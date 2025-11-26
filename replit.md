@@ -125,6 +125,12 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
 - Workflow unificato per tutti i tipi di intervento
 
 ## Recent Changes
+- 2025-11-26: Aggiunto tab "Completati" per archivio interventi
+  - 4 tab in navigazione: Dashboard, Interventi, Completati, Profilo
+  - CompletedInterventionsScreen mostra solo interventi completati
+  - InterventionsListScreen filtra automaticamente i completati
+  - Navigazione separata CompletedStackNavigator
+  - Usa ScreenFlatList per corretta gestione safe-area insets
 - 2025-11-26: Lista interventi con 3 sezioni per categoria
   - Sopralluoghi (icona search, viola)
   - Installazioni (icona tool, blu)
