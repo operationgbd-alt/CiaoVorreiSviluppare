@@ -127,9 +127,18 @@ export default function DashboardScreen() {
             Interventi per Ditta
           </ThemedText>
           {globalStats.byCompany.map((company) => (
-            <View
+            <Pressable
               key={company.companyId}
-              style={[styles.companyStatRow, { backgroundColor: theme.backgroundDefault }]}
+              style={({ pressed }) => [
+                styles.companyStatRow, 
+                { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 }
+              ]}
+              onPress={() => {
+                navigation.navigate("CompanyInterventions", { 
+                  companyId: company.companyId,
+                  companyName: company.companyName 
+                });
+              }}
             >
               <View style={styles.companyInfo}>
                 <View style={[styles.companyIcon, { backgroundColor: theme.primaryLight }]}>
@@ -137,12 +146,15 @@ export default function DashboardScreen() {
                 </View>
                 <ThemedText type="body">{company.companyName}</ThemedText>
               </View>
-              <View style={[styles.countBadge, { backgroundColor: theme.primaryLight }]}>
-                <ThemedText type="body" style={{ color: theme.primary, fontWeight: '600' }}>
-                  {company.count}
-                </ThemedText>
+              <View style={styles.companyInfoRight}>
+                <View style={[styles.countBadge, { backgroundColor: theme.primaryLight }]}>
+                  <ThemedText type="body" style={{ color: theme.primary, fontWeight: '600' }}>
+                    {company.count}
+                  </ThemedText>
+                </View>
+                <Feather name="chevron-right" size={18} color={theme.textTertiary} />
               </View>
-            </View>
+            </Pressable>
           ))}
         </View>
       ) : null}
@@ -405,6 +417,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: Spacing.sm,
+  },
+  companyInfoRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
   },
   countBadge: {
     paddingHorizontal: Spacing.md,

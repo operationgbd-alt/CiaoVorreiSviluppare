@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import DashboardScreen from "@/screens/DashboardScreen";
 import CalendarScreen from "@/screens/CalendarScreen";
 import AppointmentFormScreen from "@/screens/AppointmentFormScreen";
+import { CompanyInterventionsScreen } from "@/screens/CompanyInterventionsScreen";
 import { HeaderTitle } from "@/components/HeaderTitle";
 import { useTheme } from "@/hooks/useTheme";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
@@ -12,6 +13,7 @@ export type DashboardStackParamList = {
   Dashboard: undefined;
   Calendar: undefined;
   AppointmentForm: { appointment?: Appointment; date?: number };
+  CompanyInterventions: { companyId: string; companyName: string };
 };
 
 const Stack = createNativeStackNavigator<DashboardStackParamList>();
@@ -43,6 +45,13 @@ export default function DashboardStackNavigator() {
         options={({ route }) => ({
           headerTitle: route.params?.appointment ? "Modifica Appuntamento" : "Nuovo Appuntamento",
           presentation: "modal",
+        })}
+      />
+      <Stack.Screen
+        name="CompanyInterventions"
+        component={CompanyInterventionsScreen}
+        options={({ route }) => ({
+          headerTitle: route.params.companyName,
         })}
       />
     </Stack.Navigator>

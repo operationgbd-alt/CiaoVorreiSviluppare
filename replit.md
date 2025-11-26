@@ -58,7 +58,8 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
 │   ├── ProfileScreen.tsx            # Profilo utente e logout
 │   ├── ManageCompaniesScreen.tsx    # Gestione ditte (MASTER only)
 │   ├── ManageUsersScreen.tsx        # Gestione utenti (MASTER only)
-│   └── CreateInterventionScreen.tsx # Creazione interventi (MASTER only)
+│   ├── CreateInterventionScreen.tsx # Creazione interventi (MASTER only)
+│   └── CompanyInterventionsScreen.tsx # Lista interventi per ditta
 ├── components/
 │   ├── Button.tsx
 │   ├── Card.tsx
@@ -181,7 +182,11 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
   - AppContext esteso con gestione ditte, utenti e statistiche globali
   - DashboardScreen mostra "Panoramica Globale" per MASTER:
     - Contatori totali (interventi, ditte, tecnici)
-    - Interventi suddivisi per ditta
+    - Interventi suddivisi per ditta (cliccabili per vedere dettagli)
+  - CompanyInterventionsScreen: lista interventi filtrata per ditta
+    - Header con icona ditta e conteggio totale
+    - Sezioni separate per interventi attivi e completati
+    - Click su intervento apre dettaglio
   - ProfileScreen con sezione "Gestione Sistema" per MASTER:
     - Gestione Ditte (ManageCompaniesScreen)
     - Gestione Utenti (ManageUsersScreen)
