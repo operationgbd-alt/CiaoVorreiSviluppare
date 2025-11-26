@@ -1,27 +1,46 @@
 import React from "react";
-import { StyleSheet, View, Pressable, Alert, Switch } from "react-native";
+import { StyleSheet, View, Pressable, Alert, Switch, Platform } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { useApp } from "@/store/AppContext";
+import { useAuth } from "@/store/AuthContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+
+const getRoleLabel = (role: string) => {
+  switch (role) {
+    case 'master':
+      return 'Amministratore';
+    case 'ditta':
+      return 'Ditta Installatrice';
+    case 'tecnico':
+      return 'Tecnico';
+    default:
+      return role;
+  }
+};
 
 export default function ProfileScreen() {
   const { theme } = useTheme();
-  const { technician, logout } = useApp();
+  const { user, logout } = useAuth();
 
   const handleLogout = () => {
-    Alert.alert("Esci", "Sei sicuro di voler uscire da SolarTech?", [
-      { text: "Annulla", style: "cancel" },
-      {
-        text: "Esci",
-        style: "destructive",
-        onPress: () => {
-          logout();
+    if (Platform.OS === 'web') {
+      if (window.confirm("Sei sicuro di voler uscire da SolarTech?")) {
+        logout();
+      }
+    } else {
+      Alert.alert("Esci", "Sei sicuro di voler uscire da SolarTech?", [
+        { text: "Annulla", style: "cancel" },
+        {
+          text: "Esci",
+          style: "destructive",
+          onPress: () => {
+            logout();
+          },
         },
-      },
-    ]);
+      ]);
+    }
   };
 
   const renderSettingItem = (
@@ -71,21 +90,33 @@ export default function ProfileScreen() {
       <View style={[styles.profileCard, { backgroundColor: theme.backgroundDefault }]}>
         <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
           <ThemedText style={styles.avatarText}>
-            {technician?.name.split(" ").map((n) => n[0]).join("")}
+            {user?.name.split(" ").map((n) => n[0]).join("")}
           </ThemedText>
         </View>
         <ThemedText type="h2" style={styles.name}>
-          {technician?.name}
+          {user?.name}
         </ThemedText>
         <ThemedText type="small" style={{ color: theme.textSecondary }}>
-          {technician?.email}
+          {user?.email}
         </ThemedText>
-        <View style={[styles.badge, { backgroundColor: theme.primaryLight }]}>
-          <Feather name="briefcase" size={14} color={theme.primary} />
-          <ThemedText type="caption" style={{ color: theme.primary, marginLeft: Spacing.xs }}>
-            {technician?.companyName}
+        <View style={[styles.roleBadge, { backgroundColor: user?.role === 'master' ? theme.danger + '20' : user?.role === 'ditta' ? theme.secondary + '20' : theme.primaryLight }]}>
+          <Feather 
+            name={user?.role === 'master' ? 'shield' : user?.role === 'ditta' ? 'home' : 'tool'} 
+            size={14} 
+            color={user?.role === 'master' ? theme.danger : user?.role === 'ditta' ? theme.secondary : theme.primary} 
+          />
+          <ThemedText type="caption" style={{ color: user?.role === 'master' ? theme.danger : user?.role === 'ditta' ? theme.secondary : theme.primary, marginLeft: Spacing.xs }}>
+            {getRoleLabel(user?.role || '')}
           </ThemedText>
         </View>
+        {user?.companyName ? (
+          <View style={[styles.badge, { backgroundColor: theme.primaryLight }]}>
+            <Feather name="briefcase" size={14} color={theme.primary} />
+            <ThemedText type="caption" style={{ color: theme.primary, marginLeft: Spacing.xs }}>
+              {user.companyName}
+            </ThemedText>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.section}>
@@ -230,13 +261,21 @@ const styles = StyleSheet.create({
   name: {
     marginBottom: Spacing.xs,
   },
-  badge: {
+  roleBadge: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
     marginTop: Spacing.md,
+  },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    marginTop: Spacing.sm,
   },
   section: {
     marginBottom: Spacing.xl,
