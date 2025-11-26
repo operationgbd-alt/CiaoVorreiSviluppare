@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { StyleSheet, View, Pressable, SectionList } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RouteProp, useRoute } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -10,13 +11,10 @@ import { useApp } from "@/store/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { Intervention, InterventionStatus, InterventionCategory } from "@/types";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
-
-type InterventionsStackParamList = {
-  InterventionsList: undefined;
-  InterventionDetail: { interventionId: string };
-};
+import { InterventionsStackParamList } from "@/navigation/InterventionsStackNavigator";
 
 type InterventionsListNavProp = NativeStackNavigationProp<InterventionsStackParamList, "InterventionsList">;
+type InterventionsListRouteProp = RouteProp<InterventionsStackParamList, "InterventionsList">;
 
 interface Props {
   navigation: InterventionsListNavProp;
@@ -27,6 +25,7 @@ const STATUS_CONFIG: Record<InterventionStatus, { label: string; color: string; 
   appuntamento_fissato: { label: 'Appuntamento', color: '#007AFF', icon: 'calendar' },
   in_corso: { label: 'In Corso', color: '#5856D6', icon: 'play-circle' },
   completato: { label: 'Completato', color: '#34C759', icon: 'check-circle' },
+  chiuso: { label: 'Chiuso', color: '#8E8E93', icon: 'lock' },
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
@@ -50,17 +49,33 @@ interface SectionData {
   data: Intervention[];
 }
 
+const STATUS_LABELS: Record<InterventionStatus, string> = {
+  assegnato: 'Nuovi',
+  appuntamento_fissato: 'Programmati',
+  in_corso: 'In Corso',
+  completato: 'Completati',
+  chiuso: 'Chiusi',
+};
+
 export default function InterventionsListScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const { interventions } = useApp();
   const { paddingBottom } = useScreenInsets();
+  const route = useRoute<InterventionsListRouteProp>();
+  
+  const filterStatus = route.params?.filterStatus;
 
   const sections = useMemo(() => {
     const categories: InterventionCategory[] = ['sopralluogo', 'installazione', 'manutenzione'];
     
     return categories.map(category => {
       const categoryInterventions = interventions
-        .filter(i => i.category === category && i.status !== 'completato')
+        .filter(i => {
+          if (i.category !== category) return false;
+          if (i.status === 'completato' || i.status === 'chiuso') return false;
+          if (filterStatus && i.status !== filterStatus) return false;
+          return true;
+        })
         .sort((a, b) => {
           const statusOrder: InterventionStatus[] = ['assegnato', 'appuntamento_fissato', 'in_corso', 'completato'];
           const priorityOrder = ['urgente', 'alta', 'normale', 'bassa'];
@@ -83,7 +98,7 @@ export default function InterventionsListScreen({ navigation }: Props) {
         data: categoryInterventions,
       };
     });
-  }, [interventions]);
+  }, [interventions, filterStatus]);
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);

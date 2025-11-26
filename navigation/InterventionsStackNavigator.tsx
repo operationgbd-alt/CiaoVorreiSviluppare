@@ -4,9 +4,10 @@ import { getCommonScreenOptions } from "@/navigation/screenOptions";
 import { useTheme } from "@/hooks/useTheme";
 import InterventionsListScreen from "@/screens/InterventionsListScreen";
 import InterventionDetailScreen from "@/screens/InterventionDetailScreen";
+import { InterventionStatus } from "@/types";
 
 export type InterventionsStackParamList = {
-  InterventionsList: undefined;
+  InterventionsList: { filterStatus?: InterventionStatus } | undefined;
   InterventionDetail: { interventionId: string };
 };
 

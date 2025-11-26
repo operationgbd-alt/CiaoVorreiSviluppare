@@ -201,7 +201,10 @@ export default function DashboardScreen() {
           ]}
           onPress={() => {
             const nav = navigation.getParent() as any;
-            nav?.navigate("InterventionsTab");
+            nav?.navigate("InterventionsTab", {
+              screen: "InterventionsList",
+              params: { filterStatus: "assegnato" },
+            });
           }}
         >
           <View style={[styles.statIcon, { backgroundColor: '#FF9500' + "20" }]}>
@@ -220,7 +223,10 @@ export default function DashboardScreen() {
           ]}
           onPress={() => {
             const nav = navigation.getParent() as any;
-            nav?.navigate("InterventionsTab");
+            nav?.navigate("InterventionsTab", {
+              screen: "InterventionsList",
+              params: { filterStatus: "appuntamento_fissato" },
+            });
           }}
         >
           <View style={[styles.statIcon, { backgroundColor: theme.primary + "20" }]}>
@@ -239,7 +245,10 @@ export default function DashboardScreen() {
           ]}
           onPress={() => {
             const nav = navigation.getParent() as any;
-            nav?.navigate("InterventionsTab");
+            nav?.navigate("InterventionsTab", {
+              screen: "InterventionsList",
+              params: { filterStatus: "in_corso" },
+            });
           }}
         >
           <View style={[styles.statIcon, { backgroundColor: '#5856D6' + "20" }]}>
