@@ -60,7 +60,7 @@ export default function InterventionsListScreen({ navigation }: Props) {
     
     return categories.map(category => {
       const categoryInterventions = interventions
-        .filter(i => i.category === category)
+        .filter(i => i.category === category && i.status !== 'completato')
         .sort((a, b) => {
           const statusOrder: InterventionStatus[] = ['assegnato', 'appuntamento_fissato', 'in_corso', 'completato'];
           const priorityOrder = ['urgente', 'alta', 'normale', 'bassa'];

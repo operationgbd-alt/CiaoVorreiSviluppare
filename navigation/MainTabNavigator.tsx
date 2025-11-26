@@ -5,12 +5,14 @@ import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
 import DashboardStackNavigator from "@/navigation/DashboardStackNavigator";
 import InterventionsStackNavigator from "@/navigation/InterventionsStackNavigator";
+import CompletedStackNavigator from "@/navigation/CompletedStackNavigator";
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
 import { useTheme } from "@/hooks/useTheme";
 
 export type MainTabParamList = {
   DashboardTab: undefined;
   InterventionsTab: undefined;
+  CompletedTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -62,6 +64,16 @@ export default function MainTabNavigator() {
           title: "Interventi",
           tabBarIcon: ({ color, size }) => (
             <Feather name="briefcase" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="CompletedTab"
+        component={CompletedStackNavigator}
+        options={{
+          title: "Completati",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="check-circle" size={size} color={color} />
           ),
         }}
       />

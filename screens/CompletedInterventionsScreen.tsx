@@ -1,0 +1,257 @@
+import React, { useMemo } from "react";
+import { StyleSheet, View } from "react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Feather } from "@expo/vector-icons";
+import { ThemedText } from "@/components/ThemedText";
+import { ScreenFlatList } from "@/components/ScreenFlatList";
+import { Card } from "@/components/Card";
+import { useTheme } from "@/hooks/useTheme";
+import { useApp } from "@/store/AppContext";
+import { Spacing, BorderRadius } from "@/constants/theme";
+import { Intervention, InterventionCategory } from "@/types";
+
+type CompletedStackParamList = {
+  CompletedList: undefined;
+  CompletedDetail: { interventionId: string };
+};
+
+type CompletedListNavProp = NativeStackNavigationProp<CompletedStackParamList, "CompletedList">;
+
+interface Props {
+  navigation: CompletedListNavProp;
+}
+
+const CATEGORY_CONFIG: Record<InterventionCategory, { label: string; icon: string; color: string }> = {
+  sopralluogo: { label: 'Sopralluogo', icon: 'search', color: '#5856D6' },
+  installazione: { label: 'Installazione', icon: 'tool', color: '#007AFF' },
+  manutenzione: { label: 'Manutenzione', icon: 'settings', color: '#FF9500' },
+};
+
+export default function CompletedInterventionsScreen({ navigation }: Props) {
+  const { theme } = useTheme();
+  const { interventions } = useApp();
+
+  const completedInterventions = useMemo(() => {
+    return interventions
+      .filter(i => i.status === 'completato')
+      .sort((a, b) => {
+        const aCompleted = a.documentation.completedAt || a.updatedAt;
+        const bCompleted = b.documentation.completedAt || b.updatedAt;
+        return bCompleted - aCompleted;
+      });
+  }, [interventions]);
+
+  const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString('it-IT', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const renderHeader = () => (
+    <View style={styles.statsBar}>
+      <View style={[styles.statItem, { backgroundColor: theme.success + '15' }]}>
+        <Feather name="check-circle" size={20} color={theme.success} />
+        <ThemedText type="h2" style={{ color: theme.success, marginLeft: Spacing.sm }}>
+          {completedInterventions.length}
+        </ThemedText>
+        <ThemedText type="caption" style={{ color: theme.textSecondary, marginLeft: Spacing.sm }}>
+          Interventi Completati
+        </ThemedText>
+      </View>
+    </View>
+  );
+
+  const renderIntervention = ({ item }: { item: Intervention }) => {
+    const categoryConfig = CATEGORY_CONFIG[item.category];
+    const completedDate = item.documentation.completedAt || item.updatedAt;
+
+    return (
+      <Card 
+        style={styles.card}
+        onPress={() => navigation.navigate('CompletedDetail', { interventionId: item.id })}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.numberBadge}>
+            <ThemedText type="caption" style={{ fontWeight: '600' }}>
+              {item.number}
+            </ThemedText>
+          </View>
+          <View style={[styles.categoryBadge, { backgroundColor: categoryConfig.color + '20' }]}>
+            <Feather name={categoryConfig.icon as any} size={12} color={categoryConfig.color} />
+            <ThemedText type="caption" style={{ color: categoryConfig.color, marginLeft: 4, fontWeight: '600' }}>
+              {categoryConfig.label}
+            </ThemedText>
+          </View>
+        </View>
+
+        <View style={styles.cardBody}>
+          <View style={styles.clientRow}>
+            <Feather name="user" size={16} color={theme.textSecondary} />
+            <ThemedText type="body" style={styles.clientName}>
+              {item.client.name}
+            </ThemedText>
+          </View>
+
+          <View style={styles.addressRow}>
+            <Feather name="map-pin" size={14} color={theme.textTertiary} />
+            <ThemedText type="caption" style={{ color: theme.textSecondary, marginLeft: Spacing.xs, flex: 1 }}>
+              {item.client.address} {item.client.civicNumber}, {item.client.city}
+            </ThemedText>
+          </View>
+
+          <ThemedText type="small" numberOfLines={2} style={{ color: theme.textSecondary, marginTop: Spacing.sm }}>
+            {item.description}
+          </ThemedText>
+        </View>
+
+        <View style={[styles.cardFooter, { borderTopColor: theme.border }]}>
+          <View style={styles.statusContainer}>
+            <Feather name="check-circle" size={14} color={theme.success} />
+            <ThemedText type="caption" style={{ color: theme.success, marginLeft: Spacing.xs }}>
+              Completato
+            </ThemedText>
+          </View>
+
+          <View style={styles.dateInfo}>
+            <Feather name="calendar" size={12} color={theme.textSecondary} />
+            <ThemedText type="caption" style={{ color: theme.textSecondary, marginLeft: 4 }}>
+              {formatDate(completedDate)}
+            </ThemedText>
+          </View>
+        </View>
+
+        {item.documentation.notes ? (
+          <View style={[styles.notesPreview, { backgroundColor: theme.backgroundSecondary }]}>
+            <Feather name="file-text" size={12} color={theme.textTertiary} />
+            <ThemedText type="caption" numberOfLines={1} style={{ color: theme.textSecondary, marginLeft: Spacing.xs, flex: 1 }}>
+              {item.documentation.notes}
+            </ThemedText>
+          </View>
+        ) : null}
+
+        {item.documentation.photos.length > 0 ? (
+          <View style={[styles.photosPreview, { backgroundColor: theme.backgroundSecondary }]}>
+            <Feather name="camera" size={12} color={theme.textTertiary} />
+            <ThemedText type="caption" style={{ color: theme.textSecondary, marginLeft: Spacing.xs }}>
+              {item.documentation.photos.length} foto allegate
+            </ThemedText>
+          </View>
+        ) : null}
+      </Card>
+    );
+  };
+
+  const renderEmpty = () => (
+    <View style={styles.emptyState}>
+      <Feather name="inbox" size={48} color={theme.textTertiary} />
+      <ThemedText type="body" style={{ color: theme.textSecondary, marginTop: Spacing.md, textAlign: 'center' }}>
+        Nessun intervento completato
+      </ThemedText>
+      <ThemedText type="caption" style={{ color: theme.textTertiary, marginTop: Spacing.sm, textAlign: 'center' }}>
+        Gli interventi completati appariranno qui
+      </ThemedText>
+    </View>
+  );
+
+  return (
+    <ScreenFlatList
+      data={completedInterventions}
+      keyExtractor={(item) => item.id}
+      renderItem={renderIntervention}
+      ListHeaderComponent={renderHeader}
+      ListEmptyComponent={renderEmpty}
+      showsVerticalScrollIndicator={false}
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  statsBar: {
+    marginBottom: Spacing.md,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  card: {
+    marginBottom: Spacing.md,
+    padding: 0,
+    overflow: 'hidden',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  numberBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+  },
+  categoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.xs,
+  },
+  cardBody: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+  },
+  clientRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  clientName: {
+    fontWeight: '600',
+    marginLeft: Spacing.sm,
+  },
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: Spacing.xs,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderTopWidth: 1,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dateInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notesPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+  },
+  photosPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing['3xl'],
+  },
+});
