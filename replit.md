@@ -4,9 +4,9 @@
 Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di impianti fotovoltaici. Gestisce il workflow completo: assegnazione interventi da admin, programmazione appuntamenti, documentazione sul campo con foto/note e GPS, completamento e generazione report.
 
 ## Role-Based Access System (3 Tier)
-- **MASTER (GBD Amministratore)**: Crea e gestisce tutte le ditte e tecnici
-- **DITTA INSTALLATRICE**: Gestisce i propri tecnici, può chiudere definitivamente interventi e inviare email
-- **TECNICO**: Lavoro sul campo, documentazione foto/note, GPS
+- **MASTER (GBD Amministratore)**: Crea e gestisce tutte le ditte e tecnici, vede TUTTI gli interventi
+- **DITTA INSTALLATRICE**: Gestisce i propri tecnici, vede tutti gli interventi della propria azienda, può chiudere definitivamente interventi e inviare email
+- **TECNICO**: Vede interventi assegnati a lui + interventi della sua ditta non ancora assegnati, lavoro sul campo, documentazione foto/note, GPS
 
 ## Project Architecture
 

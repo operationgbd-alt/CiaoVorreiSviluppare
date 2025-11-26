@@ -326,7 +326,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       case 'ditta':
         return interventionsData.filter(i => i.companyId === user.companyId);
       case 'tecnico':
-        return interventionsData.filter(i => i.technicianId === user.id);
+        return interventionsData.filter(i => 
+          i.companyId === user.companyId && 
+          (i.technicianId === user.id || i.technicianId === null)
+        );
       default:
         return [];
     }
