@@ -127,6 +127,9 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
 - Workflow unificato per tutti i tipi di intervento
 
 ## Recent Changes
+- 2025-11-26: Fix Card event handling
+  - Risolto problema navigazione lista interventi
+  - Card ora usa prop onPress interno invece di Pressable wrapper
 - 2025-11-26: Refactoring completo modello dati
   - Sostituito sistema separato Survey/Installation con modello Intervention unificato
   - Nuovo workflow: assegnato -> appuntamento -> in corso -> completato
