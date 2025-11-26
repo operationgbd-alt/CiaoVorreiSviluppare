@@ -205,6 +205,12 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
     - Assegnazione in blocco a ditta selezionata
   - Filtro interventi role-based: MASTER vede tutto, DITTA vede propri, TECNICO vede assegnati + liberi
   - Aggiunto stato "chiuso" per interventi chiusi definitivamente
+- 2025-11-26: Fix navigazione card statistiche Dashboard
+  - Card "Nuovi" naviga a lista filtrata per status 'assegnato'
+  - Card "Programmati" naviga a lista filtrata per status 'appuntamento_fissato'
+  - Card "In corso" naviga a lista filtrata per status 'in_corso'
+  - Card "Completati" naviga a tab separato CompletedTab
+  - InterventionsListScreen ora accetta parametro filterStatus da route
 
 ## Development Notes
 - Hot Module Reloading attivo per modifiche codice
