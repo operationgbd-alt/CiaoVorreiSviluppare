@@ -67,11 +67,9 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
 - urgente (rosso)
 
 ### Categorie Intervento
-- installazione
-- manutenzione
-- riparazione
-- sopralluogo
-- assistenza
+- sopralluogo (viola)
+- installazione (blu)
+- manutenzione (arancione)
 
 ### Data Model (Intervention)
 ```typescript
@@ -89,8 +87,8 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
 
 ### Implemented (Phase 1 - UI/Workflow Prototype)
 1. **Dashboard** - Statistiche interventi per stato, appuntamenti del giorno, attività recenti
-2. **Lista Interventi** - Filtri per stato, ordinamento priorità/data, cards dettagliate
-3. **Dettaglio Intervento** - Info cliente, contatti rapidi (chiama/email/naviga), workflow actions
+2. **Lista Interventi** - 3 sezioni per categoria (Sopralluoghi, Installazioni, Manutenzioni)
+3. **Dettaglio Intervento** - 5 sezioni: Dettaglio, Cliente (Chiama/Naviga), Calendario, Gestisci, Esita
 4. **Programmazione Appuntamento** - Date picker, note, integrazione calendario
 5. **Acquisizione GPS** - Registrazione posizione all'avvio intervento
 6. **Documentazione** - Cattura foto con fotocamera/galleria, note lavoro
@@ -127,16 +125,19 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
 - Workflow unificato per tutti i tipi di intervento
 
 ## Recent Changes
+- 2025-11-26: Lista interventi con 3 sezioni per categoria
+  - Sopralluoghi (icona search, viola)
+  - Installazioni (icona tool, blu)
+  - Manutenzioni (icona settings, arancione)
+  - Ogni sezione mostra conteggio interventi
+  - Click su intervento apre scheda dettaglio
 - 2025-11-26: Schermata dettaglio unificata con 5 sezioni
   - Dettaglio Intervento: info base sempre visibili
   - Cliente: contatti con solo Chiama e Naviga (rimosso Email)
   - Calendario: date/time picker integrato, espandibile
   - Gestisci Intervento: foto, GPS, note in sezione espandibile
   - Esita Intervento: cambio stato in sezione espandibile
-  - Rimossi ScheduleAppointmentScreen e InterventionDocumentationScreen
   - Card onPress per sezioni espandibili (fix event handling)
-- 2025-11-26: Ridotte categorie a 2 (sopralluogo, installazione)
-  - Rimosse: manutenzione, riparazione, assistenza
 - 2025-11-26: Bug fix foto e notifiche
   - PhotoPicker usa ImagePicker.MediaTypeOptions.Images
   - Gestione errori migliorata
