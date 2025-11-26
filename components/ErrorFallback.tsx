@@ -58,12 +58,16 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
       ) : null}
 
       <View style={styles.content}>
-        <ThemedText type="h1" style={styles.title}>
-          Something went wrong
+        <View style={[styles.iconContainer, { backgroundColor: theme.primaryLight }]}>
+          <Feather name="sun" size={48} color={theme.primary} />
+        </View>
+
+        <ThemedText type="h2" style={styles.title}>
+          Ops! Qualcosa non va
         </ThemedText>
 
-        <ThemedText type="body" style={styles.message}>
-          Please reload the app to continue.
+        <ThemedText type="body" style={[styles.message, { color: theme.textSecondary }]}>
+          SolarTech ha riscontrato un problema. Riavvia l'app per continuare.
         </ThemedText>
 
         <Pressable
@@ -71,17 +75,18 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           style={({ pressed }) => [
             styles.button,
             {
-              backgroundColor: theme.link,
+              backgroundColor: theme.primary,
               opacity: pressed ? 0.9 : 1,
               transform: [{ scale: pressed ? 0.98 : 1 }],
             },
           ]}
         >
+          <Feather name="refresh-cw" size={20} color={theme.buttonText} style={styles.buttonIcon} />
           <ThemedText
-            type="body"
+            type="button"
             style={[styles.buttonText, { color: theme.buttonText }]}
           >
-            Try Again
+            Riavvia SolarTech
           </ThemedText>
         </Pressable>
       </View>
@@ -97,7 +102,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
             <ThemedView style={styles.modalContainer}>
               <View style={styles.modalHeader}>
                 <ThemedText type="h2" style={styles.modalTitle}>
-                  Error Details
+                  Dettagli Errore
                 </ThemedText>
                 <Pressable
                   onPress={() => setIsModalVisible(false)}
@@ -159,14 +164,20 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 600,
   },
+  iconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.lg,
+  },
   title: {
     textAlign: "center",
-    lineHeight: 40,
   },
   message: {
     textAlign: "center",
-    opacity: 0.7,
-    lineHeight: 24,
+    paddingHorizontal: Spacing.xl,
   },
   topButton: {
     position: "absolute",
@@ -181,23 +192,20 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   button: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: Spacing.lg,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing["2xl"],
     minWidth: 200,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginTop: Spacing.lg,
+  },
+  buttonIcon: {
+    marginRight: Spacing.sm,
   },
   buttonText: {
-    fontWeight: "600",
     textAlign: "center",
-    fontSize: 16,
   },
   modalOverlay: {
     flex: 1,
