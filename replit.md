@@ -90,6 +90,11 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
 - Form basati sui moduli PDF esistenti (Checklist Installatore, ODL)
 
 ## Recent Changes
+- 2025-11-26: Corretti bug critici nelle funzionalità foto e notifiche
+  - PhotoPicker ora usa correttamente ImagePicker.MediaTypeOptions.Images
+  - Notifiche appuntamenti con ID stabili, cancellazione/riprogrammazione su modifica/elimina
+  - Aggiunto feedback aptico ai pulsanti (solo dispositivi nativi)
+  - Gestione errori migliorata per foto e notifiche
 - 2024-11: Creazione prototipo MVP con tutte le schermate principali
 - Implementata navigazione a 4 tab (Dashboard, Sopralluoghi, Installazioni, Profilo)
 - Digitalizzati i form checklist A1, A2 e ODL
