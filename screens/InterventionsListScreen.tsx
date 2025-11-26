@@ -48,11 +48,8 @@ const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
-  installazione: 'Installazione',
-  manutenzione: 'Manutenzione',
-  riparazione: 'Riparazione',
   sopralluogo: 'Sopralluogo',
-  assistenza: 'Assistenza',
+  installazione: 'Installazione',
 };
 
 export default function InterventionsListScreen({ navigation }: Props) {

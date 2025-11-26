@@ -29,11 +29,8 @@ export type InterventionStatus =
   | 'completato';
 
 export type InterventionCategory = 
-  | 'installazione'
-  | 'manutenzione'
-  | 'riparazione'
   | 'sopralluogo'
-  | 'assistenza';
+  | 'installazione';
 
 export interface Intervention {
   id: string;

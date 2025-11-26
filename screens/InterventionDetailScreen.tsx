@@ -1,9 +1,11 @@
 import React, { useState, useLayoutEffect } from "react";
-import { StyleSheet, View, Pressable, Alert, Linking, Platform } from "react-native";
+import { StyleSheet, View, Pressable, Alert, Linking, Platform, TextInput, ScrollView, Image } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Location from "expo-location";
+import * as ImagePicker from "expo-image-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
@@ -11,13 +13,11 @@ import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/store/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { InterventionStatus } from "@/types";
+import { InterventionStatus, Photo } from "@/types";
 
 type InterventionsStackParamList = {
   InterventionsList: undefined;
   InterventionDetail: { interventionId: string };
-  InterventionDocumentation: { interventionId: string };
-  ScheduleAppointment: { interventionId: string };
 };
 
 type InterventionDetailNavProp = NativeStackNavigationProp<InterventionsStackParamList, "InterventionDetail">;
@@ -36,11 +36,8 @@ const STATUS_CONFIG: Record<InterventionStatus, { label: string; color: string; 
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
-  installazione: 'Installazione',
-  manutenzione: 'Manutenzione',
-  riparazione: 'Riparazione',
   sopralluogo: 'Sopralluogo',
-  assistenza: 'Assistenza',
+  installazione: 'Installazione',
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
@@ -50,12 +47,28 @@ const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
   urgente: { label: 'Urgente', color: '#FF3B30' },
 };
 
+const STATUS_OPTIONS: { value: InterventionStatus; label: string }[] = [
+  { value: 'assegnato', label: 'Assegnato' },
+  { value: 'appuntamento_fissato', label: 'Appuntamento Fissato' },
+  { value: 'in_corso', label: 'In Corso' },
+  { value: 'completato', label: 'Completato' },
+];
+
 export default function InterventionDetailScreen({ navigation, route }: Props) {
   const { theme } = useTheme();
-  const { getInterventionById, updateIntervention } = useApp();
-  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-
+  const { getInterventionById, updateIntervention, addAppointment } = useApp();
+  
   const intervention = getInterventionById(route.params.interventionId);
+  
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [notes, setNotes] = useState(intervention?.documentation.notes || '');
+  const [appointmentDate, setAppointmentDate] = useState<Date>(
+    intervention?.appointment?.date ? new Date(intervention.appointment.date) : new Date()
+  );
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [appointmentNotes, setAppointmentNotes] = useState(intervention?.appointment?.notes || '');
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   useLayoutEffect(() => {
     if (intervention) {
@@ -79,9 +92,9 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
   const formatDateTime = (timestamp: number) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString('it-IT', {
-      weekday: 'long',
+      weekday: 'short',
       day: 'numeric',
-      month: 'long',
+      month: 'short',
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -100,10 +113,6 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
     Linking.openURL(`tel:${intervention.client.phone}`);
   };
 
-  const handleEmail = () => {
-    Linking.openURL(`mailto:${intervention.client.email}`);
-  };
-
   const handleNavigate = () => {
     const address = `${intervention.client.address} ${intervention.client.civicNumber}, ${intervention.client.cap} ${intervention.client.city}`;
     const encodedAddress = encodeURIComponent(address);
@@ -115,11 +124,52 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
     }
   };
 
-  const handleScheduleAppointment = () => {
-    navigation.navigate('ScheduleAppointment', { interventionId: intervention.id });
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const newDate = new Date(appointmentDate);
+      newDate.setFullYear(selectedDate.getFullYear());
+      newDate.setMonth(selectedDate.getMonth());
+      newDate.setDate(selectedDate.getDate());
+      setAppointmentDate(newDate);
+    }
   };
 
-  const handleStartWork = async () => {
+  const handleTimeChange = (event: any, selectedTime?: Date) => {
+    setShowTimePicker(false);
+    if (selectedTime) {
+      const newDate = new Date(appointmentDate);
+      newDate.setHours(selectedTime.getHours());
+      newDate.setMinutes(selectedTime.getMinutes());
+      setAppointmentDate(newDate);
+    }
+  };
+
+  const handleSaveAppointment = () => {
+    updateIntervention(intervention.id, {
+      appointment: {
+        date: appointmentDate.getTime(),
+        confirmedAt: Date.now(),
+        notes: appointmentNotes,
+      },
+      status: intervention.status === 'assegnato' ? 'appuntamento_fissato' : intervention.status,
+    });
+
+    addAppointment({
+      id: `apt-${Date.now()}`,
+      type: 'intervento',
+      interventionId: intervention.id,
+      clientName: intervention.client.name,
+      address: `${intervention.client.address} ${intervention.client.civicNumber}, ${intervention.client.city}`,
+      date: appointmentDate.getTime(),
+      notes: appointmentNotes,
+      notifyBefore: 60,
+    });
+
+    Alert.alert('Appuntamento Salvato', 'L\'appuntamento e stato fissato con successo.');
+  };
+
+  const handleSendLocation = async () => {
     setIsLoadingLocation(true);
     
     try {
@@ -148,28 +198,18 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
         if (address) {
           addressString = `${address.street || ''} ${address.streetNumber || ''}, ${address.city || ''}`.trim();
         }
-      } catch (e) {
-      }
+      } catch (e) {}
 
       updateIntervention(intervention.id, {
-        status: 'in_corso',
         location: {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
           address: addressString,
           timestamp: Date.now(),
         },
-        documentation: {
-          ...intervention.documentation,
-          startedAt: Date.now(),
-        },
       });
 
-      Alert.alert(
-        'Intervento Avviato',
-        'La tua posizione e stata registrata. Ora puoi procedere con la documentazione.',
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Posizione Inviata', 'La tua posizione GPS e stata registrata con successo.');
     } catch (error) {
       Alert.alert('Errore', 'Impossibile ottenere la posizione. Riprova.');
     } finally {
@@ -177,12 +217,85 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
     }
   };
 
-  const handleDocumentation = () => {
-    navigation.navigate('InterventionDocumentation', { interventionId: intervention.id });
+  const handleTakePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert('Permesso Negato', 'Abilita i permessi della fotocamera nelle impostazioni.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const newPhoto: Photo = {
+          id: `photo-${Date.now()}`,
+          uri: result.assets[0].uri,
+          timestamp: Date.now(),
+        };
+
+        updateIntervention(intervention.id, {
+          documentation: {
+            ...intervention.documentation,
+            photos: [...intervention.documentation.photos, newPhoto],
+          },
+        });
+      }
+    } catch (error) {
+      Alert.alert('Errore', 'Impossibile scattare la foto.');
+    }
   };
 
-  const handleComplete = () => {
-    if (intervention.documentation.photos.length === 0) {
+  const handlePickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert('Permesso Negato', 'Abilita i permessi della galleria nelle impostazioni.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        allowsMultipleSelection: true,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const newPhotos: Photo[] = result.assets.map((asset, index) => ({
+          id: `photo-${Date.now()}-${index}`,
+          uri: asset.uri,
+          timestamp: Date.now(),
+        }));
+
+        updateIntervention(intervention.id, {
+          documentation: {
+            ...intervention.documentation,
+            photos: [...intervention.documentation.photos, ...newPhotos],
+          },
+        });
+      }
+    } catch (error) {
+      Alert.alert('Errore', 'Impossibile caricare le immagini.');
+    }
+  };
+
+  const handleSaveNotes = () => {
+    updateIntervention(intervention.id, {
+      documentation: {
+        ...intervention.documentation,
+        notes: notes,
+      },
+    });
+    Alert.alert('Note Salvate', 'Le note sono state salvate con successo.');
+  };
+
+  const handleChangeStatus = (newStatus: InterventionStatus) => {
+    if (newStatus === 'completato' && intervention.documentation.photos.length === 0) {
       Alert.alert(
         'Documentazione Mancante',
         'Aggiungi almeno una foto prima di completare l\'intervento.',
@@ -191,68 +304,50 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
       return;
     }
 
+    const updates: any = { status: newStatus };
+    
+    if (newStatus === 'in_corso' && !intervention.documentation.startedAt) {
+      updates.documentation = {
+        ...intervention.documentation,
+        startedAt: Date.now(),
+      };
+    }
+    
+    if (newStatus === 'completato') {
+      updates.documentation = {
+        ...intervention.documentation,
+        completedAt: Date.now(),
+      };
+    }
+
+    updateIntervention(intervention.id, updates);
+    Alert.alert('Stato Aggiornato', `Intervento ora: ${STATUS_CONFIG[newStatus].label}`);
+  };
+
+  const handleDeletePhoto = (photoId: string) => {
     Alert.alert(
-      'Completa Intervento',
-      'Sei sicuro di voler completare questo intervento? Verra generato il report finale.',
+      'Elimina Foto',
+      'Sei sicuro di voler eliminare questa foto?',
       [
         { text: 'Annulla', style: 'cancel' },
         {
-          text: 'Completa',
+          text: 'Elimina',
+          style: 'destructive',
           onPress: () => {
             updateIntervention(intervention.id, {
-              status: 'completato',
               documentation: {
                 ...intervention.documentation,
-                completedAt: Date.now(),
+                photos: intervention.documentation.photos.filter(p => p.id !== photoId),
               },
             });
-            Alert.alert('Intervento Completato', 'Il report e stato generato con successo.');
           },
         },
       ]
     );
   };
 
-  const renderActionButton = () => {
-    switch (intervention.status) {
-      case 'assegnato':
-        return (
-          <Button onPress={handleScheduleAppointment}>
-            Fissa Appuntamento
-          </Button>
-        );
-      case 'appuntamento_fissato':
-        return (
-          <Button onPress={handleStartWork} disabled={isLoadingLocation}>
-            {isLoadingLocation ? 'Acquisizione GPS...' : 'Avvia Intervento'}
-          </Button>
-        );
-      case 'in_corso':
-        return (
-          <View style={styles.actionButtons}>
-            <Button 
-              onPress={handleDocumentation}
-              style={{ flex: 1, marginRight: Spacing.sm }}
-            >
-              Documentazione
-            </Button>
-            <Button 
-              onPress={handleComplete}
-              style={{ flex: 1, marginLeft: Spacing.sm, backgroundColor: theme.success }}
-            >
-              Completa
-            </Button>
-          </View>
-        );
-      case 'completato':
-        return (
-          <Button onPress={handleDocumentation}>
-            Visualizza Report
-          </Button>
-        );
-      default:
-        return null;
-    }
+  const toggleSection = (section: string) => {
+    setExpandedSection(expandedSection === section ? null : section);
   };
 
   return (
@@ -270,17 +365,22 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
         </View>
       </View>
 
+      {/* 1. DETTAGLIO INTERVENTO */}
       <Card style={styles.section}>
         <View style={styles.sectionHeader}>
           <Feather name="file-text" size={18} color={theme.primary} />
           <ThemedText type="h3" style={{ marginLeft: Spacing.sm }}>
-            Dettagli Intervento
+            Dettaglio Intervento
           </ThemedText>
         </View>
         
         <View style={styles.detailRow}>
           <ThemedText type="caption" style={{ color: theme.textSecondary }}>Categoria</ThemedText>
-          <ThemedText type="body">{CATEGORY_LABELS[intervention.category]}</ThemedText>
+          <View style={[styles.categoryBadge, { backgroundColor: theme.primary + '15' }]}>
+            <ThemedText type="body" style={{ color: theme.primary, fontWeight: '600' }}>
+              {CATEGORY_LABELS[intervention.category]}
+            </ThemedText>
+          </View>
         </View>
 
         <View style={styles.detailRow}>
@@ -294,6 +394,7 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
         </View>
       </Card>
 
+      {/* 2. CLIENTE */}
       <Card style={styles.section}>
         <View style={styles.sectionHeader}>
           <Feather name="user" size={18} color={theme.primary} />
@@ -302,125 +403,321 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
           </ThemedText>
         </View>
 
-        <ThemedText type="body" style={{ fontWeight: '600' }}>
+        <ThemedText type="body" style={{ fontWeight: '600', fontSize: 18 }}>
           {intervention.client.name}
         </ThemedText>
         
-        <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.xs }}>
-          {intervention.client.address} {intervention.client.civicNumber}
-        </ThemedText>
-        <ThemedText type="small" style={{ color: theme.textSecondary }}>
-          {intervention.client.cap} {intervention.client.city}
-        </ThemedText>
+        <View style={styles.addressContainer}>
+          <Feather name="map-pin" size={14} color={theme.textSecondary} />
+          <View style={{ marginLeft: Spacing.xs, flex: 1 }}>
+            <ThemedText type="small" style={{ color: theme.textSecondary }}>
+              {intervention.client.address} {intervention.client.civicNumber}
+            </ThemedText>
+            <ThemedText type="small" style={{ color: theme.textSecondary }}>
+              {intervention.client.cap} {intervention.client.city}
+            </ThemedText>
+          </View>
+        </View>
 
         <View style={styles.contactButtons}>
           <Pressable 
-            style={[styles.contactButton, { backgroundColor: theme.primary + '15' }]}
+            style={[styles.contactButton, { backgroundColor: theme.primary }]}
             onPress={handleCall}
           >
-            <Feather name="phone" size={18} color={theme.primary} />
-            <ThemedText type="small" style={{ color: theme.primary, marginLeft: Spacing.xs }}>
+            <Feather name="phone" size={20} color="#FFFFFF" />
+            <ThemedText type="body" style={{ color: '#FFFFFF', marginLeft: Spacing.sm, fontWeight: '600' }}>
               Chiama
             </ThemedText>
           </Pressable>
 
           <Pressable 
-            style={[styles.contactButton, { backgroundColor: theme.primary + '15' }]}
-            onPress={handleEmail}
-          >
-            <Feather name="mail" size={18} color={theme.primary} />
-            <ThemedText type="small" style={{ color: theme.primary, marginLeft: Spacing.xs }}>
-              Email
-            </ThemedText>
-          </Pressable>
-
-          <Pressable 
-            style={[styles.contactButton, { backgroundColor: theme.success + '15' }]}
+            style={[styles.contactButton, { backgroundColor: theme.success }]}
             onPress={handleNavigate}
           >
-            <Feather name="navigation" size={18} color={theme.success} />
-            <ThemedText type="small" style={{ color: theme.success, marginLeft: Spacing.xs }}>
+            <Feather name="navigation" size={20} color="#FFFFFF" />
+            <ThemedText type="body" style={{ color: '#FFFFFF', marginLeft: Spacing.sm, fontWeight: '600' }}>
               Naviga
             </ThemedText>
           </Pressable>
         </View>
       </Card>
 
-      {intervention.appointment ? (
-        <Card style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Feather name="calendar" size={18} color={theme.primary} />
-            <ThemedText type="h3" style={{ marginLeft: Spacing.sm }}>
-              Appuntamento
+      {/* 3. CALENDARIO */}
+      <Card style={styles.section}>
+        <Pressable 
+          style={styles.sectionHeader}
+          onPress={() => toggleSection('calendario')}
+        >
+          <Feather name="calendar" size={18} color={theme.primary} />
+          <ThemedText type="h3" style={{ marginLeft: Spacing.sm, flex: 1 }}>
+            Calendario
+          </ThemedText>
+          <Feather 
+            name={expandedSection === 'calendario' ? 'chevron-up' : 'chevron-down'} 
+            size={20} 
+            color={theme.textSecondary} 
+          />
+        </Pressable>
+
+        {intervention.appointment ? (
+          <View style={styles.appointmentInfo}>
+            <Feather name="check-circle" size={16} color={theme.success} />
+            <ThemedText type="body" style={{ marginLeft: Spacing.sm, fontWeight: '600' }}>
+              {formatDateTime(intervention.appointment.date)}
             </ThemedText>
           </View>
+        ) : null}
 
-          <ThemedText type="body" style={{ fontWeight: '600' }}>
-            {formatDateTime(intervention.appointment.date)}
+        {expandedSection === 'calendario' ? (
+          <View style={styles.calendarContent}>
+            <View style={styles.dateTimeRow}>
+              <Pressable 
+                style={[styles.dateButton, { backgroundColor: theme.backgroundSecondary }]}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Feather name="calendar" size={16} color={theme.primary} />
+                <ThemedText type="body" style={{ marginLeft: Spacing.sm }}>
+                  {appointmentDate.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </ThemedText>
+              </Pressable>
+
+              <Pressable 
+                style={[styles.dateButton, { backgroundColor: theme.backgroundSecondary }]}
+                onPress={() => setShowTimePicker(true)}
+              >
+                <Feather name="clock" size={16} color={theme.primary} />
+                <ThemedText type="body" style={{ marginLeft: Spacing.sm }}>
+                  {appointmentDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                </ThemedText>
+              </Pressable>
+            </View>
+
+            {showDatePicker ? (
+              <DateTimePicker
+                value={appointmentDate}
+                mode="date"
+                display="default"
+                onChange={handleDateChange}
+                minimumDate={new Date()}
+              />
+            ) : null}
+
+            {showTimePicker ? (
+              <DateTimePicker
+                value={appointmentDate}
+                mode="time"
+                display="default"
+                onChange={handleTimeChange}
+                is24Hour={true}
+              />
+            ) : null}
+
+            <TextInput
+              style={[styles.notesInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+              placeholder="Note appuntamento..."
+              placeholderTextColor={theme.textTertiary}
+              value={appointmentNotes}
+              onChangeText={setAppointmentNotes}
+              multiline
+            />
+
+            <Button onPress={handleSaveAppointment} style={{ marginTop: Spacing.md }}>
+              Salva Appuntamento
+            </Button>
+          </View>
+        ) : null}
+      </Card>
+
+      {/* 4. GESTISCI INTERVENTO */}
+      <Card style={styles.section}>
+        <Pressable 
+          style={styles.sectionHeader}
+          onPress={() => toggleSection('gestisci')}
+        >
+          <Feather name="tool" size={18} color={theme.primary} />
+          <ThemedText type="h3" style={{ marginLeft: Spacing.sm, flex: 1 }}>
+            Gestisci Intervento
           </ThemedText>
-          
-          {intervention.appointment.notes ? (
-            <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.sm }}>
-              {intervention.appointment.notes}
-            </ThemedText>
-          ) : null}
-        </Card>
-      ) : null}
+          <Feather 
+            name={expandedSection === 'gestisci' ? 'chevron-up' : 'chevron-down'} 
+            size={20} 
+            color={theme.textSecondary} 
+          />
+        </Pressable>
 
-      {intervention.location ? (
-        <Card style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Feather name="map-pin" size={18} color={theme.success} />
-            <ThemedText type="h3" style={{ marginLeft: Spacing.sm }}>
-              Posizione Registrata
+        <View style={styles.quickStats}>
+          <View style={styles.statItem}>
+            <Feather name="camera" size={16} color={theme.textSecondary} />
+            <ThemedText type="body" style={{ marginLeft: Spacing.xs }}>
+              {intervention.documentation.photos.length} foto
             </ThemedText>
           </View>
-
-          <ThemedText type="body">
-            {intervention.location.address || `${intervention.location.latitude.toFixed(6)}, ${intervention.location.longitude.toFixed(6)}`}
-          </ThemedText>
-          
-          <ThemedText type="caption" style={{ color: theme.textSecondary, marginTop: Spacing.xs }}>
-            {formatDateTime(intervention.location.timestamp)}
-          </ThemedText>
-        </Card>
-      ) : null}
-
-      {intervention.documentation.photos.length > 0 || intervention.documentation.notes ? (
-        <Card style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Feather name="file" size={18} color={theme.primary} />
-            <ThemedText type="h3" style={{ marginLeft: Spacing.sm }}>
-              Documentazione
-            </ThemedText>
-          </View>
-
-          <View style={styles.docStats}>
-            <View style={styles.docStat}>
-              <Feather name="camera" size={16} color={theme.textSecondary} />
-              <ThemedText type="body" style={{ marginLeft: Spacing.xs }}>
-                {intervention.documentation.photos.length} foto
+          {intervention.location ? (
+            <View style={styles.statItem}>
+              <Feather name="map-pin" size={16} color={theme.success} />
+              <ThemedText type="body" style={{ marginLeft: Spacing.xs, color: theme.success }}>
+                GPS inviato
               </ThemedText>
             </View>
+          ) : null}
+        </View>
+
+        {expandedSection === 'gestisci' ? (
+          <View style={styles.manageContent}>
+            {/* Foto */}
+            <ThemedText type="body" style={{ fontWeight: '600', marginBottom: Spacing.sm }}>
+              Documenti e Foto
+            </ThemedText>
+            
+            <View style={styles.photoButtons}>
+              <Pressable 
+                style={[styles.photoButton, { backgroundColor: theme.primary }]}
+                onPress={handleTakePhoto}
+              >
+                <Feather name="camera" size={20} color="#FFFFFF" />
+                <ThemedText type="small" style={{ color: '#FFFFFF', marginTop: Spacing.xs }}>
+                  Scatta Foto
+                </ThemedText>
+              </Pressable>
+
+              <Pressable 
+                style={[styles.photoButton, { backgroundColor: theme.secondary }]}
+                onPress={handlePickImage}
+              >
+                <Feather name="image" size={20} color="#FFFFFF" />
+                <ThemedText type="small" style={{ color: '#FFFFFF', marginTop: Spacing.xs }}>
+                  Galleria
+                </ThemedText>
+              </Pressable>
+            </View>
+
+            {intervention.documentation.photos.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosScroll}>
+                {intervention.documentation.photos.map((photo) => (
+                  <Pressable 
+                    key={photo.id} 
+                    style={styles.photoThumbnail}
+                    onLongPress={() => handleDeletePhoto(photo.id)}
+                  >
+                    <Image source={{ uri: photo.uri }} style={styles.photoImage} />
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : null}
+
+            {/* Posizione GPS */}
+            <ThemedText type="body" style={{ fontWeight: '600', marginTop: Spacing.lg, marginBottom: Spacing.sm }}>
+              Posizione GPS
+            </ThemedText>
+
+            {intervention.location ? (
+              <View style={[styles.locationInfo, { backgroundColor: theme.success + '15' }]}>
+                <Feather name="check-circle" size={16} color={theme.success} />
+                <View style={{ marginLeft: Spacing.sm, flex: 1 }}>
+                  <ThemedText type="small" style={{ color: theme.success, fontWeight: '600' }}>
+                    Posizione registrata
+                  </ThemedText>
+                  <ThemedText type="caption" style={{ color: theme.textSecondary }}>
+                    {intervention.location.address || `${intervention.location.latitude.toFixed(4)}, ${intervention.location.longitude.toFixed(4)}`}
+                  </ThemedText>
+                </View>
+              </View>
+            ) : null}
+
+            <Button 
+              onPress={handleSendLocation} 
+              disabled={isLoadingLocation}
+              style={{ backgroundColor: theme.success }}
+            >
+              {isLoadingLocation ? 'Acquisizione GPS...' : 'Invia Posizione'}
+            </Button>
+
+            {/* Note */}
+            <ThemedText type="body" style={{ fontWeight: '600', marginTop: Spacing.lg, marginBottom: Spacing.sm }}>
+              Note Intervento
+            </ThemedText>
+
+            <TextInput
+              style={[styles.notesInputLarge, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+              placeholder="Inserisci note sull'intervento..."
+              placeholderTextColor={theme.textTertiary}
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={4}
+            />
+
+            <Button onPress={handleSaveNotes} style={{ marginTop: Spacing.sm }}>
+              Salva Note
+            </Button>
           </View>
+        ) : null}
+      </Card>
 
-          {intervention.documentation.notes ? (
-            <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.sm }}>
-              {intervention.documentation.notes}
-            </ThemedText>
-          ) : null}
+      {/* 5. ESITA INTERVENTO */}
+      <Card style={styles.section}>
+        <Pressable 
+          style={styles.sectionHeader}
+          onPress={() => toggleSection('esita')}
+        >
+          <Feather name="check-square" size={18} color={theme.primary} />
+          <ThemedText type="h3" style={{ marginLeft: Spacing.sm, flex: 1 }}>
+            Esita Intervento
+          </ThemedText>
+          <Feather 
+            name={expandedSection === 'esita' ? 'chevron-up' : 'chevron-down'} 
+            size={20} 
+            color={theme.textSecondary} 
+          />
+        </Pressable>
 
-          {intervention.documentation.completedAt ? (
-            <ThemedText type="caption" style={{ color: theme.success, marginTop: Spacing.md }}>
-              Completato il {formatDateTime(intervention.documentation.completedAt)}
-            </ThemedText>
-          ) : null}
-        </Card>
-      ) : null}
-
-      <View style={styles.actionContainer}>
-        {renderActionButton()}
-      </View>
+        {expandedSection === 'esita' ? (
+          <View style={styles.statusOptions}>
+            {STATUS_OPTIONS.map((option) => {
+              const config = STATUS_CONFIG[option.value];
+              const isSelected = intervention.status === option.value;
+              
+              return (
+                <Pressable
+                  key={option.value}
+                  style={[
+                    styles.statusOption,
+                    { 
+                      backgroundColor: isSelected ? config.color + '20' : theme.backgroundSecondary,
+                      borderColor: isSelected ? config.color : 'transparent',
+                    }
+                  ]}
+                  onPress={() => handleChangeStatus(option.value)}
+                >
+                  <Feather 
+                    name={config.icon as any} 
+                    size={20} 
+                    color={isSelected ? config.color : theme.textSecondary} 
+                  />
+                  <ThemedText 
+                    type="body" 
+                    style={{ 
+                      marginLeft: Spacing.sm, 
+                      color: isSelected ? config.color : theme.text,
+                      fontWeight: isSelected ? '600' : '400',
+                    }}
+                  >
+                    {option.label}
+                  </ThemedText>
+                  {isSelected ? (
+                    <Feather 
+                      name="check" 
+                      size={18} 
+                      color={config.color} 
+                      style={{ marginLeft: 'auto' }}
+                    />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
+      </Card>
 
       <View style={{ height: Spacing['3xl'] }} />
     </ScreenKeyboardAwareScrollView>
@@ -460,10 +757,22 @@ const styles = StyleSheet.create({
   detailRow: {
     marginBottom: Spacing.sm,
   },
+  categoryBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.sm,
+    marginTop: Spacing.xs,
+  },
+  addressContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: Spacing.md,
+  },
   contactButtons: {
     flexDirection: 'row',
     marginTop: Spacing.lg,
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
   contactButton: {
     flex: 1,
@@ -471,21 +780,91 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  appointmentInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  calendarContent: {
+    marginTop: Spacing.sm,
+  },
+  dateTimeRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  dateButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.md,
     borderRadius: BorderRadius.sm,
   },
-  docStats: {
+  notesInput: {
+    marginTop: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.sm,
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+  quickStats: {
     flexDirection: 'row',
     gap: Spacing.lg,
   },
-  docStat: {
+  statItem: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  actionContainer: {
-    paddingHorizontal: Spacing.lg,
+  manageContent: {
     marginTop: Spacing.md,
   },
-  actionButtons: {
+  photoButtons: {
     flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  photoButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.lg,
+    borderRadius: BorderRadius.md,
+  },
+  photosScroll: {
+    marginTop: Spacing.md,
+  },
+  photoThumbnail: {
+    marginRight: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+    overflow: 'hidden',
+  },
+  photoImage: {
+    width: 80,
+    height: 80,
+    borderRadius: BorderRadius.sm,
+  },
+  locationInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.md,
+  },
+  notesInputLarge: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.sm,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  statusOptions: {
+    gap: Spacing.sm,
+  },
+  statusOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 2,
   },
 });
