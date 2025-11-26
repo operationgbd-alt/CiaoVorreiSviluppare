@@ -278,7 +278,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addAppointment = useCallback((appointment: Appointment) => {
     setState(prev => ({
       ...prev,
-      appointments: [...prev.appointments, { ...appointment, id: generateId() }],
+      appointments: [...prev.appointments, { ...appointment, id: appointment.id || generateId() }],
     }));
   }, []);
 

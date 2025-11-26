@@ -5,11 +5,12 @@ import { RouteProp } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareScrollView";
 import { ThemedText } from "@/components/ThemedText";
+import { PhotoPicker } from "@/components/PhotoPicker";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/store/AppContext";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { SurveysStackParamList } from "@/navigation/SurveysStackNavigator";
-import { ProductSize, SurveyStatus, YesNoValue, ChecklistItem } from "@/types";
+import { ProductSize, SurveyStatus, YesNoValue, ChecklistItem, Photo } from "@/types";
 
 type SurveyFormNavProp = NativeStackNavigationProp<SurveysStackParamList, "SurveyForm">;
 type SurveyFormRouteProp = RouteProp<SurveysStackParamList, "SurveyForm">;
@@ -65,6 +66,7 @@ export default function SurveyFormScreen({ navigation, route }: Props) {
   const [checklistA2, setChecklistA2] = useState<Record<string, ChecklistItem>>(
     existingSurvey?.checklistA2 || {}
   );
+  const [photos, setPhotos] = useState<Photo[]>(existingSurvey?.photos || []);
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     cliente: true,
@@ -140,7 +142,7 @@ export default function SurveyFormScreen({ navigation, route }: Props) {
       checklistA1,
       checklistA2,
       checklistB: {},
-      photos: existingSurvey?.photos || [],
+      photos,
       notes: notes.trim(),
       createdAt: existingSurvey?.createdAt || Date.now(),
       updatedAt: Date.now(),
@@ -475,12 +477,7 @@ export default function SurveyFormScreen({ navigation, route }: Props) {
         <ThemedText type="h4" style={{ marginBottom: Spacing.md }}>
           Foto
         </ThemedText>
-        <View style={[styles.photoPlaceholder, { backgroundColor: theme.backgroundSecondary }]}>
-          <Feather name="camera" size={32} color={theme.textTertiary} />
-          <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.sm }}>
-            Tocca per aggiungere foto
-          </ThemedText>
-        </View>
+        <PhotoPicker photos={photos} onPhotosChange={setPhotos} maxPhotos={10} />
       </View>
 
       {existingSurvey ? (
@@ -584,15 +581,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xs,
     paddingHorizontal: Spacing.md,
     fontSize: 14,
-  },
-  photoPlaceholder: {
-    height: 120,
-    borderRadius: BorderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderStyle: "dashed",
-    borderColor: "rgba(128,128,128,0.3)",
   },
   deleteButton: {
     flexDirection: "row",

@@ -1,5 +1,5 @@
 import React, { useState, useLayoutEffect } from "react";
-import { StyleSheet, View, TextInput, Pressable, Alert } from "react-native";
+import { StyleSheet, View, TextInput, Pressable, Alert, Platform } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
@@ -9,7 +9,12 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/store/AppContext";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { DashboardStackParamList } from "@/navigation/DashboardStackNavigator";
-import { AppointmentType } from "@/types";
+import { AppointmentType, Appointment } from "@/types";
+import { 
+  scheduleAppointmentNotification, 
+  requestNotificationPermissions, 
+  cancelNotificationByAppointmentId 
+} from "@/utils/notifications";
 
 type AppointmentFormNavProp = NativeStackNavigationProp<DashboardStackParamList, "AppointmentForm">;
 type AppointmentFormRouteProp = RouteProp<DashboardStackParamList, "AppointmentForm">;
@@ -68,7 +73,7 @@ export default function AppointmentFormScreen({ navigation, route }: Props) {
     });
   }, [navigation, theme, clientName, address, type, date, notes, notifyBefore]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!clientName.trim()) {
       Alert.alert("Errore", "Inserisci il nome del cliente");
       return;
@@ -87,13 +92,36 @@ export default function AppointmentFormScreen({ navigation, route }: Props) {
       notifyBefore,
     };
 
+    let appointmentId: string;
     if (existingAppointment) {
+      appointmentId = existingAppointment.id;
       updateAppointment(existingAppointment.id, appointmentData);
+      
+      if (Platform.OS !== "web") {
+        await cancelNotificationByAppointmentId(existingAppointment.id);
+      }
     } else {
+      appointmentId = `apt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       addAppointment({
-        id: "",
+        id: appointmentId,
         ...appointmentData,
       });
+    }
+
+    if (notifyBefore && Platform.OS !== "web") {
+      const hasPermission = await requestNotificationPermissions();
+      if (hasPermission) {
+        const appointment: Appointment = {
+          id: appointmentId,
+          ...appointmentData,
+        };
+        await scheduleAppointmentNotification(appointment);
+      } else {
+        Alert.alert(
+          "Notifiche disabilitate",
+          "Per ricevere promemoria, abilita le notifiche nelle impostazioni del dispositivo."
+        );
+      }
     }
 
     navigation.goBack();
@@ -110,7 +138,10 @@ export default function AppointmentFormScreen({ navigation, route }: Props) {
         {
           text: "Elimina",
           style: "destructive",
-          onPress: () => {
+          onPress: async () => {
+            if (Platform.OS !== "web") {
+              await cancelNotificationByAppointmentId(existingAppointment.id);
+            }
             deleteAppointment(existingAppointment.id);
             navigation.goBack();
           },

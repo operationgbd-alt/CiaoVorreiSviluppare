@@ -5,11 +5,12 @@ import { RouteProp } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareScrollView";
 import { ThemedText } from "@/components/ThemedText";
+import { PhotoPicker } from "@/components/PhotoPicker";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/store/AppContext";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { InstallationsStackParamList } from "@/navigation/InstallationsStackNavigator";
-import { InstallationStatus, InterventionType, DetailType, InstallationItem } from "@/types";
+import { InstallationStatus, InterventionType, DetailType, InstallationItem, Photo } from "@/types";
 
 type InstallationFormNavProp = NativeStackNavigationProp<
   InstallationsStackParamList,
@@ -74,6 +75,7 @@ export default function InstallationFormScreen({ navigation, route }: Props) {
     existingInstallation?.prescriptionReason || ""
   );
   const [observations, setObservations] = useState(existingInstallation?.observations || "");
+  const [photos, setPhotos] = useState<Photo[]>(existingInstallation?.photos || []);
   const [status, setStatus] = useState<InstallationStatus>(
     existingInstallation?.status || "programmata"
   );
@@ -161,7 +163,7 @@ export default function InstallationFormScreen({ navigation, route }: Props) {
       prescriptionOk,
       prescriptionReason: prescriptionReason.trim(),
       observations: observations.trim(),
-      photos: existingInstallation?.photos || [],
+      photos,
       status,
       createdAt: existingInstallation?.createdAt || Date.now(),
       updatedAt: Date.now(),
@@ -587,6 +589,13 @@ export default function InstallationFormScreen({ navigation, route }: Props) {
           multiline
           textAlignVertical="top"
         />
+      </View>
+
+      <View style={styles.section}>
+        <ThemedText type="h4" style={styles.sectionTitle}>
+          Foto
+        </ThemedText>
+        <PhotoPicker photos={photos} onPhotosChange={setPhotos} maxPhotos={10} />
       </View>
 
       {existingInstallation ? (
