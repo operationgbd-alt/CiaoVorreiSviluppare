@@ -3,12 +3,19 @@
 ## Overview
 Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di impianti fotovoltaici. Gestisce il workflow completo: assegnazione interventi da admin, programmazione appuntamenti, documentazione sul campo con foto/note e GPS, completamento e generazione report.
 
+## Role-Based Access System (3 Tier)
+- **MASTER (GBD Amministratore)**: Crea e gestisce tutte le ditte e tecnici
+- **DITTA INSTALLATRICE**: Gestisce i propri tecnici, può chiudere definitivamente interventi e inviare email
+- **TECNICO**: Lavoro sul campo, documentazione foto/note, GPS
+
 ## Project Architecture
 
 ### Stack
 - **Framework**: Expo SDK 54 con React Native
+- **Backend**: Express.js con PostgreSQL (pg driver)
+- **Auth**: JWT con bcrypt per password hashing
 - **Navigation**: React Navigation 7 con tab navigator
-- **State Management**: React Context API (in-memory con mock data)
+- **State Management**: React Context API (AuthContext + AppContext)
 - **Styling**: React Native StyleSheet con design system personalizzato
 - **Location**: expo-location per tracciamento GPS
 - **Media**: expo-image-picker per foto documentazione
@@ -17,26 +24,38 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
 ```
 ├── App.tsx                 # Entry point con providers
 ├── app.json               # Configurazione Expo
+├── server/                # Backend Express.js
+│   └── src/
+│       ├── index.ts       # Server entry point (porta 3001)
+│       ├── db.ts          # Connessione PostgreSQL e inizializzazione tabelle
+│       └── routes/
+│           ├── auth.ts    # Login, registrazione, middleware JWT
+│           ├── users.ts   # CRUD utenti con controllo ruoli
+│           └── interventions.ts # Gestione interventi
+├── services/
+│   └── api.ts             # Layer API per comunicazione frontend-backend
 ├── constants/
 │   └── theme.ts           # Colori, spacing, typography
 ├── types/
 │   └── index.ts           # TypeScript types per Intervention, Appointment, etc.
 ├── store/
+│   ├── AuthContext.tsx    # Autenticazione con JWT e demo mode
 │   └── AppContext.tsx     # Stato globale con dati interventi e appuntamenti
 ├── navigation/
-│   ├── MainTabNavigator.tsx           # Tab navigator (3 tab: Dashboard, Interventi, Profilo)
+│   ├── RootNavigator.tsx            # Switch Login/MainApp basato su auth
+│   ├── MainTabNavigator.tsx         # Tab navigator (4 tab)
 │   ├── DashboardStackNavigator.tsx
-│   ├── InterventionsStackNavigator.tsx # Stack per workflow interventi
+│   ├── InterventionsStackNavigator.tsx
+│   ├── CompletedStackNavigator.tsx
 │   └── ProfileStackNavigator.tsx
 ├── screens/
-│   ├── DashboardScreen.tsx              # Home con statistiche e attività recenti
-│   ├── CalendarScreen.tsx               # Calendario appuntamenti
-│   ├── AppointmentFormScreen.tsx        # Form appuntamento
-│   ├── InterventionsListScreen.tsx      # Lista interventi con filtri per stato
-│   ├── InterventionDetailScreen.tsx     # Dettaglio intervento con azioni workflow
-│   ├── ScheduleAppointmentScreen.tsx    # Modal per fissare appuntamento
-│   ├── InterventionDocumentationScreen.tsx # Documentazione foto/note
-│   └── ProfileScreen.tsx                # Profilo tecnico e impostazioni
+│   ├── LoginScreen.tsx              # Login con username/password
+│   ├── DashboardScreen.tsx          # Home con statistiche
+│   ├── CalendarScreen.tsx           # Calendario appuntamenti
+│   ├── InterventionsListScreen.tsx  # Lista interventi attivi
+│   ├── InterventionDetailScreen.tsx # Dettaglio con 5 sezioni
+│   ├── CompletedInterventionsScreen.tsx # Archivio completati
+│   └── ProfileScreen.tsx            # Profilo utente e logout
 ├── components/
 │   ├── Button.tsx
 │   ├── Card.tsx
@@ -125,6 +144,13 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
 - Workflow unificato per tutti i tipi di intervento
 
 ## Recent Changes
+- 2025-11-26: Implementato sistema autenticazione completo
+  - Backend Express.js con PostgreSQL (porta 3001)
+  - JWT authentication con bcrypt password hashing
+  - Demo mode per testing senza backend attivo
+  - Account demo: gbd/master123, ditta/ditta123, alex/tecnico123, billo/tecnico123
+  - Logout con conferma (window.confirm su web, Alert.alert su native)
+  - ProfileScreen mostra ruolo utente con badge colorato
 - 2025-11-26: Aggiunto tab "Completati" per archivio interventi
   - 4 tab in navigazione: Dashboard, Interventi, Completati, Profilo
   - CompletedInterventionsScreen mostra solo interventi completati
@@ -151,6 +177,7 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
 ## Development Notes
 - Hot Module Reloading attivo per modifiche codice
 - Bundle statico per Expo Go via deep linking
-- Dati mock in AppContext per prototipazione (5 interventi demo)
+- Demo mode in AuthContext per testing senza backend
+- Account demo disponibili per tutti i ruoli (master, ditta, tecnico)
 - Web version disponibile su porta 8081
 - Test con Expo Go su device fisico via QR code
