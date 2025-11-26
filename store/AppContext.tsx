@@ -1,16 +1,10 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { Intervention, Appointment, Technician } from '@/types';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
+import { Intervention, Appointment } from '@/types';
+import { useAuth } from './AuthContext';
 
-interface AppState {
-  technician: Technician | null;
-  isLoggedIn: boolean;
+interface AppContextType {
   interventions: Intervention[];
   appointments: Appointment[];
-}
-
-interface AppContextType extends AppState {
-  login: (technician: Technician) => void;
-  logout: () => void;
   addIntervention: (intervention: Intervention) => void;
   updateIntervention: (id: string, updates: Partial<Intervention>) => void;
   deleteIntervention: (id: string) => void;
@@ -20,16 +14,9 @@ interface AppContextType extends AppState {
   getInterventionById: (id: string) => Intervention | undefined;
 }
 
-const defaultTechnician: Technician = {
-  id: 'tech-001',
-  name: 'Marco Rossi',
-  email: 'marco.rossi@solartech.it',
-  companyName: 'SolarTech Italia S.r.l.',
-};
-
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-const mockInterventions: Intervention[] = [
+const allInterventions: Intervention[] = [
   {
     id: 'int-001',
     number: 'INT-2025-001',
@@ -42,8 +29,10 @@ const mockInterventions: Intervention[] = [
       phone: '+39 02 1234567',
       email: 'g.verdi@email.it',
     },
-    technicianId: 'tech-001',
-    technicianName: 'Marco Rossi',
+    companyId: 'company-1',
+    companyName: 'GBD B&A S.r.l.',
+    technicianId: 'tech-1',
+    technicianName: 'Alessandro Rossi',
     category: 'installazione',
     description: 'Installazione impianto fotovoltaico 6kW con sistema di accumulo.',
     priority: 'alta',
@@ -69,8 +58,10 @@ const mockInterventions: Intervention[] = [
       phone: '+39 011 9876543',
       email: 'a.bianchi@email.it',
     },
-    technicianId: 'tech-001',
-    technicianName: 'Marco Rossi',
+    companyId: 'company-1',
+    companyName: 'GBD B&A S.r.l.',
+    technicianId: 'tech-1',
+    technicianName: 'Alessandro Rossi',
     category: 'sopralluogo',
     description: 'Sopralluogo per verifica stato impianto esistente e preventivo manutenzione.',
     priority: 'normale',
@@ -101,8 +92,10 @@ const mockInterventions: Intervention[] = [
       phone: '+39 055 1122334',
       email: 'm.russo@email.it',
     },
-    technicianId: 'tech-001',
-    technicianName: 'Marco Rossi',
+    companyId: 'company-1',
+    companyName: 'GBD B&A S.r.l.',
+    technicianId: 'tech-2',
+    technicianName: 'Marco Bianchi',
     category: 'installazione',
     description: 'Installazione sistema di accumulo aggiuntivo 5kWh.',
     priority: 'urgente',
@@ -133,10 +126,12 @@ const mockInterventions: Intervention[] = [
       phone: '+39 081 5554433',
       email: 'l.esposito@email.it',
     },
-    technicianId: 'tech-001',
-    technicianName: 'Marco Rossi',
+    companyId: 'company-1',
+    companyName: 'GBD B&A S.r.l.',
+    technicianId: null,
+    technicianName: null,
     category: 'sopralluogo',
-    description: 'Sopralluogo per preventivo nuovo impianto 10kW',
+    description: 'Sopralluogo per preventivo nuovo impianto 10kW - DA ASSEGNARE A TECNICO',
     priority: 'bassa',
     assignedAt: Date.now() - 86400000 * 3,
     assignedBy: 'Admin',
@@ -160,8 +155,10 @@ const mockInterventions: Intervention[] = [
       phone: '+39 051 9988776',
       email: 'f.colombo@email.it',
     },
-    technicianId: 'tech-001',
-    technicianName: 'Marco Rossi',
+    companyId: 'company-1',
+    companyName: 'GBD B&A S.r.l.',
+    technicianId: 'tech-1',
+    technicianName: 'Alessandro Rossi',
     category: 'installazione',
     description: 'Installazione impianto fotovoltaico 4kW residenziale.',
     priority: 'normale',
@@ -200,8 +197,10 @@ const mockInterventions: Intervention[] = [
       phone: '+39 049 7766554',
       email: 'r.mancini@email.it',
     },
-    technicianId: 'tech-001',
-    technicianName: 'Marco Rossi',
+    companyId: 'company-1',
+    companyName: 'GBD B&A S.r.l.',
+    technicianId: 'tech-2',
+    technicianName: 'Marco Bianchi',
     category: 'manutenzione',
     description: 'Manutenzione ordinaria impianto 8kW. Pulizia pannelli e controllo inverter.',
     priority: 'normale',
@@ -227,8 +226,10 @@ const mockInterventions: Intervention[] = [
       phone: '+39 035 4455667',
       email: 'g.ferrari@email.it',
     },
-    technicianId: 'tech-001',
-    technicianName: 'Marco Rossi',
+    companyId: 'company-2',
+    companyName: 'Solar Pro S.r.l.',
+    technicianId: 'tech-3',
+    technicianName: 'Luca Verdi',
     category: 'manutenzione',
     description: 'Sostituzione inverter guasto e verifica produzione.',
     priority: 'alta',
@@ -259,8 +260,10 @@ const mockInterventions: Intervention[] = [
       phone: '+39 045 8899001',
       email: 's.conti@email.it',
     },
-    technicianId: 'tech-001',
-    technicianName: 'Marco Rossi',
+    companyId: 'company-2',
+    companyName: 'Solar Pro S.r.l.',
+    technicianId: 'tech-3',
+    technicianName: 'Luca Verdi',
     category: 'manutenzione',
     description: 'Controllo annuale e ottimizzazione sistema di accumulo.',
     priority: 'bassa',
@@ -284,7 +287,7 @@ const mockInterventions: Intervention[] = [
   },
 ];
 
-const mockAppointments: Appointment[] = [
+const allAppointments: Appointment[] = [
   {
     id: 'apt-001',
     type: 'intervento',
@@ -307,82 +310,83 @@ const mockAppointments: Appointment[] = [
   },
 ];
 
-const initialState: AppState = {
-  technician: defaultTechnician,
-  isLoggedIn: true,
-  interventions: mockInterventions,
-  appointments: mockAppointments,
-};
-
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AppState>(initialState);
+  const { user } = useAuth();
+  const [interventionsData, setInterventionsData] = useState<Intervention[]>(allInterventions);
+  const [appointmentsData, setAppointmentsData] = useState<Appointment[]>(allAppointments);
 
-  const login = useCallback((technician: Technician) => {
-    setState(prev => ({ ...prev, technician, isLoggedIn: true }));
-  }, []);
+  const interventions = useMemo(() => {
+    if (!user) return [];
+    
+    switch (user.role) {
+      case 'master':
+        return interventionsData;
+      case 'ditta':
+        return interventionsData.filter(i => i.companyId === user.companyId);
+      case 'tecnico':
+        return interventionsData.filter(i => i.technicianId === user.id);
+      default:
+        return [];
+    }
+  }, [user, interventionsData]);
 
-  const logout = useCallback(() => {
-    setState(prev => ({ ...prev, technician: null, isLoggedIn: false }));
-  }, []);
+  const appointments = useMemo(() => {
+    if (!user) return [];
+    
+    const visibleInterventionIds = new Set(interventions.map(i => i.id));
+    return appointmentsData.filter(a => 
+      a.interventionId ? visibleInterventionIds.has(a.interventionId) : true
+    );
+  }, [user, appointmentsData, interventions]);
 
   const addIntervention = useCallback((intervention: Intervention) => {
-    setState(prev => ({
+    setInterventionsData(prev => [
+      { ...intervention, id: intervention.id || generateId() },
       ...prev,
-      interventions: [{ ...intervention, id: intervention.id || generateId() }, ...prev.interventions],
-    }));
+    ]);
   }, []);
 
   const updateIntervention = useCallback((id: string, updates: Partial<Intervention>) => {
-    setState(prev => ({
-      ...prev,
-      interventions: prev.interventions.map(i =>
-        i.id === id ? { ...i, ...updates, updatedAt: Date.now() } : i
-      ),
-    }));
+    setInterventionsData(prev =>
+      prev.map(i => (i.id === id ? { ...i, ...updates, updatedAt: Date.now() } : i))
+    );
   }, []);
 
   const deleteIntervention = useCallback((id: string) => {
-    setState(prev => ({
-      ...prev,
-      interventions: prev.interventions.filter(i => i.id !== id),
-    }));
+    setInterventionsData(prev => prev.filter(i => i.id !== id));
   }, []);
 
   const addAppointment = useCallback((appointment: Appointment) => {
-    setState(prev => ({
+    setAppointmentsData(prev => [
       ...prev,
-      appointments: [...prev.appointments, { ...appointment, id: appointment.id || generateId() }],
-    }));
+      { ...appointment, id: appointment.id || generateId() },
+    ]);
   }, []);
 
   const updateAppointment = useCallback((id: string, updates: Partial<Appointment>) => {
-    setState(prev => ({
-      ...prev,
-      appointments: prev.appointments.map(a =>
-        a.id === id ? { ...a, ...updates } : a
-      ),
-    }));
+    setAppointmentsData(prev =>
+      prev.map(a => (a.id === id ? { ...a, ...updates } : a))
+    );
   }, []);
 
   const deleteAppointment = useCallback((id: string) => {
-    setState(prev => ({
-      ...prev,
-      appointments: prev.appointments.filter(a => a.id !== id),
-    }));
+    setAppointmentsData(prev => prev.filter(a => a.id !== id));
   }, []);
 
-  const getInterventionById = useCallback((id: string) => {
-    return state.interventions.find(i => i.id === id);
-  }, [state.interventions]);
+  const getInterventionById = useCallback(
+    (id: string) => {
+      return interventionsData.find(i => i.id === id);
+    },
+    [interventionsData]
+  );
 
   return (
     <AppContext.Provider
       value={{
-        ...state,
-        login,
-        logout,
+        interventions,
+        appointments,
         addIntervention,
         updateIntervention,
         deleteIntervention,

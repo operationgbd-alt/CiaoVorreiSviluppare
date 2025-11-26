@@ -26,7 +26,8 @@ export type InterventionStatus =
   | 'assegnato'        
   | 'appuntamento_fissato' 
   | 'in_corso'         
-  | 'completato';
+  | 'completato'
+  | 'chiuso';
 
 export type InterventionCategory = 
   | 'sopralluogo'
@@ -39,8 +40,11 @@ export interface Intervention {
   
   client: ClientInfo;
   
-  technicianId: string;
-  technicianName: string;
+  companyId: string;
+  companyName: string;
+  
+  technicianId: string | null;
+  technicianName: string | null;
   
   category: InterventionCategory;
   description: string;
