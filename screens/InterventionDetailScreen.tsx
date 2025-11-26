@@ -38,6 +38,7 @@ const STATUS_CONFIG: Record<InterventionStatus, { label: string; color: string; 
 const CATEGORY_LABELS: Record<string, string> = {
   sopralluogo: 'Sopralluogo',
   installazione: 'Installazione',
+  manutenzione: 'Manutenzione',
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {

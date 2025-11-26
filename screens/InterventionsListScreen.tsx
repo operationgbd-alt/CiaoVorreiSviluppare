@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { StyleSheet, View, Pressable, FlatList } from "react-native";
+import React, { useMemo } from "react";
+import { StyleSheet, View, Pressable, SectionList } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
@@ -8,8 +8,7 @@ import { Card } from "@/components/Card";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/store/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { Intervention, InterventionStatus } from "@/types";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Intervention, InterventionStatus, InterventionCategory } from "@/types";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
 
 type InterventionsStackParamList = {
@@ -22,16 +21,6 @@ type InterventionsListNavProp = NativeStackNavigationProp<InterventionsStackPara
 interface Props {
   navigation: InterventionsListNavProp;
 }
-
-type FilterType = 'tutti' | InterventionStatus;
-
-const FILTERS: { label: string; value: FilterType }[] = [
-  { label: 'Tutti', value: 'tutti' },
-  { label: 'Assegnati', value: 'assegnato' },
-  { label: 'Appuntamento', value: 'appuntamento_fissato' },
-  { label: 'In Corso', value: 'in_corso' },
-  { label: 'Completati', value: 'completato' },
-];
 
 const STATUS_CONFIG: Record<InterventionStatus, { label: string; color: string; icon: string }> = {
   assegnato: { label: 'Assegnato', color: '#FF9500', icon: 'inbox' },
@@ -47,39 +36,54 @@ const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
   urgente: { label: 'Urgente', color: '#FF3B30' },
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  sopralluogo: 'Sopralluogo',
-  installazione: 'Installazione',
+const CATEGORY_CONFIG: Record<InterventionCategory, { label: string; icon: string; color: string }> = {
+  sopralluogo: { label: 'Sopralluoghi', icon: 'search', color: '#5856D6' },
+  installazione: { label: 'Installazioni', icon: 'tool', color: '#007AFF' },
+  manutenzione: { label: 'Manutenzioni', icon: 'settings', color: '#FF9500' },
 };
+
+interface SectionData {
+  title: string;
+  category: InterventionCategory;
+  icon: string;
+  color: string;
+  data: Intervention[];
+}
 
 export default function InterventionsListScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const { interventions } = useApp();
-  const [activeFilter, setActiveFilter] = useState<FilterType>('tutti');
   const { paddingBottom } = useScreenInsets();
 
-  const filteredInterventions = useMemo(() => {
-    let filtered = [...interventions];
+  const sections = useMemo(() => {
+    const categories: InterventionCategory[] = ['sopralluogo', 'installazione', 'manutenzione'];
     
-    if (activeFilter !== 'tutti') {
-      filtered = filtered.filter(i => i.status === activeFilter);
-    }
-    
-    const statusOrder: InterventionStatus[] = ['assegnato', 'appuntamento_fissato', 'in_corso', 'completato'];
-    const priorityOrder = ['urgente', 'alta', 'normale', 'bassa'];
-    
-    filtered.sort((a, b) => {
-      const statusDiff = statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status);
-      if (statusDiff !== 0) return statusDiff;
-      
-      const priorityDiff = priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority);
-      if (priorityDiff !== 0) return priorityDiff;
-      
-      return b.assignedAt - a.assignedAt;
+    return categories.map(category => {
+      const categoryInterventions = interventions
+        .filter(i => i.category === category)
+        .sort((a, b) => {
+          const statusOrder: InterventionStatus[] = ['assegnato', 'appuntamento_fissato', 'in_corso', 'completato'];
+          const priorityOrder = ['urgente', 'alta', 'normale', 'bassa'];
+          
+          const statusDiff = statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status);
+          if (statusDiff !== 0) return statusDiff;
+          
+          const priorityDiff = priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority);
+          if (priorityDiff !== 0) return priorityDiff;
+          
+          return b.assignedAt - a.assignedAt;
+        });
+
+      const config = CATEGORY_CONFIG[category];
+      return {
+        title: config.label,
+        category,
+        icon: config.icon,
+        color: config.color,
+        data: categoryInterventions,
+      };
     });
-    
-    return filtered;
-  }, [interventions, activeFilter]);
+  }, [interventions]);
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -97,6 +101,22 @@ export default function InterventionsListScreen({ navigation }: Props) {
     });
   };
 
+  const renderSectionHeader = ({ section }: { section: SectionData }) => (
+    <View style={styles.sectionHeader}>
+      <View style={[styles.sectionIconContainer, { backgroundColor: section.color + '15' }]}>
+        <Feather name={section.icon as any} size={20} color={section.color} />
+      </View>
+      <ThemedText type="h2" style={styles.sectionTitle}>
+        {section.title}
+      </ThemedText>
+      <View style={[styles.countBadge, { backgroundColor: section.color + '20' }]}>
+        <ThemedText type="caption" style={{ color: section.color, fontWeight: '600' }}>
+          {section.data.length}
+        </ThemedText>
+      </View>
+    </View>
+  );
+
   const renderIntervention = ({ item }: { item: Intervention }) => {
     const statusConfig = STATUS_CONFIG[item.status];
     const priorityConfig = PRIORITY_CONFIG[item.priority];
@@ -106,122 +126,88 @@ export default function InterventionsListScreen({ navigation }: Props) {
         style={styles.card}
         onPress={() => navigation.navigate('InterventionDetail', { interventionId: item.id })}
       >
-          <View style={styles.cardHeader}>
-            <View style={styles.numberBadge}>
-              <ThemedText type="caption" style={{ fontWeight: '600' }}>
-                {item.number}
-              </ThemedText>
-            </View>
-            <View style={[styles.priorityBadge, { backgroundColor: priorityConfig.color + '20' }]}>
-              <ThemedText type="caption" style={{ color: priorityConfig.color, fontWeight: '600' }}>
-                {priorityConfig.label}
-              </ThemedText>
-            </View>
+        <View style={styles.cardHeader}>
+          <View style={styles.numberBadge}>
+            <ThemedText type="caption" style={{ fontWeight: '600' }}>
+              {item.number}
+            </ThemedText>
           </View>
+          <View style={[styles.priorityBadge, { backgroundColor: priorityConfig.color + '20' }]}>
+            <ThemedText type="caption" style={{ color: priorityConfig.color, fontWeight: '600' }}>
+              {priorityConfig.label}
+            </ThemedText>
+          </View>
+        </View>
 
-          <View style={styles.cardBody}>
-            <View style={styles.clientRow}>
-              <Feather name="user" size={16} color={theme.textSecondary} />
-              <ThemedText type="body" style={styles.clientName}>
-                {item.client.name}
-              </ThemedText>
-            </View>
-
-            <View style={styles.addressRow}>
-              <Feather name="map-pin" size={14} color={theme.textTertiary} />
-              <ThemedText type="caption" style={{ color: theme.textSecondary, marginLeft: Spacing.xs, flex: 1 }}>
-                {item.client.address} {item.client.civicNumber}, {item.client.city}
-              </ThemedText>
-            </View>
-
-            <View style={styles.categoryRow}>
-              <View style={[styles.categoryBadge, { backgroundColor: theme.backgroundSecondary }]}>
-                <ThemedText type="caption">
-                  {CATEGORY_LABELS[item.category]}
-                </ThemedText>
-              </View>
-            </View>
-
-            <ThemedText type="small" numberOfLines={2} style={{ color: theme.textSecondary, marginTop: Spacing.sm }}>
-              {item.description}
+        <View style={styles.cardBody}>
+          <View style={styles.clientRow}>
+            <Feather name="user" size={16} color={theme.textSecondary} />
+            <ThemedText type="body" style={styles.clientName}>
+              {item.client.name}
             </ThemedText>
           </View>
 
-          <View style={[styles.cardFooter, { borderTopColor: theme.border }]}>
-            <View style={styles.statusContainer}>
-              <Feather name={statusConfig.icon as any} size={14} color={statusConfig.color} />
-              <ThemedText type="caption" style={{ color: statusConfig.color, marginLeft: Spacing.xs }}>
-                {statusConfig.label}
+          <View style={styles.addressRow}>
+            <Feather name="map-pin" size={14} color={theme.textTertiary} />
+            <ThemedText type="caption" style={{ color: theme.textSecondary, marginLeft: Spacing.xs, flex: 1 }}>
+              {item.client.address} {item.client.civicNumber}, {item.client.city}
+            </ThemedText>
+          </View>
+
+          <ThemedText type="small" numberOfLines={2} style={{ color: theme.textSecondary, marginTop: Spacing.sm }}>
+            {item.description}
+          </ThemedText>
+        </View>
+
+        <View style={[styles.cardFooter, { borderTopColor: theme.border }]}>
+          <View style={styles.statusContainer}>
+            <Feather name={statusConfig.icon as any} size={14} color={statusConfig.color} />
+            <ThemedText type="caption" style={{ color: statusConfig.color, marginLeft: Spacing.xs }}>
+              {statusConfig.label}
+            </ThemedText>
+          </View>
+
+          {item.appointment ? (
+            <View style={styles.appointmentInfo}>
+              <Feather name="clock" size={12} color={theme.textSecondary} />
+              <ThemedText type="caption" style={{ color: theme.textSecondary, marginLeft: 4 }}>
+                {formatDate(item.appointment.date)} {formatTime(item.appointment.date)}
               </ThemedText>
             </View>
-
-            {item.appointment ? (
-              <View style={styles.appointmentInfo}>
-                <Feather name="clock" size={12} color={theme.textSecondary} />
-                <ThemedText type="caption" style={{ color: theme.textSecondary, marginLeft: 4 }}>
-                  {formatDate(item.appointment.date)} {formatTime(item.appointment.date)}
-                </ThemedText>
-              </View>
-            ) : (
-              <ThemedText type="caption" style={{ color: theme.textTertiary }}>
-                Assegnato {formatDate(item.assignedAt)}
-              </ThemedText>
-            )}
-          </View>
-        </Card>
+          ) : (
+            <ThemedText type="caption" style={{ color: theme.textTertiary }}>
+              Assegnato {formatDate(item.assignedAt)}
+            </ThemedText>
+          )}
+        </View>
+      </Card>
     );
+  };
+
+  const renderSectionFooter = ({ section }: { section: SectionData }) => {
+    if (section.data.length === 0) {
+      return (
+        <View style={styles.emptySectionState}>
+          <ThemedText type="caption" style={{ color: theme.textTertiary }}>
+            Nessun intervento in questa categoria
+          </ThemedText>
+        </View>
+      );
+    }
+    return <View style={styles.sectionSpacer} />;
   };
 
   return (
     <ThemedView style={styles.container}>
-      <View style={styles.filtersContainer}>
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={FILTERS}
-          keyExtractor={(item) => item.value}
-          contentContainerStyle={styles.filtersContent}
-          renderItem={({ item }) => (
-            <Pressable
-              style={[
-                styles.filterButton,
-                {
-                  backgroundColor: activeFilter === item.value 
-                    ? theme.primary + '20' 
-                    : theme.backgroundSecondary,
-                  borderColor: activeFilter === item.value ? theme.primary : 'transparent',
-                },
-              ]}
-              onPress={() => setActiveFilter(item.value)}
-            >
-              <ThemedText
-                type="caption"
-                style={{
-                  color: activeFilter === item.value ? theme.primary : theme.text,
-                  fontWeight: activeFilter === item.value ? '600' : '400',
-                }}
-              >
-                {item.label}
-              </ThemedText>
-            </Pressable>
-          )}
-        />
-      </View>
-
-      <FlatList
-        data={filteredInterventions}
+      <SectionList
+        sections={sections}
         keyExtractor={(item) => item.id}
         renderItem={renderIntervention}
+        renderSectionHeader={renderSectionHeader}
+        renderSectionFooter={renderSectionFooter}
         contentContainerStyle={[styles.listContent, { paddingBottom }]}
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Feather name="inbox" size={48} color={theme.textTertiary} />
-            <ThemedText type="body" style={{ color: theme.textSecondary, marginTop: Spacing.md, textAlign: 'center' }}>
-              Nessun intervento trovato
-            </ThemedText>
-          </View>
-        }
+        stickySectionHeadersEnabled={false}
       />
     </ThemedView>
   );
@@ -231,22 +217,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  filtersContainer: {
-    paddingVertical: Spacing.sm,
-  },
-  filtersContent: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  filterButton: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-  },
   listContent: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
+    paddingTop: Spacing.md,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    marginTop: Spacing.md,
+  },
+  sectionIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionTitle: {
+    marginLeft: Spacing.md,
+    flex: 1,
+  },
+  countBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
   },
   card: {
     marginBottom: Spacing.md,
@@ -287,15 +282,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginTop: Spacing.xs,
   },
-  categoryRow: {
-    flexDirection: 'row',
-    marginTop: Spacing.sm,
-  },
-  categoryBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.xs,
-  },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -312,10 +298,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  emptyState: {
-    flex: 1,
+  emptySectionState: {
+    paddingVertical: Spacing.lg,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing['3xl'],
+  },
+  sectionSpacer: {
+    height: Spacing.sm,
   },
 });

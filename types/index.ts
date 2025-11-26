@@ -30,7 +30,8 @@ export type InterventionStatus =
 
 export type InterventionCategory = 
   | 'sopralluogo'
-  | 'installazione';
+  | 'installazione'
+  | 'manutenzione';
 
 export interface Intervention {
   id: string;
