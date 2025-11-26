@@ -4,15 +4,13 @@ import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
 import DashboardStackNavigator from "@/navigation/DashboardStackNavigator";
-import SurveysStackNavigator from "@/navigation/SurveysStackNavigator";
-import InstallationsStackNavigator from "@/navigation/InstallationsStackNavigator";
+import InterventionsStackNavigator from "@/navigation/InterventionsStackNavigator";
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
 import { useTheme } from "@/hooks/useTheme";
 
 export type MainTabParamList = {
   DashboardTab: undefined;
-  SurveysTab: undefined;
-  InstallationsTab: undefined;
+  InterventionsTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -58,22 +56,12 @@ export default function MainTabNavigator() {
         }}
       />
       <Tab.Screen
-        name="SurveysTab"
-        component={SurveysStackNavigator}
+        name="InterventionsTab"
+        component={InterventionsStackNavigator}
         options={{
-          title: "Sopralluoghi",
+          title: "Interventi",
           tabBarIcon: ({ color, size }) => (
-            <Feather name="clipboard" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="InstallationsTab"
-        component={InstallationsStackNavigator}
-        options={{
-          title: "Installazioni",
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="tool" size={size} color={color} />
+            <Feather name="briefcase" size={size} color={color} />
           ),
         }}
       />

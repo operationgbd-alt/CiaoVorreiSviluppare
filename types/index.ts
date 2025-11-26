@@ -1,17 +1,3 @@
-export type ProductSize = 'SMALL' | 'MEDIUM' | 'LARGE' | 'XLARGE' | '8kW' | '10kW' | '15kW' | '20kW' | 'Altro';
-
-export type YesNoValue = 'SI' | 'NO' | null;
-
-export type SurveyStatus = 'da_completare' | 'completato';
-export type InstallationStatus = 'programmata' | 'in_corso' | 'completata';
-export type AppointmentType = 'sopralluogo' | 'installazione';
-
-export interface ChecklistItem {
-  id: string;
-  value: YesNoValue;
-  notes: string;
-}
-
 export interface ClientInfo {
   name: string;
   address: string;
@@ -26,79 +12,77 @@ export interface Photo {
   id: string;
   uri: string;
   timestamp: number;
+  caption?: string;
 }
 
-export interface Survey {
-  id: string;
-  client: ClientInfo;
-  technicianId: string;
-  technicianName: string;
-  productSize: ProductSize | null;
-  createdAt: number;
-  updatedAt: number;
-  status: SurveyStatus;
-  checklistA1: Record<string, ChecklistItem>;
-  checklistA2: Record<string, ChecklistItem>;
-  checklistB: Record<string, ChecklistItem>;
-  photos: Photo[];
-  notes: string;
+export interface Location {
+  latitude: number;
+  longitude: number;
+  address?: string;
+  timestamp: number;
 }
 
-export interface InstallationItem {
-  id: string;
-  description: string;
-  amount: number;
-}
+export type InterventionStatus = 
+  | 'assegnato'        
+  | 'appuntamento_fissato' 
+  | 'in_corso'         
+  | 'completato';
 
-export type InterventionType = 
-  | 'intervento_tecnico'
-  | 'caldaia'
-  | 'scaldabagno'
-  | 'climatizzatore'
-  | 'elettrodomestico'
-  | 'varie';
-
-export type DetailType =
-  | 'uscita_ore_comprese'
-  | 'uscita_ore_pagamento'
-  | 'pezzi_ricambio'
-  | 'preventivo'
+export type InterventionCategory = 
+  | 'installazione'
+  | 'manutenzione'
   | 'riparazione'
-  | 'manutenzione';
+  | 'sopralluogo'
+  | 'assistenza';
 
-export interface Installation {
+export interface Intervention {
   id: string;
-  interventionNumber: string;
-  date: number;
+  number: string;
+  
   client: ClientInfo;
+  
   technicianId: string;
   technicianName: string;
-  companyName: string;
-  interventionType: InterventionType | null;
-  detailTypes: DetailType[];
-  extraHours: number;
-  plantDetails: string;
-  interventionDetails: string;
-  items: InstallationItem[];
-  totalAmount: number;
-  prescriptionOk: boolean;
-  prescriptionReason: string;
-  observations: string;
-  photos: Photo[];
-  status: InstallationStatus;
+  
+  category: InterventionCategory;
+  description: string;
+  priority: 'bassa' | 'normale' | 'alta' | 'urgente';
+  
+  assignedAt: number;
+  assignedBy: string;
+  
+  appointment?: {
+    date: number;
+    confirmedAt: number;
+    notes: string;
+  };
+  
+  location?: Location;
+  
+  documentation: {
+    photos: Photo[];
+    notes: string;
+    startedAt?: number;
+    completedAt?: number;
+  };
+  
+  status: InterventionStatus;
+  
   createdAt: number;
   updatedAt: number;
 }
+
+export type AppointmentType = 'intervento';
 
 export interface Appointment {
   id: string;
   type: AppointmentType;
+  interventionId: string;
   clientName: string;
   address: string;
   date: number;
   notes: string;
   notifyBefore: number | null;
-  relatedId?: string;
 }
 
 export interface Technician {

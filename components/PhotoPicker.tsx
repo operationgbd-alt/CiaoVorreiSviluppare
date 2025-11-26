@@ -11,9 +11,10 @@ interface PhotoPickerProps {
   photos: Photo[];
   onPhotosChange: (photos: Photo[]) => void;
   maxPhotos?: number;
+  disabled?: boolean;
 }
 
-export function PhotoPicker({ photos, onPhotosChange, maxPhotos = 10 }: PhotoPickerProps) {
+export function PhotoPicker({ photos, onPhotosChange, maxPhotos = 10, disabled = false }: PhotoPickerProps) {
   const { theme } = useTheme();
 
   const requestPermissions = async () => {

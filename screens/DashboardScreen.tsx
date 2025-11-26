@@ -9,15 +9,28 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/store/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { DashboardStackParamList } from "@/navigation/DashboardStackNavigator";
-import { SurveysStackParamList } from "@/navigation/SurveysStackNavigator";
-import { InstallationsStackParamList } from "@/navigation/InstallationsStackNavigator";
+import { InterventionStatus } from "@/types";
 
 type DashboardNavProp = NativeStackNavigationProp<DashboardStackParamList, "Dashboard">;
+
+const STATUS_CONFIG: Record<InterventionStatus, { label: string; color: string }> = {
+  assegnato: { label: 'Assegnato', color: '#FF9500' },
+  appuntamento_fissato: { label: 'Appuntamento', color: '#007AFF' },
+  in_corso: { label: 'In Corso', color: '#5856D6' },
+  completato: { label: 'Completato', color: '#34C759' },
+};
+
+const PRIORITY_CONFIG: Record<string, { color: string }> = {
+  bassa: { color: '#8E8E93' },
+  normale: { color: '#007AFF' },
+  alta: { color: '#FF9500' },
+  urgente: { color: '#FF3B30' },
+};
 
 export default function DashboardScreen() {
   const navigation = useNavigation<DashboardNavProp>();
   const { theme } = useTheme();
-  const { technician, surveys, installations, appointments } = useApp();
+  const { technician, interventions, appointments } = useApp();
 
   const today = new Date();
   const formattedDate = today.toLocaleDateString("it-IT", {
@@ -33,12 +46,19 @@ export default function DashboardScreen() {
     (a) => a.date >= todayStart && a.date <= todayEnd
   );
 
-  const pendingSurveys = surveys.filter((s) => s.status === "da_completare").length;
-  const scheduledInstallations = installations.filter(
-    (i) => i.status === "programmata"
+  const pendingInterventions = interventions.filter(
+    (i) => i.status === "assegnato"
+  ).length;
+  
+  const scheduledInterventions = interventions.filter(
+    (i) => i.status === "appuntamento_fissato"
   ).length;
 
-  const recentActivities = [...surveys, ...installations]
+  const inProgressInterventions = interventions.filter(
+    (i) => i.status === "in_corso"
+  ).length;
+
+  const recentInterventions = [...interventions]
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(0, 5);
 
@@ -68,15 +88,15 @@ export default function DashboardScreen() {
           ]}
           onPress={() => {
             const nav = navigation.getParent() as any;
-            nav?.navigate("SurveysTab");
+            nav?.navigate("InterventionsTab");
           }}
         >
-          <View style={[styles.statIcon, { backgroundColor: theme.secondary + "20" }]}>
-            <Feather name="clipboard" size={20} color={theme.secondary} />
+          <View style={[styles.statIcon, { backgroundColor: '#FF9500' + "20" }]}>
+            <Feather name="inbox" size={20} color="#FF9500" />
           </View>
-          <ThemedText type="h2">{pendingSurveys}</ThemedText>
+          <ThemedText type="h2">{pendingInterventions}</ThemedText>
           <ThemedText type="caption" style={{ color: theme.textSecondary }}>
-            Sopralluoghi da fare
+            Nuovi assegnati
           </ThemedText>
         </Pressable>
 
@@ -87,15 +107,34 @@ export default function DashboardScreen() {
           ]}
           onPress={() => {
             const nav = navigation.getParent() as any;
-            nav?.navigate("InstallationsTab");
+            nav?.navigate("InterventionsTab");
           }}
         >
           <View style={[styles.statIcon, { backgroundColor: theme.primary + "20" }]}>
-            <Feather name="tool" size={20} color={theme.primary} />
+            <Feather name="calendar" size={20} color={theme.primary} />
           </View>
-          <ThemedText type="h2">{scheduledInstallations}</ThemedText>
+          <ThemedText type="h2">{scheduledInterventions}</ThemedText>
           <ThemedText type="caption" style={{ color: theme.textSecondary }}>
-            Installazioni programmate
+            Con appuntamento
+          </ThemedText>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.statCard,
+            { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.8 : 1 },
+          ]}
+          onPress={() => {
+            const nav = navigation.getParent() as any;
+            nav?.navigate("InterventionsTab");
+          }}
+        >
+          <View style={[styles.statIcon, { backgroundColor: '#5856D6' + "20" }]}>
+            <Feather name="play-circle" size={20} color="#5856D6" />
+          </View>
+          <ThemedText type="h2">{inProgressInterventions}</ThemedText>
+          <ThemedText type="caption" style={{ color: theme.textSecondary }}>
+            In corso
           </ThemedText>
         </Pressable>
       </View>
@@ -119,118 +158,95 @@ export default function DashboardScreen() {
             </ThemedText>
           </View>
         ) : (
-          todayAppointments.map((appointment) => (
-            <Pressable
-              key={appointment.id}
-              style={({ pressed }) => [
-                styles.appointmentCard,
-                { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.8 : 1 },
-              ]}
-              onPress={() => navigation.navigate("AppointmentForm", { appointment })}
-            >
-              <View
-                style={[
-                  styles.appointmentType,
-                  {
-                    backgroundColor:
-                      appointment.type === "sopralluogo"
-                        ? theme.secondary + "20"
-                        : theme.primary + "20",
-                  },
+          todayAppointments.map((appointment) => {
+            const intervention = interventions.find(i => i.id === appointment.interventionId);
+            const priorityColor = intervention ? PRIORITY_CONFIG[intervention.priority]?.color : theme.primary;
+            
+            return (
+              <Pressable
+                key={appointment.id}
+                style={({ pressed }) => [
+                  styles.appointmentCard,
+                  { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.8 : 1 },
                 ]}
+                onPress={() => {
+                  if (intervention) {
+                    const nav = navigation.getParent() as any;
+                    nav?.navigate("InterventionsTab", {
+                      screen: "InterventionDetail",
+                      params: { interventionId: intervention.id },
+                    });
+                  }
+                }}
               >
-                <Feather
-                  name={appointment.type === "sopralluogo" ? "clipboard" : "tool"}
-                  size={16}
-                  color={appointment.type === "sopralluogo" ? theme.secondary : theme.primary}
-                />
-              </View>
-              <View style={styles.appointmentInfo}>
-                <ThemedText type="h4">{appointment.clientName}</ThemedText>
-                <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                  {new Date(appointment.date).toLocaleTimeString("it-IT", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}{" "}
-                  - {appointment.address}
-                </ThemedText>
-              </View>
-              <Feather name="chevron-right" size={20} color={theme.textTertiary} />
-            </Pressable>
-          ))
+                <View
+                  style={[
+                    styles.appointmentType,
+                    { backgroundColor: priorityColor + "20" },
+                  ]}
+                >
+                  <Feather name="briefcase" size={16} color={priorityColor} />
+                </View>
+                <View style={styles.appointmentInfo}>
+                  <ThemedText type="h4">{appointment.clientName}</ThemedText>
+                  <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                    {new Date(appointment.date).toLocaleTimeString("it-IT", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    - {appointment.address}
+                  </ThemedText>
+                </View>
+                <Feather name="chevron-right" size={20} color={theme.textTertiary} />
+              </Pressable>
+            );
+          })
         )}
       </View>
 
       <View style={styles.section}>
         <ThemedText type="h3" style={styles.sectionTitle}>
-          Attivita Recenti
+          Interventi Recenti
         </ThemedText>
 
-        {recentActivities.length === 0 ? (
+        {recentInterventions.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: theme.backgroundDefault }]}>
-            <Feather name="activity" size={32} color={theme.textTertiary} />
+            <Feather name="briefcase" size={32} color={theme.textTertiary} />
             <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.sm }}>
-              Nessuna attivita recente
+              Nessun intervento recente
             </ThemedText>
           </View>
         ) : (
-          recentActivities.map((activity) => {
-            const isSurvey = "checklistA1" in activity;
-            const status = isSurvey
-              ? (activity as any).status
-              : (activity as any).status;
-            const statusColor =
-              status === "completato" || status === "completata"
-                ? theme.success
-                : status === "in_corso"
-                ? theme.primary
-                : theme.secondary;
+          recentInterventions.map((intervention) => {
+            const statusConfig = STATUS_CONFIG[intervention.status];
 
             return (
               <Pressable
-                key={activity.id}
+                key={intervention.id}
                 style={({ pressed }) => [
                   styles.activityCard,
                   { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.8 : 1 },
                 ]}
                 onPress={() => {
                   const nav = navigation.getParent() as any;
-                  if (isSurvey) {
-                    nav?.navigate("SurveysTab", {
-                      screen: "SurveyForm",
-                      params: { survey: activity },
-                    });
-                  } else {
-                    nav?.navigate("InstallationsTab", {
-                      screen: "InstallationForm",
-                      params: { installation: activity },
-                    });
-                  }
+                  nav?.navigate("InterventionsTab", {
+                    screen: "InterventionDetail",
+                    params: { interventionId: intervention.id },
+                  });
                 }}
               >
                 <View style={styles.activityLeft}>
-                  <Feather
-                    name={isSurvey ? "clipboard" : "tool"}
-                    size={18}
-                    color={theme.textSecondary}
-                  />
+                  <Feather name="briefcase" size={18} color={theme.textSecondary} />
                   <View style={styles.activityInfo}>
-                    <ThemedText type="body">{activity.client.name}</ThemedText>
+                    <ThemedText type="body">{intervention.client.name}</ThemedText>
                     <ThemedText type="caption" style={{ color: theme.textSecondary }}>
-                      {isSurvey ? "Sopralluogo" : "Installazione"} -{" "}
-                      {new Date(activity.updatedAt).toLocaleDateString("it-IT")}
+                      {intervention.number} - {intervention.client.city}
                     </ThemedText>
                   </View>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: statusColor + "20" }]}>
-                  <ThemedText type="caption" style={{ color: statusColor, fontWeight: "600" }}>
-                    {status === "da_completare"
-                      ? "Da completare"
-                      : status === "programmata"
-                      ? "Programmata"
-                      : status === "in_corso"
-                      ? "In corso"
-                      : "Completato"}
+                <View style={[styles.statusBadge, { backgroundColor: statusConfig.color + "20" }]}>
+                  <ThemedText type="caption" style={{ color: statusConfig.color, fontWeight: "600" }}>
+                    {statusConfig.label}
                   </ThemedText>
                 </View>
               </Pressable>
@@ -271,22 +287,22 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: "row",
-    gap: Spacing.md,
+    gap: Spacing.sm,
     marginBottom: Spacing.xl,
   },
   statCard: {
     flex: 1,
     borderRadius: BorderRadius.md,
-    padding: Spacing.lg,
+    padding: Spacing.md,
     alignItems: "center",
   },
   statIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   section: {
     marginBottom: Spacing.xl,

@@ -1,26 +1,23 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { Survey, Installation, Appointment, Technician } from '@/types';
+import { Intervention, Appointment, Technician } from '@/types';
 
 interface AppState {
   technician: Technician | null;
   isLoggedIn: boolean;
-  surveys: Survey[];
-  installations: Installation[];
+  interventions: Intervention[];
   appointments: Appointment[];
 }
 
 interface AppContextType extends AppState {
   login: (technician: Technician) => void;
   logout: () => void;
-  addSurvey: (survey: Survey) => void;
-  updateSurvey: (id: string, survey: Partial<Survey>) => void;
-  deleteSurvey: (id: string) => void;
-  addInstallation: (installation: Installation) => void;
-  updateInstallation: (id: string, installation: Partial<Installation>) => void;
-  deleteInstallation: (id: string) => void;
+  addIntervention: (intervention: Intervention) => void;
+  updateIntervention: (id: string, updates: Partial<Intervention>) => void;
+  deleteIntervention: (id: string) => void;
   addAppointment: (appointment: Appointment) => void;
   updateAppointment: (id: string, appointment: Partial<Appointment>) => void;
   deleteAppointment: (id: string) => void;
+  getInterventionById: (id: string) => Intervention | undefined;
 }
 
 const defaultTechnician: Technician = {
@@ -32,9 +29,10 @@ const defaultTechnician: Technician = {
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-const mockSurveys: Survey[] = [
+const mockInterventions: Intervention[] = [
   {
-    id: 'srv-001',
+    id: 'int-001',
+    number: 'INT-2025-001',
     client: {
       name: 'Giuseppe Verdi',
       address: 'Via Roma',
@@ -46,18 +44,22 @@ const mockSurveys: Survey[] = [
     },
     technicianId: 'tech-001',
     technicianName: 'Marco Rossi',
-    productSize: 'MEDIUM',
+    category: 'installazione',
+    description: 'Installazione impianto fotovoltaico 6kW con sistema di accumulo',
+    priority: 'alta',
+    assignedAt: Date.now() - 86400000 * 2,
+    assignedBy: 'Admin',
+    status: 'assegnato',
+    documentation: {
+      photos: [],
+      notes: '',
+    },
     createdAt: Date.now() - 86400000 * 2,
-    updatedAt: Date.now() - 86400000,
-    status: 'completato',
-    checklistA1: {},
-    checklistA2: {},
-    checklistB: {},
-    photos: [],
-    notes: 'Tetto in ottime condizioni, esposizione sud.',
+    updatedAt: Date.now() - 86400000 * 2,
   },
   {
-    id: 'srv-002',
+    id: 'int-002',
+    number: 'INT-2025-002',
     client: {
       name: 'Anna Bianchi',
       address: 'Corso Vittorio Emanuele',
@@ -69,81 +71,27 @@ const mockSurveys: Survey[] = [
     },
     technicianId: 'tech-001',
     technicianName: 'Marco Rossi',
-    productSize: 'LARGE',
+    category: 'manutenzione',
+    description: 'Manutenzione ordinaria impianto fotovoltaico - pulizia pannelli e verifica inverter',
+    priority: 'normale',
+    assignedAt: Date.now() - 86400000,
+    assignedBy: 'Admin',
+    appointment: {
+      date: Date.now() + 86400000 * 2 + 3600000 * 10,
+      confirmedAt: Date.now() - 3600000 * 5,
+      notes: 'Cliente disponibile solo al mattino',
+    },
+    status: 'appuntamento_fissato',
+    documentation: {
+      photos: [],
+      notes: '',
+    },
     createdAt: Date.now() - 86400000,
-    updatedAt: Date.now() - 86400000,
-    status: 'da_completare',
-    checklistA1: {},
-    checklistA2: {},
-    checklistB: {},
-    photos: [],
-    notes: '',
+    updatedAt: Date.now() - 3600000 * 5,
   },
   {
-    id: 'srv-003',
-    client: {
-      name: 'Luigi Esposito',
-      address: 'Via Napoli',
-      civicNumber: '78',
-      cap: '80121',
-      city: 'Napoli',
-      phone: '+39 081 5554433',
-      email: 'l.esposito@email.it',
-    },
-    technicianId: 'tech-001',
-    technicianName: 'Marco Rossi',
-    productSize: null,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    status: 'da_completare',
-    checklistA1: {},
-    checklistA2: {},
-    checklistB: {},
-    photos: [],
-    notes: '',
-  },
-];
-
-const mockInstallations: Installation[] = [
-  {
-    id: 'inst-001',
-    interventionNumber: 'ODL-2024-001',
-    date: Date.now() + 86400000 * 3,
-    client: {
-      name: 'Giuseppe Verdi',
-      address: 'Via Roma',
-      civicNumber: '45',
-      cap: '20121',
-      city: 'Milano',
-      phone: '+39 02 1234567',
-      email: 'g.verdi@email.it',
-    },
-    technicianId: 'tech-001',
-    technicianName: 'Marco Rossi',
-    companyName: 'SolarTech Italia S.r.l.',
-    interventionType: 'varie',
-    detailTypes: ['uscita_ore_comprese'],
-    extraHours: 0,
-    plantDetails: 'Impianto fotovoltaico 6kW con storage',
-    interventionDetails: 'Installazione pannelli e inverter',
-    items: [
-      { id: '1', description: 'Pannelli solari 400W x15', amount: 4500 },
-      { id: '2', description: 'Inverter ibrido 6kW', amount: 1800 },
-      { id: '3', description: 'Batteria 10kWh', amount: 3200 },
-    ],
-    totalAmount: 9500,
-    prescriptionOk: true,
-    prescriptionReason: '',
-    observations: '',
-    photos: [],
-    status: 'programmata',
-    createdAt: Date.now() - 86400000 * 5,
-    updatedAt: Date.now() - 86400000,
-  },
-  {
-    id: 'inst-002',
-    interventionNumber: 'ODL-2024-002',
-    date: Date.now(),
+    id: 'int-003',
+    number: 'INT-2025-003',
     client: {
       name: 'Maria Russo',
       address: 'Via Garibaldi',
@@ -155,64 +103,120 @@ const mockInstallations: Installation[] = [
     },
     technicianId: 'tech-001',
     technicianName: 'Marco Rossi',
-    companyName: 'SolarTech Italia S.r.l.',
-    interventionType: 'climatizzatore',
-    detailTypes: ['riparazione', 'pezzi_ricambio'],
-    extraHours: 2,
-    plantDetails: 'Sistema di climatizzazione multi-split',
-    interventionDetails: 'Sostituzione compressore e ricarica gas',
-    items: [
-      { id: '1', description: 'Compressore ricondizionato', amount: 450 },
-      { id: '2', description: 'Ricarica gas R32', amount: 120 },
-    ],
-    totalAmount: 570,
-    prescriptionOk: true,
-    prescriptionReason: '',
-    observations: 'Cliente soddisfatto del lavoro svolto',
-    photos: [],
-    status: 'in_corso',
-    createdAt: Date.now() - 86400000 * 2,
-    updatedAt: Date.now(),
+    category: 'riparazione',
+    description: 'Riparazione inverter - segnalazione errore E15',
+    priority: 'urgente',
+    assignedAt: Date.now() - 3600000 * 4,
+    assignedBy: 'Admin',
+    appointment: {
+      date: Date.now() + 3600000 * 2,
+      confirmedAt: Date.now() - 3600000 * 2,
+      notes: 'Urgente - cliente senza produzione',
+    },
+    status: 'appuntamento_fissato',
+    documentation: {
+      photos: [],
+      notes: '',
+    },
+    createdAt: Date.now() - 3600000 * 4,
+    updatedAt: Date.now() - 3600000 * 2,
+  },
+  {
+    id: 'int-004',
+    number: 'INT-2025-004',
+    client: {
+      name: 'Luigi Esposito',
+      address: 'Via Napoli',
+      civicNumber: '78',
+      cap: '80121',
+      city: 'Napoli',
+      phone: '+39 081 5554433',
+      email: 'l.esposito@email.it',
+    },
+    technicianId: 'tech-001',
+    technicianName: 'Marco Rossi',
+    category: 'sopralluogo',
+    description: 'Sopralluogo per preventivo nuovo impianto 10kW',
+    priority: 'bassa',
+    assignedAt: Date.now() - 86400000 * 3,
+    assignedBy: 'Admin',
+    status: 'assegnato',
+    documentation: {
+      photos: [],
+      notes: '',
+    },
+    createdAt: Date.now() - 86400000 * 3,
+    updatedAt: Date.now() - 86400000 * 3,
+  },
+  {
+    id: 'int-005',
+    number: 'INT-2025-005',
+    client: {
+      name: 'Franco Colombo',
+      address: 'Via Dante',
+      civicNumber: '15',
+      cap: '40121',
+      city: 'Bologna',
+      phone: '+39 051 9988776',
+      email: 'f.colombo@email.it',
+    },
+    technicianId: 'tech-001',
+    technicianName: 'Marco Rossi',
+    category: 'assistenza',
+    description: 'Configurazione sistema di monitoraggio e app cliente',
+    priority: 'normale',
+    assignedAt: Date.now() - 86400000 * 5,
+    assignedBy: 'Admin',
+    appointment: {
+      date: Date.now() - 86400000,
+      confirmedAt: Date.now() - 86400000 * 3,
+      notes: '',
+    },
+    location: {
+      latitude: 44.4949,
+      longitude: 11.3426,
+      address: 'Via Dante 15, Bologna',
+      timestamp: Date.now() - 86400000,
+    },
+    status: 'completato',
+    documentation: {
+      photos: [],
+      notes: 'Configurazione completata. App installata e funzionante. Cliente istruito sull\'utilizzo.',
+      startedAt: Date.now() - 86400000 - 3600000,
+      completedAt: Date.now() - 86400000,
+    },
+    createdAt: Date.now() - 86400000 * 5,
+    updatedAt: Date.now() - 86400000,
   },
 ];
 
 const mockAppointments: Appointment[] = [
   {
     id: 'apt-001',
-    type: 'sopralluogo',
-    clientName: 'Luigi Esposito',
-    address: 'Via Napoli 78, Napoli',
-    date: Date.now() + 3600000 * 2,
-    notes: 'Chiamare prima di arrivare',
-    notifyBefore: 30,
-    relatedId: 'srv-003',
+    type: 'intervento',
+    interventionId: 'int-002',
+    clientName: 'Anna Bianchi',
+    address: 'Corso Vittorio Emanuele 120, Torino',
+    date: Date.now() + 86400000 * 2 + 3600000 * 10,
+    notes: 'Cliente disponibile solo al mattino',
+    notifyBefore: 60,
   },
   {
     id: 'apt-002',
-    type: 'installazione',
-    clientName: 'Giuseppe Verdi',
-    address: 'Via Roma 45, Milano',
-    date: Date.now() + 86400000 * 3 + 3600000 * 9,
-    notes: 'Portare scala estensibile',
-    notifyBefore: 60,
-    relatedId: 'inst-001',
-  },
-  {
-    id: 'apt-003',
-    type: 'sopralluogo',
-    clientName: 'Franco Colombo',
-    address: 'Via Dante 15, Bologna',
-    date: Date.now() + 86400000 * 5,
-    notes: '',
-    notifyBefore: 15,
+    type: 'intervento',
+    interventionId: 'int-003',
+    clientName: 'Maria Russo',
+    address: 'Via Garibaldi 33, Firenze',
+    date: Date.now() + 3600000 * 2,
+    notes: 'Urgente - cliente senza produzione',
+    notifyBefore: 30,
   },
 ];
 
 const initialState: AppState = {
   technician: defaultTechnician,
   isLoggedIn: true,
-  surveys: mockSurveys,
-  installations: mockInstallations,
+  interventions: mockInterventions,
   appointments: mockAppointments,
 };
 
@@ -229,49 +233,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, technician: null, isLoggedIn: false }));
   }, []);
 
-  const addSurvey = useCallback((survey: Survey) => {
+  const addIntervention = useCallback((intervention: Intervention) => {
     setState(prev => ({
       ...prev,
-      surveys: [{ ...survey, id: generateId() }, ...prev.surveys],
+      interventions: [{ ...intervention, id: intervention.id || generateId() }, ...prev.interventions],
     }));
   }, []);
 
-  const updateSurvey = useCallback((id: string, updates: Partial<Survey>) => {
+  const updateIntervention = useCallback((id: string, updates: Partial<Intervention>) => {
     setState(prev => ({
       ...prev,
-      surveys: prev.surveys.map(s =>
-        s.id === id ? { ...s, ...updates, updatedAt: Date.now() } : s
-      ),
-    }));
-  }, []);
-
-  const deleteSurvey = useCallback((id: string) => {
-    setState(prev => ({
-      ...prev,
-      surveys: prev.surveys.filter(s => s.id !== id),
-    }));
-  }, []);
-
-  const addInstallation = useCallback((installation: Installation) => {
-    setState(prev => ({
-      ...prev,
-      installations: [{ ...installation, id: generateId() }, ...prev.installations],
-    }));
-  }, []);
-
-  const updateInstallation = useCallback((id: string, updates: Partial<Installation>) => {
-    setState(prev => ({
-      ...prev,
-      installations: prev.installations.map(i =>
+      interventions: prev.interventions.map(i =>
         i.id === id ? { ...i, ...updates, updatedAt: Date.now() } : i
       ),
     }));
   }, []);
 
-  const deleteInstallation = useCallback((id: string) => {
+  const deleteIntervention = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
-      installations: prev.installations.filter(i => i.id !== id),
+      interventions: prev.interventions.filter(i => i.id !== id),
     }));
   }, []);
 
@@ -298,21 +279,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const getInterventionById = useCallback((id: string) => {
+    return state.interventions.find(i => i.id === id);
+  }, [state.interventions]);
+
   return (
     <AppContext.Provider
       value={{
         ...state,
         login,
         logout,
-        addSurvey,
-        updateSurvey,
-        deleteSurvey,
-        addInstallation,
-        updateInstallation,
-        deleteInstallation,
+        addIntervention,
+        updateIntervention,
+        deleteIntervention,
         addAppointment,
         updateAppointment,
         deleteAppointment,
+        getInterventionById,
       }}
     >
       {children}
