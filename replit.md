@@ -127,17 +127,16 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
 - Workflow unificato per tutti i tipi di intervento
 
 ## Recent Changes
-- 2025-11-26: Fix Card event handling
-  - Risolto problema navigazione lista interventi
-  - Card ora usa prop onPress interno invece di Pressable wrapper
-- 2025-11-26: Refactoring completo modello dati
-  - Sostituito sistema separato Survey/Installation con modello Intervention unificato
-  - Nuovo workflow: assegnato -> appuntamento -> in corso -> completato
-  - Aggiunto tracciamento GPS all'avvio intervento
-  - Nuova schermata dettaglio con azioni workflow dinamiche
-  - Filtri interventi per stato
-  - Dashboard aggiornata con statistiche interventi
-  - Tab navigation ridotta a 3 tab (Dashboard, Interventi, Profilo)
+- 2025-11-26: Schermata dettaglio unificata con 5 sezioni
+  - Dettaglio Intervento: info base sempre visibili
+  - Cliente: contatti con solo Chiama e Naviga (rimosso Email)
+  - Calendario: date/time picker integrato, espandibile
+  - Gestisci Intervento: foto, GPS, note in sezione espandibile
+  - Esita Intervento: cambio stato in sezione espandibile
+  - Rimossi ScheduleAppointmentScreen e InterventionDocumentationScreen
+  - Card onPress per sezioni espandibili (fix event handling)
+- 2025-11-26: Ridotte categorie a 2 (sopralluogo, installazione)
+  - Rimosse: manutenzione, riparazione, assistenza
 - 2025-11-26: Bug fix foto e notifiche
   - PhotoPicker usa ImagePicker.MediaTypeOptions.Images
   - Gestione errori migliorata
