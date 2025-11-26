@@ -58,17 +58,9 @@ export function CreateInterventionScreen() {
       return;
     }
 
-    if (!formData.companyId) {
-      const msg = 'Seleziona una ditta';
-      if (Platform.OS === 'web') {
-        window.alert(msg);
-      } else {
-        Alert.alert('Errore', msg);
-      }
-      return;
-    }
-
-    const company = companies.find(c => c.id === formData.companyId);
+    const company = formData.companyId 
+      ? companies.find(c => c.id === formData.companyId)
+      : null;
     const technician = formData.technicianId
       ? users.find(u => u.id === formData.technicianId)
       : null;
@@ -83,8 +75,8 @@ export function CreateInterventionScreen() {
         phone: formData.clientPhone.trim(),
         email: formData.clientEmail.trim(),
       },
-      companyId: formData.companyId,
-      companyName: company?.name || '',
+      companyId: company?.id || null,
+      companyName: company?.name || null,
       technicianId: technician?.id || null,
       technicianName: technician?.name || null,
       category: formData.category,
@@ -92,7 +84,7 @@ export function CreateInterventionScreen() {
       description: formData.description.trim(),
       assignedAt: Date.now(),
       assignedBy: 'Admin',
-      status: 'assegnato',
+      status: formData.companyId ? 'assegnato' : 'assegnato',
       documentation: { photos: [], notes: '' },
     });
 
@@ -285,11 +277,36 @@ export function CreateInterventionScreen() {
       </Card>
 
       <Card style={styles.section}>
-        <ThemedText type="h4" style={styles.sectionTitle}>Assegnazione</ThemedText>
+        <ThemedText type="h4" style={styles.sectionTitle}>Assegnazione (opzionale)</ThemedText>
+        <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.md }}>
+          Puoi assegnare l'intervento a una ditta ora, oppure lasciarlo libero e assegnarlo successivamente
+        </ThemedText>
 
         <View style={styles.inputGroup}>
-          <ThemedText type="small" style={styles.label}>Ditta *</ThemedText>
+          <ThemedText type="small" style={styles.label}>Ditta</ThemedText>
           <View style={styles.companyButtons}>
+            <Pressable
+              style={[
+                styles.companyButton,
+                { borderColor: theme.border },
+                !formData.companyId && { backgroundColor: theme.backgroundSecondary, borderColor: theme.primary },
+              ]}
+              onPress={() => setFormData(prev => ({ ...prev, companyId: '', technicianId: '' }))}
+            >
+              <Feather
+                name="inbox"
+                size={16}
+                color={!formData.companyId ? theme.primary : theme.textSecondary}
+              />
+              <ThemedText
+                style={[
+                  styles.companyButtonText,
+                  !formData.companyId && { color: theme.primary, fontWeight: '600' },
+                ]}
+              >
+                Non assegnare (intervento libero)
+              </ThemedText>
+            </Pressable>
             {companies.map(company => (
               <Pressable
                 key={company.id}

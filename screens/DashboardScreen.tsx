@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet, View, Pressable } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
@@ -33,7 +34,8 @@ export default function DashboardScreen() {
   const navigation = useNavigation<DashboardNavProp>();
   const { theme } = useTheme();
   const { user } = useAuth();
-  const { interventions, appointments, getGlobalStats } = useApp();
+  const { interventions, appointments, getGlobalStats, unassignedInterventions } = useApp();
+  const insets = useSafeAreaInsets();
 
   const isMaster = user?.role === 'master';
   const globalStats = isMaster ? getGlobalStats() : null;
@@ -156,6 +158,38 @@ export default function DashboardScreen() {
               </View>
             </Pressable>
           ))}
+
+          {globalStats.unassignedCount > 0 ? (
+            <Pressable
+              style={({ pressed }) => [
+                styles.unassignedRow,
+                { backgroundColor: theme.secondary + '15', borderColor: theme.secondary, opacity: pressed ? 0.7 : 1 }
+              ]}
+              onPress={() => navigation.navigate("BulkAssign")}
+            >
+              <View style={styles.companyInfo}>
+                <View style={[styles.companyIcon, { backgroundColor: theme.secondary + '30' }]}>
+                  <Feather name="inbox" size={16} color={theme.secondary} />
+                </View>
+                <View>
+                  <ThemedText type="body" style={{ fontWeight: '600' }}>
+                    Interventi Non Assegnati
+                  </ThemedText>
+                  <ThemedText type="caption" style={{ color: theme.textSecondary }}>
+                    Da assegnare a una ditta
+                  </ThemedText>
+                </View>
+              </View>
+              <View style={styles.companyInfoRight}>
+                <View style={[styles.countBadge, { backgroundColor: theme.secondary + '30' }]}>
+                  <ThemedText type="body" style={{ color: theme.secondary, fontWeight: '600' }}>
+                    {globalStats.unassignedCount}
+                  </ThemedText>
+                </View>
+                <Feather name="chevron-right" size={18} color={theme.secondary} />
+              </View>
+            </Pressable>
+          ) : null}
         </View>
       ) : null}
 
@@ -353,7 +387,23 @@ export default function DashboardScreen() {
         )}
       </View>
 
-      <View style={{ height: Spacing["3xl"] }} />
+      <View style={{ height: Spacing["3xl"] + 80 }} />
+
+      {isMaster ? (
+        <Pressable
+          style={({ pressed }) => [
+            styles.fab,
+            { 
+              backgroundColor: theme.primary,
+              bottom: insets.bottom + Spacing.xl + 60,
+              opacity: pressed ? 0.8 : 1,
+            }
+          ]}
+          onPress={() => navigation.navigate("CreateIntervention")}
+        >
+          <Feather name="plus" size={24} color="#FFFFFF" />
+        </Pressable>
+      ) : null}
     </ScreenScrollView>
   );
 }
@@ -404,6 +454,16 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
+  },
+  unassignedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginTop: Spacing.md,
+    borderWidth: 1,
+    borderStyle: "dashed",
   },
   companyInfo: {
     flexDirection: "row",
@@ -509,5 +569,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.xs,
+  },
+  fab: {
+    position: "absolute",
+    right: Spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });

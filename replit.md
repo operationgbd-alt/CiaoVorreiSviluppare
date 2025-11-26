@@ -59,7 +59,8 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
 │   ├── ManageCompaniesScreen.tsx    # Gestione ditte (MASTER only)
 │   ├── ManageUsersScreen.tsx        # Gestione utenti (MASTER only)
 │   ├── CreateInterventionScreen.tsx # Creazione interventi (MASTER only)
-│   └── CompanyInterventionsScreen.tsx # Lista interventi per ditta
+│   ├── CompanyInterventionsScreen.tsx # Lista interventi per ditta
+│   └── BulkAssignScreen.tsx         # Assegnazione multipla interventi
 ├── components/
 │   ├── Button.tsx
 │   ├── Card.tsx
@@ -183,6 +184,8 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
   - DashboardScreen mostra "Panoramica Globale" per MASTER:
     - Contatori totali (interventi, ditte, tecnici)
     - Interventi suddivisi per ditta (cliccabili per vedere dettagli)
+    - Sezione "Interventi Non Assegnati" con badge conteggio
+    - FAB (pulsante flottante) per creare nuovi interventi
   - CompanyInterventionsScreen: lista interventi filtrata per ditta
     - Header con icona ditta e conteggio totale
     - Sezioni separate per interventi attivi e completati
@@ -193,7 +196,13 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
     - Nuovo Intervento (CreateInterventionScreen)
   - ManageCompaniesScreen: CRUD ditte con form validato
   - ManageUsersScreen: CRUD utenti con selezione ruolo e ditta
-  - CreateInterventionScreen: form completo per creazione interventi
+  - CreateInterventionScreen: form completo con assegnazione ditta OPZIONALE
+    - Opzione "Non assegnare (intervento libero)" per creare senza ditta
+    - Gli interventi non assegnati appaiono in Dashboard
+  - BulkAssignScreen: assegnazione multipla interventi
+    - Selezione multipla interventi non assegnati
+    - Pulsanti "Seleziona tutti" e "Deseleziona"
+    - Assegnazione in blocco a ditta selezionata
   - Filtro interventi role-based: MASTER vede tutto, DITTA vede propri, TECNICO vede assegnati + liberi
   - Aggiunto stato "chiuso" per interventi chiusi definitivamente
 

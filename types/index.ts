@@ -40,8 +40,8 @@ export interface Intervention {
   
   client: ClientInfo;
   
-  companyId: string;
-  companyName: string;
+  companyId: string | null;
+  companyName: string | null;
   
   technicianId: string | null;
   technicianName: string | null;

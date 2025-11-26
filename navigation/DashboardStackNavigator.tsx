@@ -4,6 +4,8 @@ import DashboardScreen from "@/screens/DashboardScreen";
 import CalendarScreen from "@/screens/CalendarScreen";
 import AppointmentFormScreen from "@/screens/AppointmentFormScreen";
 import { CompanyInterventionsScreen } from "@/screens/CompanyInterventionsScreen";
+import { CreateInterventionScreen } from "@/screens/CreateInterventionScreen";
+import { BulkAssignScreen } from "@/screens/BulkAssignScreen";
 import { HeaderTitle } from "@/components/HeaderTitle";
 import { useTheme } from "@/hooks/useTheme";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
@@ -14,6 +16,8 @@ export type DashboardStackParamList = {
   Calendar: undefined;
   AppointmentForm: { appointment?: Appointment; date?: number };
   CompanyInterventions: { companyId: string; companyName: string };
+  CreateIntervention: undefined;
+  BulkAssign: undefined;
 };
 
 const Stack = createNativeStackNavigator<DashboardStackParamList>();
@@ -53,6 +57,22 @@ export default function DashboardStackNavigator() {
         options={({ route }) => ({
           headerTitle: route.params.companyName,
         })}
+      />
+      <Stack.Screen
+        name="CreateIntervention"
+        component={CreateInterventionScreen}
+        options={{
+          headerTitle: "Nuovo Intervento",
+          presentation: "modal",
+        }}
+      />
+      <Stack.Screen
+        name="BulkAssign"
+        component={BulkAssignScreen}
+        options={{
+          headerTitle: "Assegna Interventi",
+          presentation: "modal",
+        }}
       />
     </Stack.Navigator>
   );

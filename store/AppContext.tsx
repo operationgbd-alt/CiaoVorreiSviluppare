@@ -8,9 +8,11 @@ interface AppContextType {
   companies: Company[];
   users: User[];
   allInterventionsCount: number;
+  unassignedInterventions: Intervention[];
   addIntervention: (intervention: Omit<Intervention, 'id' | 'number' | 'createdAt' | 'updatedAt'>) => void;
   updateIntervention: (id: string, updates: Partial<Intervention>) => void;
   deleteIntervention: (id: string) => void;
+  bulkAssignToCompany: (interventionIds: string[], companyId: string, companyName: string) => void;
   addAppointment: (appointment: Appointment) => void;
   updateAppointment: (id: string, appointment: Partial<Appointment>) => void;
   deleteAppointment: (id: string) => void;
@@ -29,6 +31,7 @@ interface AppContextType {
     byCompany: { companyId: string; companyName: string; count: number }[];
     totalCompanies: number;
     totalTechnicians: number;
+    unassignedCount: number;
   };
 }
 
@@ -474,6 +477,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setInterventionsData(prev => prev.filter(i => i.id !== id));
   }, []);
 
+  const bulkAssignToCompany = useCallback((interventionIds: string[], companyId: string, companyName: string) => {
+    const now = Date.now();
+    setInterventionsData(prev =>
+      prev.map(i =>
+        interventionIds.includes(i.id)
+          ? { 
+              ...i, 
+              companyId, 
+              companyName, 
+              assignedAt: now,
+              assignedBy: 'Admin',
+              status: 'assegnato' as const,
+              updatedAt: now,
+            }
+          : i
+      )
+    );
+  }, []);
+
+  const unassignedInterventions = useMemo(() => {
+    return interventionsData.filter(i => !i.companyId);
+  }, [interventionsData]);
+
   const addAppointment = useCallback((appointment: Appointment) => {
     setAppointmentsData(prev => [...prev, { ...appointment, id: appointment.id || generateId() }]);
   }, []);
@@ -541,10 +567,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     interventionsData.forEach(i => {
       byStatus[i.status] = (byStatus[i.status] || 0) + 1;
-      if (!byCompanyMap[i.companyId]) {
-        byCompanyMap[i.companyId] = { companyName: i.companyName, count: 0 };
+      if (i.companyId) {
+        if (!byCompanyMap[i.companyId]) {
+          byCompanyMap[i.companyId] = { companyName: i.companyName || 'Senza Ditta', count: 0 };
+        }
+        byCompanyMap[i.companyId].count++;
       }
-      byCompanyMap[i.companyId].count++;
     });
 
     const byCompany = Object.entries(byCompanyMap).map(([companyId, data]) => ({
@@ -553,12 +581,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       count: data.count,
     }));
 
+    const unassignedCount = interventionsData.filter(i => !i.companyId).length;
+
     return {
       totalInterventions: interventionsData.length,
       byStatus,
       byCompany,
       totalCompanies: companiesData.length,
       totalTechnicians: usersData.filter(u => u.role === 'tecnico').length,
+      unassignedCount,
     };
   }, [interventionsData, companiesData, usersData]);
 
@@ -570,9 +601,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         companies,
         users,
         allInterventionsCount: interventionsData.length,
+        unassignedInterventions,
         addIntervention,
         updateIntervention,
         deleteIntervention,
+        bulkAssignToCompany,
         addAppointment,
         updateAppointment,
         deleteAppointment,
