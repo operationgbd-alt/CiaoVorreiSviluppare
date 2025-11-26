@@ -7,6 +7,7 @@ import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/store/AppContext";
+import { useAuth } from "@/store/AuthContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { DashboardStackParamList } from "@/navigation/DashboardStackNavigator";
 import { InterventionStatus } from "@/types";
@@ -18,6 +19,7 @@ const STATUS_CONFIG: Record<InterventionStatus, { label: string; color: string }
   appuntamento_fissato: { label: 'Appuntamento', color: '#007AFF' },
   in_corso: { label: 'In Corso', color: '#5856D6' },
   completato: { label: 'Completato', color: '#34C759' },
+  chiuso: { label: 'Chiuso', color: '#8E8E93' },
 };
 
 const PRIORITY_CONFIG: Record<string, { color: string }> = {
@@ -30,7 +32,11 @@ const PRIORITY_CONFIG: Record<string, { color: string }> = {
 export default function DashboardScreen() {
   const navigation = useNavigation<DashboardNavProp>();
   const { theme } = useTheme();
-  const { technician, interventions, appointments } = useApp();
+  const { user } = useAuth();
+  const { interventions, appointments, getGlobalStats } = useApp();
+
+  const isMaster = user?.role === 'master';
+  const globalStats = isMaster ? getGlobalStats() : null;
 
   const today = new Date();
   const formattedDate = today.toLocaleDateString("it-IT", {
@@ -58,27 +64,88 @@ export default function DashboardScreen() {
     (i) => i.status === "in_corso"
   ).length;
 
+  const completedInterventions = interventions.filter(
+    (i) => i.status === "completato" || i.status === "chiuso"
+  ).length;
+
   const recentInterventions = [...interventions]
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(0, 5);
+
+  const getUserInitials = (name: string) => {
+    return name.split(" ").map((n: string) => n[0]).join("");
+  };
 
   return (
     <ScreenScrollView>
       <View style={[styles.welcomeCard, { backgroundColor: theme.backgroundDefault }]}>
         <View style={styles.welcomeHeader}>
-          <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+          <View style={[styles.avatar, { backgroundColor: isMaster ? theme.danger : theme.primary }]}>
             <ThemedText style={styles.avatarText}>
-              {technician?.name.split(" ").map((n) => n[0]).join("")}
+              {user ? getUserInitials(user.name) : "?"}
             </ThemedText>
           </View>
           <View style={styles.welcomeText}>
-            <ThemedText type="h3">Ciao, {technician?.name.split(" ")[0]}</ThemedText>
+            <ThemedText type="h3">Ciao, {user?.name.split(" ")[0]}</ThemedText>
             <ThemedText type="small" style={{ color: theme.textSecondary }}>
               {formattedDate}
             </ThemedText>
           </View>
         </View>
       </View>
+
+      {isMaster && globalStats ? (
+        <View style={styles.masterSection}>
+          <ThemedText type="h4" style={styles.sectionTitle}>
+            Panoramica Globale
+          </ThemedText>
+          <View style={styles.masterStatsGrid}>
+            <View style={[styles.masterStatCard, { backgroundColor: theme.backgroundDefault }]}>
+              <Feather name="briefcase" size={24} color={theme.primary} />
+              <ThemedText type="h2">{globalStats.totalInterventions}</ThemedText>
+              <ThemedText type="caption" style={{ color: theme.textSecondary }}>
+                Interventi Totali
+              </ThemedText>
+            </View>
+            <View style={[styles.masterStatCard, { backgroundColor: theme.backgroundDefault }]}>
+              <Feather name="home" size={24} color={theme.secondary} />
+              <ThemedText type="h2">{globalStats.totalCompanies}</ThemedText>
+              <ThemedText type="caption" style={{ color: theme.textSecondary }}>
+                Ditte
+              </ThemedText>
+            </View>
+            <View style={[styles.masterStatCard, { backgroundColor: theme.backgroundDefault }]}>
+              <Feather name="users" size={24} color={theme.success} />
+              <ThemedText type="h2">{globalStats.totalTechnicians}</ThemedText>
+              <ThemedText type="caption" style={{ color: theme.textSecondary }}>
+                Tecnici
+              </ThemedText>
+            </View>
+          </View>
+
+          <ThemedText type="h4" style={[styles.sectionTitle, { marginTop: Spacing.lg }]}>
+            Interventi per Ditta
+          </ThemedText>
+          {globalStats.byCompany.map((company) => (
+            <View
+              key={company.companyId}
+              style={[styles.companyStatRow, { backgroundColor: theme.backgroundDefault }]}
+            >
+              <View style={styles.companyInfo}>
+                <View style={[styles.companyIcon, { backgroundColor: theme.primaryLight }]}>
+                  <Feather name="home" size={16} color={theme.primary} />
+                </View>
+                <ThemedText type="body">{company.companyName}</ThemedText>
+              </View>
+              <View style={[styles.countBadge, { backgroundColor: theme.primaryLight }]}>
+                <ThemedText type="body" style={{ color: theme.primary, fontWeight: '600' }}>
+                  {company.count}
+                </ThemedText>
+              </View>
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       <View style={styles.statsRow}>
         <Pressable
@@ -96,7 +163,7 @@ export default function DashboardScreen() {
           </View>
           <ThemedText type="h2">{pendingInterventions}</ThemedText>
           <ThemedText type="caption" style={{ color: theme.textSecondary }}>
-            Nuovi assegnati
+            Nuovi
           </ThemedText>
         </Pressable>
 
@@ -115,7 +182,7 @@ export default function DashboardScreen() {
           </View>
           <ThemedText type="h2">{scheduledInterventions}</ThemedText>
           <ThemedText type="caption" style={{ color: theme.textSecondary }}>
-            Con appuntamento
+            Programmati
           </ThemedText>
         </Pressable>
 
@@ -135,6 +202,25 @@ export default function DashboardScreen() {
           <ThemedText type="h2">{inProgressInterventions}</ThemedText>
           <ThemedText type="caption" style={{ color: theme.textSecondary }}>
             In corso
+          </ThemedText>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.statCard,
+            { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.8 : 1 },
+          ]}
+          onPress={() => {
+            const nav = navigation.getParent() as any;
+            nav?.navigate("CompletedTab");
+          }}
+        >
+          <View style={[styles.statIcon, { backgroundColor: '#34C759' + "20" }]}>
+            <Feather name="check-circle" size={20} color="#34C759" />
+          </View>
+          <ThemedText type="h2">{completedInterventions}</ThemedText>
+          <ThemedText type="caption" style={{ color: theme.textSecondary }}>
+            Completati
           </ThemedText>
         </Pressable>
       </View>
@@ -205,7 +291,7 @@ export default function DashboardScreen() {
       </View>
 
       <View style={styles.section}>
-        <ThemedText type="h3" style={styles.sectionTitle}>
+        <ThemedText type="h3" style={styles.sectionTitleOnly}>
           Interventi Recenti
         </ThemedText>
 
@@ -285,13 +371,55 @@ const styles = StyleSheet.create({
   welcomeText: {
     marginLeft: Spacing.md,
   },
+  masterSection: {
+    marginBottom: Spacing.xl,
+  },
+  masterStatsGrid: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  masterStatCard: {
+    flex: 1,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  companyStatRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  companyInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  companyIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: Spacing.sm,
+  },
+  countBadge: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+  },
   statsRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: Spacing.sm,
     marginBottom: Spacing.xl,
   },
   statCard: {
     flex: 1,
+    minWidth: 70,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     alignItems: "center",
@@ -314,6 +442,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   sectionTitle: {
+    marginBottom: Spacing.md,
+  },
+  sectionTitleOnly: {
     marginBottom: Spacing.md,
   },
   emptyCard: {

@@ -1,11 +1,16 @@
 import React from "react";
 import { StyleSheet, View, Pressable, Alert, Switch, Platform } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/store/AuthContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
+
+type ProfileScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList, 'Profile'>;
 
 const getRoleLabel = (role: string) => {
   switch (role) {
@@ -23,6 +28,9 @@ const getRoleLabel = (role: string) => {
 export default function ProfileScreen() {
   const { theme } = useTheme();
   const { user, logout } = useAuth();
+  const navigation = useNavigation<ProfileScreenNavigationProp>();
+  
+  const isMaster = user?.role === 'master';
 
   const handleLogout = () => {
     if (Platform.OS === 'web') {
@@ -118,6 +126,37 @@ export default function ProfileScreen() {
           </View>
         ) : null}
       </View>
+
+      {isMaster ? (
+        <View style={styles.section}>
+          <ThemedText type="h4" style={styles.sectionTitle}>
+            Gestione Sistema
+          </ThemedText>
+          <View style={styles.settingGroup}>
+            {renderSettingItem(
+              "home",
+              "Gestione Ditte",
+              "Crea e modifica aziende installatrici",
+              undefined,
+              () => navigation.navigate('ManageCompanies')
+            )}
+            {renderSettingItem(
+              "users",
+              "Gestione Utenti",
+              "Crea tecnici e account ditta",
+              undefined,
+              () => navigation.navigate('ManageUsers')
+            )}
+            {renderSettingItem(
+              "plus-circle",
+              "Nuovo Intervento",
+              "Crea e assegna un intervento",
+              undefined,
+              () => navigation.navigate('CreateIntervention')
+            )}
+          </View>
+        </View>
+      ) : null}
 
       <View style={styles.section}>
         <ThemedText type="h4" style={styles.sectionTitle}>

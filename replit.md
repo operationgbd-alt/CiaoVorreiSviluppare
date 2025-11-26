@@ -50,12 +50,15 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
 │   └── ProfileStackNavigator.tsx
 ├── screens/
 │   ├── LoginScreen.tsx              # Login con username/password
-│   ├── DashboardScreen.tsx          # Home con statistiche
+│   ├── DashboardScreen.tsx          # Home con statistiche (globali per MASTER)
 │   ├── CalendarScreen.tsx           # Calendario appuntamenti
 │   ├── InterventionsListScreen.tsx  # Lista interventi attivi
 │   ├── InterventionDetailScreen.tsx # Dettaglio con 5 sezioni
 │   ├── CompletedInterventionsScreen.tsx # Archivio completati
-│   └── ProfileScreen.tsx            # Profilo utente e logout
+│   ├── ProfileScreen.tsx            # Profilo utente e logout
+│   ├── ManageCompaniesScreen.tsx    # Gestione ditte (MASTER only)
+│   ├── ManageUsersScreen.tsx        # Gestione utenti (MASTER only)
+│   └── CreateInterventionScreen.tsx # Creazione interventi (MASTER only)
 ├── components/
 │   ├── Button.tsx
 │   ├── Card.tsx
@@ -78,6 +81,7 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
 2. **appuntamento_fissato** - Appuntamento confermato con cliente
 3. **in_corso** - Tecnico sul posto (GPS registrato)
 4. **completato** - Lavoro terminato con documentazione
+5. **chiuso** - Intervento chiuso definitivamente dalla ditta
 
 ### Priorità
 - bassa (grigio)
@@ -173,6 +177,20 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
 - 2025-11-26: Bug fix foto e notifiche
   - PhotoPicker usa ImagePicker.MediaTypeOptions.Images
   - Gestione errori migliorata
+- 2025-11-26: Implementate funzionalità MASTER complete
+  - AppContext esteso con gestione ditte, utenti e statistiche globali
+  - DashboardScreen mostra "Panoramica Globale" per MASTER:
+    - Contatori totali (interventi, ditte, tecnici)
+    - Interventi suddivisi per ditta
+  - ProfileScreen con sezione "Gestione Sistema" per MASTER:
+    - Gestione Ditte (ManageCompaniesScreen)
+    - Gestione Utenti (ManageUsersScreen)
+    - Nuovo Intervento (CreateInterventionScreen)
+  - ManageCompaniesScreen: CRUD ditte con form validato
+  - ManageUsersScreen: CRUD utenti con selezione ruolo e ditta
+  - CreateInterventionScreen: form completo per creazione interventi
+  - Filtro interventi role-based: MASTER vede tutto, DITTA vede propri, TECNICO vede assegnati + liberi
+  - Aggiunto stato "chiuso" per interventi chiusi definitivamente
 
 ## Development Notes
 - Hot Module Reloading attivo per modifiche codice

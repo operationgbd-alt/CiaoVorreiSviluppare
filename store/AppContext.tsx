@@ -1,20 +1,132 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
-import { Intervention, Appointment } from '@/types';
+import { Intervention, Appointment, Company, User } from '@/types';
 import { useAuth } from './AuthContext';
 
 interface AppContextType {
   interventions: Intervention[];
   appointments: Appointment[];
-  addIntervention: (intervention: Intervention) => void;
+  companies: Company[];
+  users: User[];
+  allInterventionsCount: number;
+  addIntervention: (intervention: Omit<Intervention, 'id' | 'number' | 'createdAt' | 'updatedAt'>) => void;
   updateIntervention: (id: string, updates: Partial<Intervention>) => void;
   deleteIntervention: (id: string) => void;
   addAppointment: (appointment: Appointment) => void;
   updateAppointment: (id: string, appointment: Partial<Appointment>) => void;
   deleteAppointment: (id: string) => void;
   getInterventionById: (id: string) => Intervention | undefined;
+  addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => void;
+  updateCompany: (id: string, updates: Partial<Company>) => void;
+  deleteCompany: (id: string) => void;
+  addUser: (user: Omit<User, 'id' | 'createdAt'>) => void;
+  updateUser: (id: string, updates: Partial<User>) => void;
+  deleteUser: (id: string) => void;
+  getCompanyById: (id: string) => Company | undefined;
+  getUsersByCompany: (companyId: string) => User[];
+  getGlobalStats: () => {
+    totalInterventions: number;
+    byStatus: Record<string, number>;
+    byCompany: { companyId: string; companyName: string; count: number }[];
+    totalCompanies: number;
+    totalTechnicians: number;
+  };
 }
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+let interventionCounter = 9;
+const generateInterventionNumber = () => {
+  interventionCounter++;
+  return `INT-2025-${String(interventionCounter).padStart(3, '0')}`;
+};
+
+const initialCompanies: Company[] = [
+  {
+    id: 'company-1',
+    name: 'GBD B&A S.r.l.',
+    address: 'Via Milano 123, Milano',
+    phone: '+39 02 12345678',
+    email: 'info@gbd-ba.it',
+    createdAt: Date.now() - 86400000 * 30,
+  },
+  {
+    id: 'company-2',
+    name: 'Solar Pro S.r.l.',
+    address: 'Via Roma 45, Roma',
+    phone: '+39 06 87654321',
+    email: 'info@solarpro.it',
+    createdAt: Date.now() - 86400000 * 20,
+  },
+];
+
+const initialUsers: User[] = [
+  {
+    id: 'master-1',
+    username: 'gbd',
+    role: 'master',
+    name: 'GBD Amministratore',
+    email: 'admin@gbd.it',
+    phone: '+39 02 00000000',
+    companyId: null,
+    companyName: null,
+    createdAt: Date.now() - 86400000 * 60,
+  },
+  {
+    id: 'ditta-1',
+    username: 'ditta',
+    role: 'ditta',
+    name: 'GBD B&A',
+    email: 'info@gbd-ba.it',
+    phone: '+39 02 12345678',
+    companyId: 'company-1',
+    companyName: 'GBD B&A S.r.l.',
+    createdAt: Date.now() - 86400000 * 30,
+  },
+  {
+    id: 'ditta-2',
+    username: 'solarpro',
+    role: 'ditta',
+    name: 'Solar Pro',
+    email: 'info@solarpro.it',
+    phone: '+39 06 87654321',
+    companyId: 'company-2',
+    companyName: 'Solar Pro S.r.l.',
+    createdAt: Date.now() - 86400000 * 20,
+  },
+  {
+    id: 'tech-1',
+    username: 'alex',
+    role: 'tecnico',
+    name: 'Alessandro Rossi',
+    email: 'alex@gbd-ba.it',
+    phone: '+39 333 1234567',
+    companyId: 'company-1',
+    companyName: 'GBD B&A S.r.l.',
+    createdAt: Date.now() - 86400000 * 25,
+  },
+  {
+    id: 'tech-2',
+    username: 'billo',
+    role: 'tecnico',
+    name: 'Marco Bianchi',
+    email: 'billo@gbd-ba.it',
+    phone: '+39 333 7654321',
+    companyId: 'company-1',
+    companyName: 'GBD B&A S.r.l.',
+    createdAt: Date.now() - 86400000 * 20,
+  },
+  {
+    id: 'tech-3',
+    username: 'luca',
+    role: 'tecnico',
+    name: 'Luca Verdi',
+    email: 'luca@solarpro.it',
+    phone: '+39 333 9988776',
+    companyId: 'company-2',
+    companyName: 'Solar Pro S.r.l.',
+    createdAt: Date.now() - 86400000 * 15,
+  },
+];
 
 const allInterventions: Intervention[] = [
   {
@@ -39,10 +151,7 @@ const allInterventions: Intervention[] = [
     assignedAt: Date.now() - 86400000 * 2,
     assignedBy: 'Admin',
     status: 'assegnato',
-    documentation: {
-      photos: [],
-      notes: '',
-    },
+    documentation: { photos: [], notes: '' },
     createdAt: Date.now() - 86400000 * 2,
     updatedAt: Date.now() - 86400000 * 2,
   },
@@ -63,7 +172,7 @@ const allInterventions: Intervention[] = [
     technicianId: 'tech-1',
     technicianName: 'Alessandro Rossi',
     category: 'sopralluogo',
-    description: 'Sopralluogo per verifica stato impianto esistente e preventivo manutenzione.',
+    description: 'Sopralluogo per verifica stato impianto esistente.',
     priority: 'normale',
     assignedAt: Date.now() - 86400000,
     assignedBy: 'Admin',
@@ -73,10 +182,7 @@ const allInterventions: Intervention[] = [
       notes: 'Cliente disponibile solo al mattino',
     },
     status: 'appuntamento_fissato',
-    documentation: {
-      photos: [],
-      notes: '',
-    },
+    documentation: { photos: [], notes: '' },
     createdAt: Date.now() - 86400000,
     updatedAt: Date.now() - 3600000 * 5,
   },
@@ -107,10 +213,7 @@ const allInterventions: Intervention[] = [
       notes: 'Urgente - cliente senza produzione',
     },
     status: 'appuntamento_fissato',
-    documentation: {
-      photos: [],
-      notes: '',
-    },
+    documentation: { photos: [], notes: '' },
     createdAt: Date.now() - 3600000 * 4,
     updatedAt: Date.now() - 3600000 * 2,
   },
@@ -131,15 +234,12 @@ const allInterventions: Intervention[] = [
     technicianId: null,
     technicianName: null,
     category: 'sopralluogo',
-    description: 'Sopralluogo per preventivo nuovo impianto 10kW - DA ASSEGNARE A TECNICO',
+    description: 'Sopralluogo per preventivo nuovo impianto 10kW - DA ASSEGNARE',
     priority: 'bassa',
     assignedAt: Date.now() - 86400000 * 3,
     assignedBy: 'Admin',
     status: 'assegnato',
-    documentation: {
-      photos: [],
-      notes: '',
-    },
+    documentation: { photos: [], notes: '' },
     createdAt: Date.now() - 86400000 * 3,
     updatedAt: Date.now() - 86400000 * 3,
   },
@@ -178,7 +278,7 @@ const allInterventions: Intervention[] = [
     status: 'completato',
     documentation: {
       photos: [],
-      notes: 'Configurazione completata. App installata e funzionante. Cliente istruito sull\'utilizzo.',
+      notes: 'Installazione completata. Cliente soddisfatto.',
       startedAt: Date.now() - 86400000 - 3600000,
       completedAt: Date.now() - 86400000,
     },
@@ -202,15 +302,12 @@ const allInterventions: Intervention[] = [
     technicianId: 'tech-2',
     technicianName: 'Marco Bianchi',
     category: 'manutenzione',
-    description: 'Manutenzione ordinaria impianto 8kW. Pulizia pannelli e controllo inverter.',
+    description: 'Manutenzione ordinaria impianto 8kW.',
     priority: 'normale',
     assignedAt: Date.now() - 86400000 * 2,
     assignedBy: 'Admin',
     status: 'assegnato',
-    documentation: {
-      photos: [],
-      notes: '',
-    },
+    documentation: { photos: [], notes: '' },
     createdAt: Date.now() - 86400000 * 2,
     updatedAt: Date.now() - 86400000 * 2,
   },
@@ -231,7 +328,7 @@ const allInterventions: Intervention[] = [
     technicianId: 'tech-3',
     technicianName: 'Luca Verdi',
     category: 'manutenzione',
-    description: 'Sostituzione inverter guasto e verifica produzione.',
+    description: 'Sostituzione inverter guasto.',
     priority: 'alta',
     assignedAt: Date.now() - 86400000,
     assignedBy: 'Admin',
@@ -241,10 +338,7 @@ const allInterventions: Intervention[] = [
       notes: 'Portare inverter sostitutivo',
     },
     status: 'appuntamento_fissato',
-    documentation: {
-      photos: [],
-      notes: '',
-    },
+    documentation: { photos: [], notes: '' },
     createdAt: Date.now() - 86400000,
     updatedAt: Date.now() - 3600000 * 2,
   },
@@ -265,7 +359,7 @@ const allInterventions: Intervention[] = [
     technicianId: 'tech-3',
     technicianName: 'Luca Verdi',
     category: 'manutenzione',
-    description: 'Controllo annuale e ottimizzazione sistema di accumulo.',
+    description: 'Controllo annuale sistema di accumulo.',
     priority: 'bassa',
     assignedAt: Date.now() - 86400000 * 4,
     assignedBy: 'Admin',
@@ -278,7 +372,7 @@ const allInterventions: Intervention[] = [
     },
     documentation: {
       photos: [],
-      notes: 'Batteria efficienza al 92%. Sistema ottimizzato.',
+      notes: 'Batteria efficienza al 92%.',
       startedAt: Date.now() - 86400000 * 2 - 3600000,
       completedAt: Date.now() - 86400000 * 2,
     },
@@ -305,7 +399,7 @@ const allAppointments: Appointment[] = [
     clientName: 'Maria Russo',
     address: 'Via Garibaldi 33, Firenze',
     date: Date.now() + 3600000 * 2,
-    notes: 'Urgente - cliente senza produzione',
+    notes: 'Urgente',
     notifyBefore: 30,
   },
 ];
@@ -316,18 +410,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [interventionsData, setInterventionsData] = useState<Intervention[]>(allInterventions);
   const [appointmentsData, setAppointmentsData] = useState<Appointment[]>(allAppointments);
+  const [companiesData, setCompaniesData] = useState<Company[]>(initialCompanies);
+  const [usersData, setUsersData] = useState<User[]>(initialUsers);
 
   const interventions = useMemo(() => {
     if (!user) return [];
-    
     switch (user.role) {
       case 'master':
         return interventionsData;
       case 'ditta':
         return interventionsData.filter(i => i.companyId === user.companyId);
       case 'tecnico':
-        return interventionsData.filter(i => 
-          i.companyId === user.companyId && 
+        return interventionsData.filter(i =>
+          i.companyId === user.companyId &&
           (i.technicianId === user.id || i.technicianId === null)
         );
       default:
@@ -337,18 +432,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const appointments = useMemo(() => {
     if (!user) return [];
-    
-    const visibleInterventionIds = new Set(interventions.map(i => i.id));
-    return appointmentsData.filter(a => 
-      a.interventionId ? visibleInterventionIds.has(a.interventionId) : true
+    const visibleIds = new Set(interventions.map(i => i.id));
+    return appointmentsData.filter(a =>
+      a.interventionId ? visibleIds.has(a.interventionId) : true
     );
   }, [user, appointmentsData, interventions]);
 
-  const addIntervention = useCallback((intervention: Intervention) => {
-    setInterventionsData(prev => [
-      { ...intervention, id: intervention.id || generateId() },
-      ...prev,
-    ]);
+  const companies = useMemo(() => {
+    if (!user) return [];
+    if (user.role === 'master') return companiesData;
+    if (user.role === 'ditta') return companiesData.filter(c => c.id === user.companyId);
+    return [];
+  }, [user, companiesData]);
+
+  const users = useMemo(() => {
+    if (!user) return [];
+    if (user.role === 'master') return usersData;
+    if (user.role === 'ditta') return usersData.filter(u => u.companyId === user.companyId);
+    return [];
+  }, [user, usersData]);
+
+  const addIntervention = useCallback((intervention: Omit<Intervention, 'id' | 'number' | 'createdAt' | 'updatedAt'>) => {
+    const now = Date.now();
+    const newIntervention: Intervention = {
+      ...intervention,
+      id: generateId(),
+      number: generateInterventionNumber(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    setInterventionsData(prev => [newIntervention, ...prev]);
   }, []);
 
   const updateIntervention = useCallback((id: string, updates: Partial<Intervention>) => {
@@ -362,16 +475,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addAppointment = useCallback((appointment: Appointment) => {
-    setAppointmentsData(prev => [
-      ...prev,
-      { ...appointment, id: appointment.id || generateId() },
-    ]);
+    setAppointmentsData(prev => [...prev, { ...appointment, id: appointment.id || generateId() }]);
   }, []);
 
   const updateAppointment = useCallback((id: string, updates: Partial<Appointment>) => {
-    setAppointmentsData(prev =>
-      prev.map(a => (a.id === id ? { ...a, ...updates } : a))
-    );
+    setAppointmentsData(prev => prev.map(a => (a.id === id ? { ...a, ...updates } : a)));
   }, []);
 
   const deleteAppointment = useCallback((id: string) => {
@@ -379,17 +487,89 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const getInterventionById = useCallback(
-    (id: string) => {
-      return interventionsData.find(i => i.id === id);
-    },
+    (id: string) => interventionsData.find(i => i.id === id),
     [interventionsData]
   );
+
+  const addCompany = useCallback((company: Omit<Company, 'id' | 'createdAt'>) => {
+    const newCompany: Company = {
+      ...company,
+      id: generateId(),
+      createdAt: Date.now(),
+    };
+    setCompaniesData(prev => [...prev, newCompany]);
+  }, []);
+
+  const updateCompany = useCallback((id: string, updates: Partial<Company>) => {
+    setCompaniesData(prev => prev.map(c => (c.id === id ? { ...c, ...updates } : c)));
+  }, []);
+
+  const deleteCompany = useCallback((id: string) => {
+    setCompaniesData(prev => prev.filter(c => c.id !== id));
+  }, []);
+
+  const addUser = useCallback((user: Omit<User, 'id' | 'createdAt'>) => {
+    const newUser: User = {
+      ...user,
+      id: generateId(),
+      createdAt: Date.now(),
+    };
+    setUsersData(prev => [...prev, newUser]);
+  }, []);
+
+  const updateUser = useCallback((id: string, updates: Partial<User>) => {
+    setUsersData(prev => prev.map(u => (u.id === id ? { ...u, ...updates } : u)));
+  }, []);
+
+  const deleteUser = useCallback((id: string) => {
+    setUsersData(prev => prev.filter(u => u.id !== id));
+  }, []);
+
+  const getCompanyById = useCallback(
+    (id: string) => companiesData.find(c => c.id === id),
+    [companiesData]
+  );
+
+  const getUsersByCompany = useCallback(
+    (companyId: string) => usersData.filter(u => u.companyId === companyId),
+    [usersData]
+  );
+
+  const getGlobalStats = useCallback(() => {
+    const byStatus: Record<string, number> = {};
+    const byCompanyMap: Record<string, { companyName: string; count: number }> = {};
+
+    interventionsData.forEach(i => {
+      byStatus[i.status] = (byStatus[i.status] || 0) + 1;
+      if (!byCompanyMap[i.companyId]) {
+        byCompanyMap[i.companyId] = { companyName: i.companyName, count: 0 };
+      }
+      byCompanyMap[i.companyId].count++;
+    });
+
+    const byCompany = Object.entries(byCompanyMap).map(([companyId, data]) => ({
+      companyId,
+      companyName: data.companyName,
+      count: data.count,
+    }));
+
+    return {
+      totalInterventions: interventionsData.length,
+      byStatus,
+      byCompany,
+      totalCompanies: companiesData.length,
+      totalTechnicians: usersData.filter(u => u.role === 'tecnico').length,
+    };
+  }, [interventionsData, companiesData, usersData]);
 
   return (
     <AppContext.Provider
       value={{
         interventions,
         appointments,
+        companies,
+        users,
+        allInterventionsCount: interventionsData.length,
         addIntervention,
         updateIntervention,
         deleteIntervention,
@@ -397,6 +577,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateAppointment,
         deleteAppointment,
         getInterventionById,
+        addCompany,
+        updateCompany,
+        deleteCompany,
+        addUser,
+        updateUser,
+        deleteUser,
+        getCompanyById,
+        getUsersByCompany,
+        getGlobalStats,
       }}
     >
       {children}

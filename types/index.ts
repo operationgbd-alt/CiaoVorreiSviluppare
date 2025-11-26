@@ -94,3 +94,24 @@ export interface Technician {
   companyName: string;
   avatar?: string;
 }
+
+export interface Company {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  createdAt: number;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  role: 'master' | 'ditta' | 'tecnico';
+  name: string;
+  email: string;
+  phone?: string;
+  companyId: string | null;
+  companyName: string | null;
+  createdAt: number;
+}
