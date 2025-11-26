@@ -443,11 +443,8 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
       </Card>
 
       {/* 3. CALENDARIO */}
-      <Card style={styles.section}>
-        <Pressable 
-          style={styles.sectionHeader}
-          onPress={() => toggleSection('calendario')}
-        >
+      <Card style={styles.section} onPress={() => toggleSection('calendario')}>
+        <View style={styles.sectionHeader}>
           <Feather name="calendar" size={18} color={theme.primary} />
           <ThemedText type="h3" style={{ marginLeft: Spacing.sm, flex: 1 }}>
             Calendario
@@ -457,7 +454,7 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
             size={20} 
             color={theme.textSecondary} 
           />
-        </Pressable>
+        </View>
 
         {intervention.appointment ? (
           <View style={styles.appointmentInfo}>
@@ -529,11 +526,8 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
       </Card>
 
       {/* 4. GESTISCI INTERVENTO */}
-      <Card style={styles.section}>
-        <Pressable 
-          style={styles.sectionHeader}
-          onPress={() => toggleSection('gestisci')}
-        >
+      <Card style={styles.section} onPress={() => toggleSection('gestisci')}>
+        <View style={styles.sectionHeader}>
           <Feather name="tool" size={18} color={theme.primary} />
           <ThemedText type="h3" style={{ marginLeft: Spacing.sm, flex: 1 }}>
             Gestisci Intervento
@@ -543,7 +537,7 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
             size={20} 
             color={theme.textSecondary} 
           />
-        </Pressable>
+        </View>
 
         <View style={styles.quickStats}>
           <View style={styles.statItem}>
@@ -655,11 +649,8 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
       </Card>
 
       {/* 5. ESITA INTERVENTO */}
-      <Card style={styles.section}>
-        <Pressable 
-          style={styles.sectionHeader}
-          onPress={() => toggleSection('esita')}
-        >
+      <Card style={styles.section} onPress={() => toggleSection('esita')}>
+        <View style={styles.sectionHeader}>
           <Feather name="check-square" size={18} color={theme.primary} />
           <ThemedText type="h3" style={{ marginLeft: Spacing.sm, flex: 1 }}>
             Esita Intervento
@@ -669,7 +660,7 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
             size={20} 
             color={theme.textSecondary} 
           />
-        </Pressable>
+        </View>
 
         {expandedSection === 'esita' ? (
           <View style={styles.statusOptions}>
