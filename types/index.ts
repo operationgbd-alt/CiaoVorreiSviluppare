@@ -78,7 +78,7 @@ export interface Intervention {
   updatedAt: number;
 }
 
-export type AppointmentType = 'intervento';
+export type AppointmentType = 'intervento' | 'sopralluogo' | 'installazione' | 'manutenzione';
 
 export interface Appointment {
   id: string;

@@ -91,58 +91,70 @@ export default function CalendarScreen({ navigation }: Props) {
     return !!appointmentsByDate[date.toDateString()];
   };
 
-  const getAppointmentColor = (apt: Appointment) => {
-    if (apt.type === "sopralluogo") return theme.secondary;
-    return theme.primary;
+  const getAppointmentConfig = (type: string) => {
+    switch (type) {
+      case "sopralluogo":
+        return { color: theme.secondary, icon: "clipboard" as const, label: "Sopralluogo" };
+      case "installazione":
+        return { color: theme.primary, icon: "tool" as const, label: "Installazione" };
+      case "manutenzione":
+        return { color: theme.success, icon: "settings" as const, label: "Manutenzione" };
+      case "intervento":
+      default:
+        return { color: theme.primary, icon: "briefcase" as const, label: "Intervento" };
+    }
   };
 
-  const renderAppointment = (item: Appointment) => (
-    <Pressable
-      key={item.id}
-      style={({ pressed }) => [
-        styles.appointmentCard,
-        { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.8 : 1 },
-      ]}
-      onPress={() => navigation.navigate("AppointmentForm", { appointment: item })}
-    >
-      <View
-        style={[
-          styles.appointmentTime,
-          { backgroundColor: getAppointmentColor(item) + "20" },
+  const renderAppointment = (item: Appointment) => {
+    const config = getAppointmentConfig(item.type);
+    return (
+      <Pressable
+        key={item.id}
+        style={({ pressed }) => [
+          styles.appointmentCard,
+          { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.8 : 1 },
         ]}
+        onPress={() => navigation.navigate("AppointmentForm", { appointment: item })}
       >
-        <ThemedText
-          type="caption"
-          style={{
-            color: getAppointmentColor(item),
-            fontWeight: "600",
-          }}
+        <View
+          style={[
+            styles.appointmentTime,
+            { backgroundColor: config.color + "20" },
+          ]}
         >
-          {new Date(item.date).toLocaleTimeString("it-IT", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </ThemedText>
-      </View>
-      <View style={styles.appointmentInfo}>
-        <ThemedText type="h4">{item.clientName}</ThemedText>
-        <ThemedText type="small" style={{ color: theme.textSecondary }}>
-          {item.address}
-        </ThemedText>
-        <View style={styles.appointmentTypeRow}>
-          <Feather
-            name={item.type === "sopralluogo" ? "clipboard" : "tool"}
-            size={12}
-            color={theme.textSecondary}
-          />
-          <ThemedText type="caption" style={{ color: theme.textSecondary, marginLeft: 4 }}>
-            {item.type === "sopralluogo" ? "Sopralluogo" : "Installazione"}
+          <ThemedText
+            type="caption"
+            style={{
+              color: config.color,
+              fontWeight: "600",
+            }}
+          >
+            {new Date(item.date).toLocaleTimeString("it-IT", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </ThemedText>
         </View>
-      </View>
-      <Feather name="chevron-right" size={20} color={theme.textTertiary} />
-    </Pressable>
-  );
+        <View style={styles.appointmentInfo}>
+          <ThemedText type="h4">{item.clientName}</ThemedText>
+          <ThemedText type="small" style={{ color: theme.textSecondary }}>
+            {item.address}
+          </ThemedText>
+          <View style={styles.appointmentTypeRow}>
+            <Feather
+              name={config.icon}
+              size={12}
+              color={theme.textSecondary}
+            />
+            <ThemedText type="caption" style={{ color: theme.textSecondary, marginLeft: 4 }}>
+              {config.label}
+            </ThemedText>
+          </View>
+        </View>
+        <Feather name="chevron-right" size={20} color={theme.textTertiary} />
+      </Pressable>
+    );
+  };
 
   return (
     <ScrollView 
