@@ -59,6 +59,24 @@ function ContextAwareBackButton({ routeName }: { routeName: keyof ProfileStackPa
   );
 }
 
+function ProfileBackButton() {
+  const { theme } = useTheme();
+  const navigation = useNavigation<any>();
+
+  const handleBack = () => {
+    const tabNav = navigation.getParent();
+    if (tabNav) {
+      tabNav.navigate('DashboardTab');
+    }
+  };
+
+  return (
+    <Pressable onPress={handleBack} style={{ padding: Spacing.xs }}>
+      <Feather name="chevron-left" size={24} color={theme.text} />
+    </Pressable>
+  );
+}
+
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
 export default function ProfileStackNavigator() {
@@ -71,6 +89,7 @@ export default function ProfileStackNavigator() {
         component={ProfileScreen}
         options={{
           title: "Profilo",
+          headerLeft: () => <ProfileBackButton />,
         }}
       />
       <Stack.Screen
