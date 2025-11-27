@@ -16,7 +16,7 @@ interface Props {
   onClose: () => void;
   intervention: Intervention;
   companyName: string;
-  onReportSent?: () => void;
+  onReportSent?: (interventionId: string) => void;
 }
 
 export function SendReportModal({ visible, onClose, intervention, companyName, onReportSent }: Props) {
@@ -131,12 +131,10 @@ export function SendReportModal({ visible, onClose, intervention, companyName, o
           
           window.open(mailtoUrl, '_blank');
           
-          onReportSent?.();
-          Alert.alert(
-            'Report Pronto',
-            'L\'email è stata aperta nel tuo browser. Completa l\'invio dalla tua app email.',
-            [{ text: 'OK', onPress: onClose }]
-          );
+          onReportSent?.(intervention.id);
+          setIsSending(false);
+          onClose();
+          return;
         } else {
           Alert.alert(
             'Email Non Disponibile',
@@ -155,7 +153,7 @@ export function SendReportModal({ visible, onClose, intervention, companyName, o
         .map(photo => photo.uri)
         .filter(uri => uri && !uri.startsWith('http'));
 
-      onReportSent?.();
+      onReportSent?.(intervention.id);
 
       const result = await MailComposer.composeAsync({
         recipients: [GBD_EMAIL],
@@ -164,7 +162,9 @@ export function SendReportModal({ visible, onClose, intervention, companyName, o
         attachments: attachments.length > 0 ? attachments : undefined,
       });
 
-      if (result.status === MailComposer.MailComposerStatus.SENT) {
+      if (Platform.OS === 'web') {
+        onClose();
+      } else if (result.status === MailComposer.MailComposerStatus.SENT) {
         Alert.alert(
           'Report Inviato',
           'Il report è stato inviato con successo a GBD.',
@@ -184,12 +184,16 @@ export function SendReportModal({ visible, onClose, intervention, companyName, o
         );
       }
     } catch (error) {
-      onReportSent?.();
-      Alert.alert(
-        'Report Salvato',
-        'L\'intervento è stato marcato come inviato. Verifica che l\'email sia stata inviata.',
-        [{ text: 'OK', onPress: onClose }]
-      );
+      onReportSent?.(intervention.id);
+      if (Platform.OS === 'web') {
+        onClose();
+      } else {
+        Alert.alert(
+          'Report Salvato',
+          'L\'intervento è stato marcato come inviato. Verifica che l\'email sia stata inviata.',
+          [{ text: 'OK', onPress: onClose }]
+        );
+      }
     } finally {
       setIsSending(false);
     }

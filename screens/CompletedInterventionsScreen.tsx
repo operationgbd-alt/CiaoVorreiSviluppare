@@ -38,12 +38,10 @@ export default function CompletedInterventionsScreen({ navigation }: Props) {
 
   const isDitta = user?.role === 'ditta';
 
-  const handleReportSent = () => {
-    if (selectedIntervention) {
-      updateIntervention(selectedIntervention.id, {
-        emailSentTo: 'operation.gbd@gruppo-phoenix.com',
-      });
-    }
+  const handleReportSent = (interventionId: string) => {
+    updateIntervention(interventionId, {
+      emailSentTo: 'operation.gbd@gruppo-phoenix.com',
+    });
   };
 
   const completedInterventions = useMemo(() => {
