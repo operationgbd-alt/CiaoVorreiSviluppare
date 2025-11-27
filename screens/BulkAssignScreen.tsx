@@ -91,43 +91,39 @@ export function BulkAssignScreen() {
     const priorityConfig = PRIORITY_CONFIG[intervention.priority];
 
     return (
-      <Pressable
+      <Card
         key={intervention.id}
-        style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+        style={[
+          styles.interventionCard,
+          isSelected && { borderColor: theme.primary, borderWidth: 2 },
+        ]}
         onPress={() => toggleIntervention(intervention.id)}
       >
-        <Card
-          style={[
-            styles.interventionCard,
-            isSelected && { borderColor: theme.primary, borderWidth: 2 },
-          ]}
-        >
-          <View style={styles.cardRow}>
-            <View style={[
-              styles.checkbox,
-              { borderColor: isSelected ? theme.primary : theme.border },
-              isSelected && { backgroundColor: theme.primary },
-            ]}>
-              {isSelected ? (
-                <Feather name="check" size={14} color="#FFFFFF" />
-              ) : null}
-            </View>
-
-            <View style={[styles.categoryIcon, { backgroundColor: categoryConfig.color + '20' }]}>
-              <Feather name={categoryConfig.icon as any} size={16} color={categoryConfig.color} />
-            </View>
-
-            <View style={styles.cardInfo}>
-              <ThemedText type="h4">{intervention.client.name}</ThemedText>
-              <ThemedText type="caption" style={{ color: theme.textSecondary }}>
-                {intervention.number} - {intervention.client.city}
-              </ThemedText>
-            </View>
-
-            <View style={[styles.priorityDot, { backgroundColor: priorityConfig.color }]} />
+        <View style={styles.cardRow}>
+          <View style={[
+            styles.checkbox,
+            { borderColor: isSelected ? theme.primary : theme.border },
+            isSelected && { backgroundColor: theme.primary },
+          ]}>
+            {isSelected ? (
+              <Feather name="check" size={14} color="#FFFFFF" />
+            ) : null}
           </View>
-        </Card>
-      </Pressable>
+
+          <View style={[styles.categoryIcon, { backgroundColor: categoryConfig.color + '20' }]}>
+            <Feather name={categoryConfig.icon as any} size={16} color={categoryConfig.color} />
+          </View>
+
+          <View style={styles.cardInfo}>
+            <ThemedText type="h4">{intervention.client.name}</ThemedText>
+            <ThemedText type="caption" style={{ color: theme.textSecondary }}>
+              {intervention.number} - {intervention.client.city}
+            </ThemedText>
+          </View>
+
+          <View style={[styles.priorityDot, { backgroundColor: priorityConfig.color }]} />
+        </View>
+      </Card>
     );
   };
 
