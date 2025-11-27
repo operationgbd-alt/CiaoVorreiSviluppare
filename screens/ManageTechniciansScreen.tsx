@@ -8,26 +8,29 @@ import { useTheme } from '@/hooks/useTheme';
 import { useApp } from '@/store/AppContext';
 import { useAuth } from '@/store/AuthContext';
 import { Spacing, BorderRadius, Typography } from '@/constants/theme';
-import { Company } from '@/types';
+import { User } from '@/types';
 
-export function ManageCompaniesScreen() {
+export function ManageTechniciansScreen() {
   const { theme } = useTheme();
-  const { companies, addCompany, deleteCompany, getUsersByCompany, addUser } = useApp();
-  const { registerUser } = useAuth();
+  const { user: currentUser, registerUser } = useAuth();
+  const { users, addUser, deleteUser } = useApp();
   const [showForm, setShowForm] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    address: '',
-    phone: '',
-    email: '',
     username: '',
     password: '',
+    name: '',
+    email: '',
+    phone: '',
   });
-  const [showPassword, setShowPassword] = useState(false);
+
+  const companyTechnicians = users.filter(
+    u => u.role === 'tecnico' && u.companyId === currentUser?.companyId
+  );
 
   const handleSubmit = async () => {
-    if (!formData.name.trim()) {
-      const msg = 'Inserisci il nome della ditta';
+    if (!formData.username.trim() || !formData.name.trim()) {
+      const msg = 'Inserisci username e nome';
       if (Platform.OS === 'web') {
         window.alert(msg);
       } else {
@@ -36,8 +39,8 @@ export function ManageCompaniesScreen() {
       return;
     }
 
-    if (!formData.username.trim() || !formData.password.trim()) {
-      const msg = 'Inserisci username e password per l\'account ditta';
+    if (!formData.password.trim()) {
+      const msg = 'Inserisci la password';
       if (Platform.OS === 'web') {
         window.alert(msg);
       } else {
@@ -56,34 +59,35 @@ export function ManageCompaniesScreen() {
       return;
     }
 
-    const companyName = formData.name.trim();
-    const companyAddress = formData.address.trim();
-    const companyPhone = formData.phone.trim();
-    const companyEmail = formData.email.trim();
+    if (!currentUser?.companyId || !currentUser?.companyName) {
+      const msg = 'Errore: ditta non configurata';
+      if (Platform.OS === 'web') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Errore', msg);
+      }
+      return;
+    }
+
     const username = formData.username.trim().toLowerCase();
     const password = formData.password;
-
-    const companyId = addCompany({
-      name: companyName,
-      address: companyAddress,
-      phone: companyPhone,
-      email: companyEmail,
-    });
+    const name = formData.name.trim();
+    const email = formData.email.trim();
+    const phone = formData.phone.trim();
 
     try {
       const registerResult = await registerUser({
-        username: username,
-        password: password,
-        name: companyName,
-        email: companyEmail,
-        phone: companyPhone,
-        role: 'ditta',
-        companyId: companyId,
-        companyName: companyName,
+        username,
+        password,
+        name,
+        email,
+        phone,
+        role: 'tecnico',
+        companyId: currentUser.companyId,
+        companyName: currentUser.companyName,
       });
 
       if (!registerResult.success) {
-        deleteCompany(companyId);
         const errorMsg = registerResult.error || 'Errore durante la creazione dell\'account';
         if (Platform.OS === 'web') {
           window.alert(errorMsg);
@@ -94,27 +98,32 @@ export function ManageCompaniesScreen() {
       }
 
       addUser({
-        username: username,
-        name: companyName,
-        email: companyEmail,
-        phone: companyPhone,
-        role: 'ditta',
-        companyId: companyId,
-        companyName: companyName,
+        username,
+        name,
+        email,
+        phone,
+        role: 'tecnico',
+        companyId: currentUser.companyId,
+        companyName: currentUser.companyName,
       });
 
-      const successMsg = `Ditta "${companyName}" creata con successo!\n\nCredenziali:\nUsername: ${username}\nPassword: ${password}`;
+      const successMsg = `Tecnico "${name}" creato con successo!\n\nCredenziali:\nUsername: ${username}\nPassword: ${password}`;
 
-      setFormData({ name: '', address: '', phone: '', email: '', username: '', password: '' });
+      setFormData({
+        username: '',
+        password: '',
+        name: '',
+        email: '',
+        phone: '',
+      });
       setShowForm(false);
 
       if (Platform.OS === 'web') {
         window.alert(successMsg);
       } else {
-        Alert.alert('Ditta Creata', successMsg);
+        Alert.alert('Tecnico Creato', successMsg);
       }
     } catch (error) {
-      deleteCompany(companyId);
       const errorMsg = 'Errore durante la creazione dell\'account. Riprova.';
       if (Platform.OS === 'web') {
         window.alert(errorMsg);
@@ -124,84 +133,66 @@ export function ManageCompaniesScreen() {
     }
   };
 
-  const handleDelete = (company: Company) => {
-    const users = getUsersByCompany(company.id);
-    const confirmMessage = users.length > 0
-      ? `Eliminare "${company.name}"? Ci sono ${users.length} utenti associati.`
-      : `Eliminare "${company.name}"?`;
-
+  const handleDelete = (user: User) => {
+    const confirmMessage = `Eliminare il tecnico "${user.name}"?`;
     if (Platform.OS === 'web') {
       if (window.confirm(confirmMessage)) {
-        deleteCompany(company.id);
+        deleteUser(user.id);
       }
     } else {
       Alert.alert('Conferma', confirmMessage, [
         { text: 'Annulla', style: 'cancel' },
-        { text: 'Elimina', style: 'destructive', onPress: () => deleteCompany(company.id) },
+        { text: 'Elimina', style: 'destructive', onPress: () => deleteUser(user.id) },
       ]);
     }
   };
 
-  const renderCompanyCard = (company: Company) => {
-    const users = getUsersByCompany(company.id);
-    const technicians = users.filter(u => u.role === 'tecnico');
-
-    return (
-      <Card key={company.id} style={styles.card}>
-        <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: theme.primaryLight }]}>
-            <Feather name="home" size={24} color={theme.primary} />
-          </View>
-          <View style={styles.cardInfo}>
-            <ThemedText type="h4">{company.name}</ThemedText>
-            <ThemedText type="small" style={{ color: theme.textSecondary }}>
-              {technicians.length} tecnici
-            </ThemedText>
-          </View>
-          <Pressable
-            onPress={() => handleDelete(company)}
-            style={[styles.deleteButton, { backgroundColor: theme.danger + '20' }]}
-          >
-            <Feather name="trash-2" size={18} color={theme.danger} />
-          </Pressable>
+  const renderTechnicianCard = (technician: User) => (
+    <Card key={technician.id} style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={[styles.iconContainer, { backgroundColor: theme.primaryLight }]}>
+          <Feather name="tool" size={24} color={theme.primary} />
         </View>
-        
-        {company.address ? (
-          <View style={styles.detailRow}>
-            <Feather name="map-pin" size={14} color={theme.textSecondary} />
-            <ThemedText type="small" style={[styles.detailText, { color: theme.textSecondary }]}>
-              {company.address}
-            </ThemedText>
-          </View>
-        ) : null}
-        
-        {company.phone ? (
-          <View style={styles.detailRow}>
-            <Feather name="phone" size={14} color={theme.textSecondary} />
-            <ThemedText type="small" style={[styles.detailText, { color: theme.textSecondary }]}>
-              {company.phone}
-            </ThemedText>
-          </View>
-        ) : null}
-        
-        {company.email ? (
-          <View style={styles.detailRow}>
-            <Feather name="mail" size={14} color={theme.textSecondary} />
-            <ThemedText type="small" style={[styles.detailText, { color: theme.textSecondary }]}>
-              {company.email}
-            </ThemedText>
-          </View>
-        ) : null}
-      </Card>
-    );
-  };
+        <View style={styles.cardInfo}>
+          <ThemedText type="h4">{technician.name}</ThemedText>
+          <ThemedText type="small" style={{ color: theme.textSecondary }}>
+            @{technician.username}
+          </ThemedText>
+        </View>
+        <Pressable
+          onPress={() => handleDelete(technician)}
+          style={[styles.deleteButton, { backgroundColor: theme.danger + '20' }]}
+        >
+          <Feather name="trash-2" size={18} color={theme.danger} />
+        </Pressable>
+      </View>
+
+      {technician.email ? (
+        <View style={styles.detailRow}>
+          <Feather name="mail" size={14} color={theme.textSecondary} />
+          <ThemedText type="small" style={[styles.detailText, { color: theme.textSecondary }]}>
+            {technician.email}
+          </ThemedText>
+        </View>
+      ) : null}
+
+      {technician.phone ? (
+        <View style={styles.detailRow}>
+          <Feather name="phone" size={14} color={theme.textSecondary} />
+          <ThemedText type="small" style={[styles.detailText, { color: theme.textSecondary }]}>
+            {technician.phone}
+          </ThemedText>
+        </View>
+      ) : null}
+    </Card>
+  );
 
   return (
     <ScreenScrollView>
       <View style={styles.header}>
-        <ThemedText type="h2">Gestione Ditte</ThemedText>
+        <ThemedText type="h2">I Tuoi Tecnici</ThemedText>
         <ThemedText type="small" style={{ color: theme.textSecondary }}>
-          {companies.length} ditte registrate
+          {companyTechnicians.length} tecnici registrati
         </ThemedText>
       </View>
 
@@ -211,60 +202,13 @@ export function ManageCompaniesScreen() {
       >
         <Feather name={showForm ? 'x' : 'plus'} size={20} color="#FFFFFF" />
         <ThemedText style={styles.addButtonText}>
-          {showForm ? 'Annulla' : 'Nuova Ditta'}
+          {showForm ? 'Annulla' : 'Nuovo Tecnico'}
         </ThemedText>
       </Pressable>
 
       {showForm ? (
         <Card style={styles.formCard}>
-          <ThemedText type="h4" style={styles.formTitle}>Nuova Ditta</ThemedText>
-          
-          <View style={styles.inputGroup}>
-            <ThemedText type="small" style={styles.label}>Nome Ditta *</ThemedText>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
-              placeholder="Es. Solar Tech S.r.l."
-              placeholderTextColor={theme.textSecondary}
-              value={formData.name}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <ThemedText type="small" style={styles.label}>Indirizzo</ThemedText>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
-              placeholder="Es. Via Roma 123, Milano"
-              placeholderTextColor={theme.textSecondary}
-              value={formData.address}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, address: text }))}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <ThemedText type="small" style={styles.label}>Telefono</ThemedText>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
-              placeholder="Es. +39 02 12345678"
-              placeholderTextColor={theme.textSecondary}
-              value={formData.phone}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, phone: text }))}
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <ThemedText type="small" style={styles.label}>Email</ThemedText>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
-              placeholder="Es. info@solartech.it"
-              placeholderTextColor={theme.textSecondary}
-              value={formData.email}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
+          <ThemedText type="h4" style={styles.formTitle}>Nuovo Tecnico</ThemedText>
 
           <View style={[styles.credentialsSection, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}>
             <View style={styles.credentialsHeader}>
@@ -278,7 +222,7 @@ export function ManageCompaniesScreen() {
               <ThemedText type="small" style={styles.label}>Username *</ThemedText>
               <TextInput
                 style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text, borderColor: theme.border }]}
-                placeholder="Es. solartech"
+                placeholder="Es. mario.rossi"
                 placeholderTextColor={theme.textSecondary}
                 value={formData.username}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, username: text }))}
@@ -310,25 +254,61 @@ export function ManageCompaniesScreen() {
             </View>
           </View>
 
+          <View style={styles.inputGroup}>
+            <ThemedText type="small" style={styles.label}>Nome Completo *</ThemedText>
+            <TextInput
+              style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
+              placeholder="Es. Mario Rossi"
+              placeholderTextColor={theme.textSecondary}
+              value={formData.name}
+              onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <ThemedText type="small" style={styles.label}>Email</ThemedText>
+            <TextInput
+              style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
+              placeholder="Es. mario@azienda.it"
+              placeholderTextColor={theme.textSecondary}
+              value={formData.email}
+              onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <ThemedText type="small" style={styles.label}>Telefono</ThemedText>
+            <TextInput
+              style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
+              placeholder="Es. +39 333 1234567"
+              placeholderTextColor={theme.textSecondary}
+              value={formData.phone}
+              onChangeText={(text) => setFormData(prev => ({ ...prev, phone: text }))}
+              keyboardType="phone-pad"
+            />
+          </View>
+
           <Pressable
             style={[styles.submitButton, { backgroundColor: theme.success }]}
             onPress={handleSubmit}
           >
             <Feather name="check" size={20} color="#FFFFFF" />
-            <ThemedText style={styles.submitButtonText}>Crea Ditta</ThemedText>
+            <ThemedText style={styles.submitButtonText}>Crea Tecnico</ThemedText>
           </Pressable>
         </Card>
       ) : null}
 
       <View style={styles.list}>
-        {companies.map(renderCompanyCard)}
+        {companyTechnicians.map(renderTechnicianCard)}
       </View>
 
-      {companies.length === 0 ? (
+      {companyTechnicians.length === 0 && !showForm ? (
         <View style={styles.emptyState}>
-          <Feather name="home" size={48} color={theme.textSecondary} />
-          <ThemedText type="body" style={{ color: theme.textSecondary, marginTop: Spacing.md }}>
-            Nessuna ditta registrata
+          <Feather name="users" size={48} color={theme.textSecondary} />
+          <ThemedText type="body" style={{ color: theme.textSecondary, marginTop: Spacing.md, textAlign: 'center' }}>
+            Nessun tecnico registrato.{'\n'}Crea il primo tecnico per iniziare.
           </ThemedText>
         </View>
       ) : null}
@@ -379,7 +359,6 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    marginTop: Spacing.md,
     marginBottom: Spacing.md,
   },
   credentialsHeader: {
@@ -427,7 +406,7 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   iconContainer: {
     width: 48,

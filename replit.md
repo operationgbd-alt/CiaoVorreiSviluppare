@@ -251,6 +251,28 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
     - Badge "Report inviato" per interventi già inviati (emailSentTo valorizzato)
   - Button component esteso con prop variant: 'primary' | 'secondary' | 'danger'
   - Nuovo componente: components/SendReportModal.tsx
+- 2025-11-27: Implementato sistema creazione credenziali
+  - AuthContext esteso con funzione registerUser per registrazione utenti demo
+    - Salvataggio credenziali in AsyncStorage (solo per demo mode)
+    - Verifica duplicati username
+    - Password minimo 6 caratteri
+  - ManageCompaniesScreen: MASTER crea ditte con credenziali
+    - Sezione "Credenziali Account Ditta" con username/password
+    - Toggle visibilità password
+    - Rollback ditta se registrazione fallisce
+    - Alert con riepilogo credenziali create
+  - ManageUsersScreen: MASTER crea utenti con credenziali
+    - Sezione "Credenziali Accesso" nel form
+    - Toggle visibilità password
+    - Alert con riepilogo credenziali create
+  - ManageTechniciansScreen: DITTA crea tecnici propri
+    - Nuova schermata per gestione tecnici della ditta
+    - Form con username/password
+    - Lista tecnici della propria ditta
+    - Navigazione da ProfileScreen per ruolo DITTA
+  - ProfileScreen aggiornato:
+    - Sezione "Gestione Ditta" per DITTA mostra "Gestione Tecnici"
+  - ProfileStackNavigator: aggiunta route ManageTechnicians
 
 ## Development Notes
 - Hot Module Reloading attivo per modifiche codice

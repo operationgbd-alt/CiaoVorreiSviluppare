@@ -12,18 +12,33 @@ interface AuthUser {
   companyName: string | null;
 }
 
+interface RegisterUserData {
+  username: string;
+  password: string;
+  role: 'ditta' | 'tecnico';
+  name: string;
+  email: string;
+  phone?: string;
+  companyId: string;
+  companyName: string;
+}
+
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  registerUser: (userData: RegisterUserData) => Promise<{ success: boolean; userId: string; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const TOKEN_KEY = 'solartech_auth_token';
 const USER_KEY = 'solartech_user';
+const REGISTERED_USERS_KEY = 'solartech_registered_users';
+
+const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = {
   gbd: {
@@ -103,12 +118,18 @@ const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [registeredUsers, setRegisteredUsers] = useState<Record<string, { password: string; user: AuthUser }>>({});
 
   const loadStoredAuth = useCallback(async () => {
     try {
       const storedUser = await AsyncStorage.getItem(USER_KEY);
       if (storedUser) {
         setUser(JSON.parse(storedUser));
+      }
+      
+      const storedRegisteredUsers = await AsyncStorage.getItem(REGISTERED_USERS_KEY);
+      if (storedRegisteredUsers) {
+        setRegisteredUsers(JSON.parse(storedRegisteredUsers));
       }
     } catch (error) {
       console.error('Error loading stored auth:', error);
@@ -143,8 +164,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: true };
     }
 
+    const registeredAccount = registeredUsers[username.toLowerCase()];
+    if (registeredAccount && registeredAccount.password === password) {
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(registeredAccount.user));
+      setUser(registeredAccount.user);
+      return { success: true };
+    }
+
     return { success: false, error: 'Credenziali non valide' };
-  }, []);
+  }, [registeredUsers]);
+
+  const registerUser = useCallback(async (userData: RegisterUserData) => {
+    const usernameKey = userData.username.toLowerCase();
+    
+    if (DEMO_ACCOUNTS[usernameKey] || registeredUsers[usernameKey]) {
+      return { success: false, userId: '', error: 'Username già in uso' };
+    }
+
+    const userId = generateId();
+    const newUser: AuthUser = {
+      id: userId,
+      username: userData.username.toLowerCase(),
+      role: userData.role,
+      name: userData.name,
+      email: userData.email,
+      companyId: userData.companyId,
+      companyName: userData.companyName,
+    };
+
+    const updatedRegisteredUsers = {
+      ...registeredUsers,
+      [usernameKey]: {
+        password: userData.password,
+        user: newUser,
+      },
+    };
+
+    try {
+      await AsyncStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(updatedRegisteredUsers));
+      setRegisteredUsers(updatedRegisteredUsers);
+      return { success: true, userId };
+    } catch (error) {
+      console.error('Error registering user:', error);
+      return { success: false, userId: '', error: 'Errore durante la registrazione' };
+    }
+  }, [registeredUsers]);
 
   const logout = useCallback(async () => {
     try {
@@ -163,6 +227,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: user !== null,
     login,
     logout,
+    registerUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

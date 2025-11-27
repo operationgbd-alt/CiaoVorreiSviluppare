@@ -6,6 +6,7 @@ import { ManageUsersScreen } from "@/screens/ManageUsersScreen";
 import { CreateInterventionScreen } from "@/screens/CreateInterventionScreen";
 import { CompanyAccountScreen } from "@/screens/CompanyAccountScreen";
 import { CloseInterventionsScreen } from "@/screens/CloseInterventionsScreen";
+import { ManageTechniciansScreen } from "@/screens/ManageTechniciansScreen";
 import { useTheme } from "@/hooks/useTheme";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
 
@@ -16,6 +17,7 @@ export type ProfileStackParamList = {
   CreateIntervention: undefined;
   CompanyAccount: undefined;
   CloseInterventions: undefined;
+  ManageTechnicians: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -65,6 +67,13 @@ export default function ProfileStackNavigator() {
         component={CloseInterventionsScreen}
         options={{
           title: "Chiudi Interventi",
+        }}
+      />
+      <Stack.Screen
+        name="ManageTechnicians"
+        component={ManageTechniciansScreen}
+        options={{
+          title: "Gestione Tecnici",
         }}
       />
     </Stack.Navigator>

@@ -172,6 +172,13 @@ export default function ProfileScreen() {
               undefined,
               () => navigation.navigate('CompanyAccount')
             )}
+            {renderSettingItem(
+              "users",
+              "Gestione Tecnici",
+              "Crea e modifica tecnici della tua ditta",
+              undefined,
+              () => navigation.navigate('ManageTechnicians')
+            )}
           </View>
         </View>
       ) : null}

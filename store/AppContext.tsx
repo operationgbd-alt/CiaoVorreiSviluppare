@@ -17,7 +17,7 @@ interface AppContextType {
   updateAppointment: (id: string, appointment: Partial<Appointment>) => void;
   deleteAppointment: (id: string) => void;
   getInterventionById: (id: string) => Intervention | undefined;
-  addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => void;
+  addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => string;
   updateCompany: (id: string, updates: Partial<Company>) => void;
   deleteCompany: (id: string) => void;
   addUser: (user: Omit<User, 'id' | 'createdAt'>) => void;
@@ -616,13 +616,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [interventionsData]
   );
 
-  const addCompany = useCallback((company: Omit<Company, 'id' | 'createdAt'>) => {
+  const addCompany = useCallback((company: Omit<Company, 'id' | 'createdAt'>): string => {
+    const companyId = generateId();
     const newCompany: Company = {
       ...company,
-      id: generateId(),
+      id: companyId,
       createdAt: Date.now(),
     };
     setCompaniesData(prev => [...prev, newCompany]);
+    return companyId;
   }, []);
 
   const updateCompany = useCallback((id: string, updates: Partial<Company>) => {

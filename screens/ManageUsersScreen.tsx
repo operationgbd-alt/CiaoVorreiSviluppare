@@ -6,15 +6,19 @@ import { ThemedText } from '@/components/ThemedText';
 import { Card } from '@/components/Card';
 import { useTheme } from '@/hooks/useTheme';
 import { useApp } from '@/store/AppContext';
+import { useAuth } from '@/store/AuthContext';
 import { Spacing, BorderRadius, Typography } from '@/constants/theme';
 import { User } from '@/types';
 
 export function ManageUsersScreen() {
   const { theme } = useTheme();
   const { users, companies, addUser, deleteUser } = useApp();
+  const { registerUser } = useAuth();
   const [showForm, setShowForm] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
+    password: '',
     name: '',
     email: '',
     phone: '',
@@ -25,9 +29,29 @@ export function ManageUsersScreen() {
   const technicians = users.filter(u => u.role === 'tecnico');
   const companyAccounts = users.filter(u => u.role === 'ditta');
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.username.trim() || !formData.name.trim()) {
       const msg = 'Inserisci username e nome';
+      if (Platform.OS === 'web') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Errore', msg);
+      }
+      return;
+    }
+
+    if (!formData.password.trim()) {
+      const msg = 'Inserisci la password';
+      if (Platform.OS === 'web') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Errore', msg);
+      }
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      const msg = 'La password deve essere di almeno 6 caratteri';
       if (Platform.OS === 'web') {
         window.alert(msg);
       } else {
@@ -48,25 +72,73 @@ export function ManageUsersScreen() {
 
     const company = companies.find(c => c.id === formData.companyId);
 
-    addUser({
-      username: formData.username.trim().toLowerCase(),
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      phone: formData.phone.trim(),
-      role: formData.role,
-      companyId: formData.companyId,
-      companyName: company?.name || null,
-    });
+    const username = formData.username.trim().toLowerCase();
+    const password = formData.password;
+    const name = formData.name.trim();
+    const email = formData.email.trim();
+    const phone = formData.phone.trim();
+    const role = formData.role;
+    const companyId = formData.companyId;
+    const companyName = company?.name || '';
 
-    setFormData({
-      username: '',
-      name: '',
-      email: '',
-      phone: '',
-      role: 'tecnico',
-      companyId: '',
-    });
-    setShowForm(false);
+    try {
+      const registerResult = await registerUser({
+        username,
+        password,
+        name,
+        email,
+        phone,
+        role,
+        companyId,
+        companyName,
+      });
+
+      if (!registerResult.success) {
+        const errorMsg = registerResult.error || 'Errore durante la creazione dell\'account';
+        if (Platform.OS === 'web') {
+          window.alert(errorMsg);
+        } else {
+          Alert.alert('Errore', errorMsg);
+        }
+        return;
+      }
+
+      addUser({
+        username,
+        name,
+        email,
+        phone,
+        role,
+        companyId,
+        companyName: companyName || null,
+      });
+
+      const successMsg = `Utente "${name}" creato con successo!\n\nCredenziali:\nUsername: ${username}\nPassword: ${password}`;
+      
+      setFormData({
+        username: '',
+        password: '',
+        name: '',
+        email: '',
+        phone: '',
+        role: 'tecnico',
+        companyId: '',
+      });
+      setShowForm(false);
+
+      if (Platform.OS === 'web') {
+        window.alert(successMsg);
+      } else {
+        Alert.alert('Utente Creato', successMsg);
+      }
+    } catch (error) {
+      const errorMsg = 'Errore durante la creazione dell\'account. Riprova.';
+      if (Platform.OS === 'web') {
+        window.alert(errorMsg);
+      } else {
+        Alert.alert('Errore', errorMsg);
+      }
+    }
   };
 
   const handleDelete = (user: User) => {
@@ -248,16 +320,48 @@ export function ManageUsersScreen() {
             </View>
           </View>
 
-          <View style={styles.inputGroup}>
-            <ThemedText type="small" style={styles.label}>Username *</ThemedText>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text, borderColor: theme.border }]}
-              placeholder="Es. mario.rossi"
-              placeholderTextColor={theme.textSecondary}
-              value={formData.username}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, username: text }))}
-              autoCapitalize="none"
-            />
+          <View style={[styles.credentialsSection, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}>
+            <View style={styles.credentialsHeader}>
+              <Feather name="lock" size={18} color={theme.primary} />
+              <ThemedText type="h4" style={{ marginLeft: Spacing.sm, color: theme.primary }}>
+                Credenziali Accesso
+              </ThemedText>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <ThemedText type="small" style={styles.label}>Username *</ThemedText>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text, borderColor: theme.border }]}
+                placeholder="Es. mario.rossi"
+                placeholderTextColor={theme.textSecondary}
+                value={formData.username}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, username: text }))}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <ThemedText type="small" style={styles.label}>Password *</ThemedText>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={[styles.passwordInput, { backgroundColor: theme.backgroundDefault, color: theme.text, borderColor: theme.border }]}
+                  placeholder="Min. 6 caratteri"
+                  placeholderTextColor={theme.textSecondary}
+                  value={formData.password}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, password: text }))}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <Pressable
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color={theme.textSecondary} />
+                </Pressable>
+              </View>
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
@@ -374,6 +478,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: Spacing.md,
     fontSize: Typography.body.fontSize,
+  },
+  credentialsSection: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    marginBottom: Spacing.md,
+  },
+  credentialsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.md,
+    fontSize: Typography.body.fontSize,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: Spacing.md,
+    padding: Spacing.xs,
   },
   roleButtons: {
     flexDirection: 'row',
