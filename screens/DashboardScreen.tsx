@@ -125,18 +125,10 @@ export default function DashboardScreen() {
               ]}
               onPress={() => {
                 const nav = navigation.getParent() as any;
-                nav?.navigate("ProfileTab");
-                setTimeout(() => {
-                  nav?.dispatch(
-                    CommonActions.navigate({
-                      name: "ProfileTab",
-                      params: {
-                        screen: "ManageCompanies",
-                        initial: false,
-                      },
-                    })
-                  );
-                }, 50);
+                nav?.navigate("ProfileTab", { 
+                  screen: "ManageCompanies",
+                  params: { origin: 'Dashboard' }
+                });
               }}
             >
               <Feather name="home" size={24} color={theme.secondary} />

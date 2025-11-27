@@ -139,21 +139,21 @@ export default function ProfileScreen() {
               "Gestione Ditte",
               "Crea e modifica aziende installatrici",
               undefined,
-              () => navigation.navigate('ManageCompanies')
+              () => navigation.navigate('ManageCompanies', { origin: 'Profile' })
             )}
             {renderSettingItem(
               "users",
               "Gestione Utenti",
               "Crea tecnici e account ditta",
               undefined,
-              () => navigation.navigate('ManageUsers')
+              () => navigation.navigate('ManageUsers', { origin: 'Profile' })
             )}
             {renderSettingItem(
               "plus-circle",
               "Nuovo Intervento",
               "Crea e assegna un intervento",
               undefined,
-              () => navigation.navigate('CreateIntervention')
+              () => navigation.navigate('CreateIntervention', { origin: 'Profile' })
             )}
           </View>
         </View>
@@ -170,14 +170,14 @@ export default function ProfileScreen() {
               "Account Ditta",
               "Statistiche, tecnici e chiusura interventi",
               undefined,
-              () => navigation.navigate('CompanyAccount')
+              () => navigation.navigate('CompanyAccount', { origin: 'Profile' })
             )}
             {renderSettingItem(
               "users",
               "Gestione Tecnici",
               "Crea e modifica tecnici della tua ditta",
               undefined,
-              () => navigation.navigate('ManageTechnicians')
+              () => navigation.navigate('ManageTechnicians', { origin: 'Profile' })
             )}
           </View>
         </View>

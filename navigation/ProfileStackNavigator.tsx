@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import ProfileScreen from "@/screens/ProfileScreen";
 import { ManageCompaniesScreen } from "@/screens/ManageCompaniesScreen";
@@ -14,15 +14,35 @@ import { useTheme } from "@/hooks/useTheme";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
 import { Spacing } from "@/constants/theme";
 
-function BackButton() {
+export type ProfileStackParamList = {
+  Profile: undefined;
+  ManageCompanies: { origin?: 'Dashboard' | 'Profile' } | undefined;
+  ManageUsers: { origin?: 'Dashboard' | 'Profile' } | undefined;
+  CreateIntervention: { origin?: 'Dashboard' | 'Profile' } | undefined;
+  CompanyAccount: { origin?: 'Dashboard' | 'Profile' } | undefined;
+  CloseInterventions: { origin?: 'Dashboard' | 'Profile' } | undefined;
+  ManageTechnicians: { origin?: 'Dashboard' | 'Profile' } | undefined;
+};
+
+function ContextAwareBackButton({ routeName }: { routeName: keyof ProfileStackParamList }) {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
+  const route = useRoute<RouteProp<ProfileStackParamList, typeof routeName>>();
+  
+  const origin = (route.params as any)?.origin;
 
   const handleBack = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Profile' }],
-    });
+    if (origin === 'Dashboard') {
+      const tabNav = navigation.getParent();
+      if (tabNav) {
+        tabNav.navigate('DashboardTab');
+      }
+    } else {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Profile' }],
+      });
+    }
   };
 
   return (
@@ -31,16 +51,6 @@ function BackButton() {
     </Pressable>
   );
 }
-
-export type ProfileStackParamList = {
-  Profile: undefined;
-  ManageCompanies: undefined;
-  ManageUsers: undefined;
-  CreateIntervention: undefined;
-  CompanyAccount: undefined;
-  CloseInterventions: undefined;
-  ManageTechnicians: undefined;
-};
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
@@ -61,7 +71,7 @@ export default function ProfileStackNavigator() {
         component={ManageCompaniesScreen}
         options={{
           title: "Gestione Ditte",
-          headerLeft: () => <BackButton />,
+          headerLeft: () => <ContextAwareBackButton routeName="ManageCompanies" />,
         }}
       />
       <Stack.Screen
@@ -69,7 +79,7 @@ export default function ProfileStackNavigator() {
         component={ManageUsersScreen}
         options={{
           title: "Gestione Utenti",
-          headerLeft: () => <BackButton />,
+          headerLeft: () => <ContextAwareBackButton routeName="ManageUsers" />,
         }}
       />
       <Stack.Screen
@@ -77,7 +87,7 @@ export default function ProfileStackNavigator() {
         component={CreateInterventionScreen}
         options={{
           title: "Nuovo Intervento",
-          headerLeft: () => <BackButton />,
+          headerLeft: () => <ContextAwareBackButton routeName="CreateIntervention" />,
         }}
       />
       <Stack.Screen
@@ -85,7 +95,7 @@ export default function ProfileStackNavigator() {
         component={CompanyAccountScreen}
         options={{
           title: "Account Ditta",
-          headerLeft: () => <BackButton />,
+          headerLeft: () => <ContextAwareBackButton routeName="CompanyAccount" />,
         }}
       />
       <Stack.Screen
@@ -93,7 +103,7 @@ export default function ProfileStackNavigator() {
         component={CloseInterventionsScreen}
         options={{
           title: "Chiudi Interventi",
-          headerLeft: () => <BackButton />,
+          headerLeft: () => <ContextAwareBackButton routeName="CloseInterventions" />,
         }}
       />
       <Stack.Screen
@@ -101,7 +111,7 @@ export default function ProfileStackNavigator() {
         component={ManageTechniciansScreen}
         options={{
           title: "Gestione Tecnici",
-          headerLeft: () => <BackButton />,
+          headerLeft: () => <ContextAwareBackButton routeName="ManageTechnicians" />,
         }}
       />
     </Stack.Navigator>
