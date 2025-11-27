@@ -7,6 +7,7 @@ SolarTech is a cross-platform mobile application (Android and iOS) designed for 
 - Lingua: Italiano
 - Interfaccia ottimizzata per uso sul campo con pulsanti grandi
 - Workflow unificato per tutti i tipi di intervento
+- Freccia "torna indietro" sempre visibile in tutte le pagine di navigazione
 
 ## System Architecture
 
