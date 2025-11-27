@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { StyleSheet, View, Pressable } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { RouteProp, useRoute, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
@@ -62,57 +62,49 @@ export function CompanyInterventionsScreen() {
     const priorityConfig = PRIORITY_CONFIG[item.priority];
 
     return (
-      <Pressable
-        style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
-        onPress={() => {
-          const nav = navigation.getParent() as any;
-          nav?.navigate("InterventionsTab", {
-            screen: "InterventionDetail",
-            params: { interventionId: item.id },
-          });
-        }}
+      <Card 
+        style={styles.card}
+        onPress={() => navigation.navigate("InterventionDetail", { interventionId: item.id })}
       >
-        <Card style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.categoryIcon, { backgroundColor: categoryConfig.color + '20' }]}>
-              <Feather name={categoryConfig.icon as any} size={18} color={categoryConfig.color} />
-            </View>
-            <View style={styles.cardInfo}>
-              <ThemedText type="h4">{item.client.name}</ThemedText>
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                {item.number} - {item.client.city}
+        <View style={styles.cardHeader}>
+          <View style={[styles.categoryIcon, { backgroundColor: categoryConfig.color + '20' }]}>
+            <Feather name={categoryConfig.icon as any} size={18} color={categoryConfig.color} />
+          </View>
+          <View style={styles.cardInfo}>
+            <ThemedText type="h4">{item.client.name}</ThemedText>
+            <ThemedText type="small" style={{ color: theme.textSecondary }}>
+              {item.number} - {item.client.city}
+            </ThemedText>
+          </View>
+          <View style={[styles.priorityDot, { backgroundColor: priorityConfig.color }]} />
+        </View>
+
+        <ThemedText type="small" numberOfLines={2} style={{ color: theme.textSecondary, marginTop: Spacing.sm }}>
+          {item.description}
+        </ThemedText>
+
+        <View style={styles.cardFooter}>
+          <View style={[styles.statusBadge, { backgroundColor: statusConfig.color + '20' }]}>
+            <ThemedText type="caption" style={{ color: statusConfig.color, fontWeight: '600' }}>
+              {statusConfig.label}
+            </ThemedText>
+          </View>
+          {item.technicianName ? (
+            <View style={styles.technicianInfo}>
+              <Feather name="user" size={12} color={theme.textSecondary} />
+              <ThemedText type="caption" style={{ color: theme.textSecondary, marginLeft: 4 }}>
+                {item.technicianName}
               </ThemedText>
             </View>
-            <View style={[styles.priorityDot, { backgroundColor: priorityConfig.color }]} />
-          </View>
-
-          <ThemedText type="small" numberOfLines={2} style={{ color: theme.textSecondary, marginTop: Spacing.sm }}>
-            {item.description}
-          </ThemedText>
-
-          <View style={styles.cardFooter}>
-            <View style={[styles.statusBadge, { backgroundColor: statusConfig.color + '20' }]}>
-              <ThemedText type="caption" style={{ color: statusConfig.color, fontWeight: '600' }}>
-                {statusConfig.label}
+          ) : (
+            <View style={[styles.unassignedBadge, { backgroundColor: theme.secondary + '20' }]}>
+              <ThemedText type="caption" style={{ color: theme.secondary }}>
+                Non assegnato
               </ThemedText>
             </View>
-            {item.technicianName ? (
-              <View style={styles.technicianInfo}>
-                <Feather name="user" size={12} color={theme.textSecondary} />
-                <ThemedText type="caption" style={{ color: theme.textSecondary, marginLeft: 4 }}>
-                  {item.technicianName}
-                </ThemedText>
-              </View>
-            ) : (
-              <View style={[styles.unassignedBadge, { backgroundColor: theme.secondary + '20' }]}>
-                <ThemedText type="caption" style={{ color: theme.secondary }}>
-                  Non assegnato
-                </ThemedText>
-              </View>
-            )}
-          </View>
-        </Card>
-      </Pressable>
+          )}
+        </View>
+      </Card>
     );
   };
 
