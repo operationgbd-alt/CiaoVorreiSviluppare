@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useNavigation, useNavigationState } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import DashboardScreen from "@/screens/DashboardScreen";
 import CalendarScreen from "@/screens/CalendarScreen";
@@ -20,22 +20,15 @@ import { Spacing } from "@/constants/theme";
 function BackButton() {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
-  const routes = useNavigationState((state) => state.routes);
-  const stackIndex = useNavigationState((state) => state.index);
 
   const handleBack = () => {
-    if (stackIndex > 0 && routes[stackIndex - 1]?.name !== routes[stackIndex]?.name) {
+    if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      const parent = navigation.getParent();
-      if (parent?.canGoBack()) {
-        parent.goBack();
-      } else {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Dashboard' }],
-        });
-      }
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Dashboard' }],
+      });
     }
   };
 
