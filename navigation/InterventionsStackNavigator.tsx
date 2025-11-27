@@ -39,6 +39,24 @@ function BackButton() {
   );
 }
 
+function InterventionsListBackButton() {
+  const { theme } = useTheme();
+  const navigation = useNavigation<any>();
+
+  const handleBack = () => {
+    const tabNav = navigation.getParent();
+    if (tabNav) {
+      tabNav.navigate('DashboardTab');
+    }
+  };
+
+  return (
+    <Pressable onPress={handleBack} style={{ padding: Spacing.xs }}>
+      <Feather name="chevron-left" size={24} color={theme.text} />
+    </Pressable>
+  );
+}
+
 export default function InterventionsStackNavigator() {
   const { theme, isDark } = useTheme();
   const commonOptions = getCommonScreenOptions({ theme, isDark });
@@ -50,6 +68,7 @@ export default function InterventionsStackNavigator() {
         component={InterventionsListScreen}
         options={{
           title: "Interventi",
+          headerLeft: () => <InterventionsListBackButton />,
         }}
       />
       <Stack.Screen

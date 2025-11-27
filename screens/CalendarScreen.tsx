@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { StyleSheet, View, Pressable, FlatList } from "react-native";
+import { StyleSheet, View, Pressable, ScrollView } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -91,8 +91,14 @@ export default function CalendarScreen({ navigation }: Props) {
     return !!appointmentsByDate[date.toDateString()];
   };
 
-  const renderAppointment = ({ item }: { item: Appointment }) => (
+  const getAppointmentColor = (apt: Appointment) => {
+    if (apt.type === "sopralluogo") return theme.secondary;
+    return theme.primary;
+  };
+
+  const renderAppointment = (item: Appointment) => (
     <Pressable
+      key={item.id}
       style={({ pressed }) => [
         styles.appointmentCard,
         { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.8 : 1 },
@@ -102,16 +108,13 @@ export default function CalendarScreen({ navigation }: Props) {
       <View
         style={[
           styles.appointmentTime,
-          {
-            backgroundColor:
-              item.type === "sopralluogo" ? theme.secondary + "20" : theme.primary + "20",
-          },
+          { backgroundColor: getAppointmentColor(item) + "20" },
         ]}
       >
         <ThemedText
           type="caption"
           style={{
-            color: item.type === "sopralluogo" ? theme.secondary : theme.primary,
+            color: getAppointmentColor(item),
             fontWeight: "600",
           }}
         >
@@ -142,8 +145,15 @@ export default function CalendarScreen({ navigation }: Props) {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
-      <View style={[styles.calendarContainer, { paddingTop: headerHeight + Spacing.lg }]}>
+    <ScrollView 
+      style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
+      contentContainerStyle={{ 
+        paddingTop: headerHeight + Spacing.md,
+        paddingBottom: tabBarHeight + Spacing.xl 
+      }}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.calendarContainer}>
         <View style={styles.monthHeader}>
           <Pressable onPress={goToPrevMonth} style={styles.monthButton}>
             <Feather name="chevron-left" size={24} color={theme.primary} />
@@ -190,14 +200,14 @@ export default function CalendarScreen({ navigation }: Props) {
                   >
                     {date.getDate()}
                   </ThemedText>
-                  {hasAppointments(date) && (
+                  {hasAppointments(date) ? (
                     <View
                       style={[
                         styles.dot,
                         { backgroundColor: isSelected(date) ? "#FFFFFF" : theme.primary },
                       ]}
                     />
-                  )}
+                  ) : null}
                 </>
               ) : null}
             </Pressable>
@@ -233,18 +243,12 @@ export default function CalendarScreen({ navigation }: Props) {
             </ThemedText>
           </View>
         ) : (
-          <FlatList
-            data={selectedDateAppointments}
-            renderItem={renderAppointment}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{
-              paddingBottom: tabBarHeight + Spacing.xl,
-            }}
-            showsVerticalScrollIndicator={false}
-          />
+          <View>
+            {selectedDateAppointments.map(renderAppointment)}
+          </View>
         )}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -296,11 +300,12 @@ const styles = StyleSheet.create({
     bottom: 6,
   },
   appointmentsSection: {
-    flex: 1,
+    minHeight: 200,
     borderTopLeftRadius: BorderRadius.xl,
     borderTopRightRadius: BorderRadius.xl,
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
+    paddingBottom: Spacing.lg,
   },
   appointmentsHeader: {
     flexDirection: "row",
@@ -316,10 +321,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   emptyState: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: 100,
+    paddingVertical: Spacing.xl,
   },
   appointmentCard: {
     flexDirection: "row",
