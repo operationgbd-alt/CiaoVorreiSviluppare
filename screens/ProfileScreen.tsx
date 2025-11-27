@@ -31,6 +31,7 @@ export default function ProfileScreen() {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   
   const isMaster = user?.role === 'master';
+  const isDitta = user?.role === 'ditta';
 
   const handleLogout = () => {
     if (Platform.OS === 'web') {
@@ -153,6 +154,23 @@ export default function ProfileScreen() {
               "Crea e assegna un intervento",
               undefined,
               () => navigation.navigate('CreateIntervention')
+            )}
+          </View>
+        </View>
+      ) : null}
+
+      {isDitta ? (
+        <View style={styles.section}>
+          <ThemedText type="h4" style={styles.sectionTitle}>
+            Gestione Ditta
+          </ThemedText>
+          <View style={styles.settingGroup}>
+            {renderSettingItem(
+              "home",
+              "Account Ditta",
+              "Statistiche, tecnici e chiusura interventi",
+              undefined,
+              () => navigation.navigate('CompanyAccount')
             )}
           </View>
         </View>

@@ -70,6 +70,10 @@ export interface Intervention {
   
   status: InterventionStatus;
   
+  closedAt?: number;
+  closedBy?: string;
+  emailSentTo?: string;
+  
   createdAt: number;
   updatedAt: number;
 }

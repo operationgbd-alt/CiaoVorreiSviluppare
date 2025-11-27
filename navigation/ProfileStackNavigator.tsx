@@ -4,6 +4,8 @@ import ProfileScreen from "@/screens/ProfileScreen";
 import { ManageCompaniesScreen } from "@/screens/ManageCompaniesScreen";
 import { ManageUsersScreen } from "@/screens/ManageUsersScreen";
 import { CreateInterventionScreen } from "@/screens/CreateInterventionScreen";
+import { CompanyAccountScreen } from "@/screens/CompanyAccountScreen";
+import { CloseInterventionsScreen } from "@/screens/CloseInterventionsScreen";
 import { useTheme } from "@/hooks/useTheme";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
 
@@ -12,6 +14,8 @@ export type ProfileStackParamList = {
   ManageCompanies: undefined;
   ManageUsers: undefined;
   CreateIntervention: undefined;
+  CompanyAccount: undefined;
+  CloseInterventions: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -47,6 +51,20 @@ export default function ProfileStackNavigator() {
         component={CreateInterventionScreen}
         options={{
           title: "Nuovo Intervento",
+        }}
+      />
+      <Stack.Screen
+        name="CompanyAccount"
+        component={CompanyAccountScreen}
+        options={{
+          title: "Account Ditta",
+        }}
+      />
+      <Stack.Screen
+        name="CloseInterventions"
+        component={CloseInterventionsScreen}
+        options={{
+          title: "Chiudi Interventi",
         }}
       />
     </Stack.Navigator>
