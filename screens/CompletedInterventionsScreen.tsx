@@ -1,11 +1,13 @@
-import React, { useMemo } from "react";
-import { StyleSheet, View } from "react-native";
+import React, { useMemo, useState } from "react";
+import { StyleSheet, View, Pressable } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { ScreenFlatList } from "@/components/ScreenFlatList";
 import { Card } from "@/components/Card";
+import { SendReportModal } from "@/components/SendReportModal";
 import { useTheme } from "@/hooks/useTheme";
+import { useAuth } from "@/store/AuthContext";
 import { useApp } from "@/store/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { Intervention, InterventionCategory } from "@/types";
@@ -29,7 +31,20 @@ const CATEGORY_CONFIG: Record<InterventionCategory, { label: string; icon: strin
 
 export default function CompletedInterventionsScreen({ navigation }: Props) {
   const { theme } = useTheme();
-  const { interventions } = useApp();
+  const { user } = useAuth();
+  const { interventions, updateIntervention } = useApp();
+  const [selectedIntervention, setSelectedIntervention] = useState<Intervention | null>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+
+  const isDitta = user?.role === 'ditta';
+
+  const handleReportSent = () => {
+    if (selectedIntervention) {
+      updateIntervention(selectedIntervention.id, {
+        emailSentTo: 'operation.gbd@gruppo-phoenix.com',
+      });
+    }
+  };
 
   const completedInterventions = useMemo(() => {
     return interventions
@@ -140,6 +155,30 @@ export default function CompletedInterventionsScreen({ navigation }: Props) {
             </ThemedText>
           </View>
         ) : null}
+
+        {isDitta && !item.emailSentTo ? (
+          <Pressable 
+            style={[styles.sendReportButton, { backgroundColor: theme.primary }]}
+            onPress={() => {
+              setSelectedIntervention(item);
+              setShowReportModal(true);
+            }}
+          >
+            <Feather name="mail" size={16} color="#FFFFFF" />
+            <ThemedText type="body" style={{ color: '#FFFFFF', marginLeft: Spacing.sm, fontWeight: '600' }}>
+              Invia Report a GBD
+            </ThemedText>
+          </Pressable>
+        ) : null}
+
+        {item.emailSentTo ? (
+          <View style={[styles.reportSentBadge, { backgroundColor: theme.success + '15' }]}>
+            <Feather name="check-circle" size={14} color={theme.success} />
+            <ThemedText type="caption" style={{ color: theme.success, marginLeft: Spacing.xs }}>
+              Report inviato
+            </ThemedText>
+          </View>
+        ) : null}
       </Card>
     );
   };
@@ -157,14 +196,28 @@ export default function CompletedInterventionsScreen({ navigation }: Props) {
   );
 
   return (
-    <ScreenFlatList
-      data={completedInterventions}
-      keyExtractor={(item) => item.id}
-      renderItem={renderIntervention}
-      ListHeaderComponent={renderHeader}
-      ListEmptyComponent={renderEmpty}
-      showsVerticalScrollIndicator={false}
-    />
+    <>
+      <ScreenFlatList
+        data={completedInterventions}
+        keyExtractor={(item) => item.id}
+        renderItem={renderIntervention}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmpty}
+        showsVerticalScrollIndicator={false}
+      />
+      {selectedIntervention ? (
+        <SendReportModal
+          visible={showReportModal}
+          onClose={() => {
+            setShowReportModal(false);
+            setSelectedIntervention(null);
+          }}
+          intervention={selectedIntervention}
+          companyName={user?.companyName || 'Ditta'}
+          onReportSent={handleReportSent}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -243,6 +296,21 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
   },
   photosPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+  },
+  sendReportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.md,
+    marginHorizontal: Spacing.md,
+    marginBottom: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  reportSentBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,

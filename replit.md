@@ -238,6 +238,19 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
   - Demo data con 3 tecnici in citta italiane (Milano, Torino, Roma)
   - Navigazione DashboardStackNavigator aggiornata
   - Tutti i colori usano theme Colors constants
+- 2025-11-27: Implementato invio report email per DITTA
+  - SendReportModal: modale per invio report interventi completati
+    - Destinatario fisso: operation.gbd@gruppo-phoenix.com
+    - Riepilogo intervento: numero, cliente, foto, GPS, note
+    - Campo note extra opzionale per aggiungere commenti dalla ditta
+    - Usa expo-mail-composer per aprire l'app email nativa
+    - Su web: apre il gestore email del browser (mailto)
+    - Email formattata con tutti i dati intervento, cliente, tecnico, GPS, foto
+  - CompletedInterventionsScreen aggiornato:
+    - Pulsante "Invia Report a GBD" visibile solo per utenti DITTA
+    - Badge "Report inviato" per interventi già inviati (emailSentTo valorizzato)
+  - Button component esteso con prop variant: 'primary' | 'secondary' | 'danger'
+  - Nuovo componente: components/SendReportModal.tsx
 
 ## Development Notes
 - Hot Module Reloading attivo per modifiche codice

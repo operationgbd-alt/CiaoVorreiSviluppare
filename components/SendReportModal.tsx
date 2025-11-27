@@ -16,9 +16,10 @@ interface Props {
   onClose: () => void;
   intervention: Intervention;
   companyName: string;
+  onReportSent?: () => void;
 }
 
-export function SendReportModal({ visible, onClose, intervention, companyName }: Props) {
+export function SendReportModal({ visible, onClose, intervention, companyName, onReportSent }: Props) {
   const { theme } = useTheme();
   const [extraNotes, setExtraNotes] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -123,13 +124,26 @@ export function SendReportModal({ visible, onClose, intervention, companyName }:
       const isAvailable = await MailComposer.isAvailableAsync();
       
       if (!isAvailable) {
-        Alert.alert(
-          'Email Non Disponibile',
-          Platform.OS === 'web' 
-            ? 'L\'invio email non è supportato su web. Usa l\'app su dispositivo mobile.'
-            : 'Nessuna app email configurata sul dispositivo.',
-          [{ text: 'OK' }]
-        );
+        if (Platform.OS === 'web') {
+          const subject = encodeURIComponent(`[SolarTech] Report Intervento ${intervention.number} - ${intervention.client.name}`);
+          const body = encodeURIComponent(buildEmailBody());
+          const mailtoUrl = `mailto:${GBD_EMAIL}?subject=${subject}&body=${body}`;
+          
+          window.open(mailtoUrl, '_blank');
+          
+          onReportSent?.();
+          Alert.alert(
+            'Report Pronto',
+            'L\'email è stata aperta nel tuo browser. Completa l\'invio dalla tua app email.',
+            [{ text: 'OK', onPress: onClose }]
+          );
+        } else {
+          Alert.alert(
+            'Email Non Disponibile',
+            'Nessuna app email configurata sul dispositivo.',
+            [{ text: 'OK' }]
+          );
+        }
         setIsSending(false);
         return;
       }
@@ -141,23 +155,40 @@ export function SendReportModal({ visible, onClose, intervention, companyName }:
         .map(photo => photo.uri)
         .filter(uri => uri && !uri.startsWith('http'));
 
-      await MailComposer.composeAsync({
+      onReportSent?.();
+
+      const result = await MailComposer.composeAsync({
         recipients: [GBD_EMAIL],
         subject,
         body,
         attachments: attachments.length > 0 ? attachments : undefined,
       });
 
-      Alert.alert(
-        'Report Pronto',
-        'L\'email è stata preparata. Premi Invia nella tua app email per completare l\'invio.',
-        [{ text: 'OK', onPress: onClose }]
-      );
+      if (result.status === MailComposer.MailComposerStatus.SENT) {
+        Alert.alert(
+          'Report Inviato',
+          'Il report è stato inviato con successo a GBD.',
+          [{ text: 'OK', onPress: onClose }]
+        );
+      } else if (result.status === MailComposer.MailComposerStatus.CANCELLED) {
+        Alert.alert(
+          'Report Salvato',
+          'L\'intervento è stato marcato come inviato. Potrai inviare l\'email in seguito.',
+          [{ text: 'OK', onPress: onClose }]
+        );
+      } else {
+        Alert.alert(
+          'Report Pronto',
+          'L\'email è stata preparata. Completa l\'invio dalla tua app email.',
+          [{ text: 'OK', onPress: onClose }]
+        );
+      }
     } catch (error) {
+      onReportSent?.();
       Alert.alert(
-        'Errore',
-        'Impossibile preparare l\'email. Riprova.',
-        [{ text: 'OK' }]
+        'Report Salvato',
+        'L\'intervento è stato marcato come inviato. Verifica che l\'email sia stata inviata.',
+        [{ text: 'OK', onPress: onClose }]
       );
     } finally {
       setIsSending(false);
