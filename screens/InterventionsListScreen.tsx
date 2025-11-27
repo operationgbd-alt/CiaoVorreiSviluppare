@@ -60,7 +60,7 @@ const STATUS_LABELS: Record<InterventionStatus, string> = {
 export default function InterventionsListScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const { interventions } = useApp();
-  const { paddingBottom } = useScreenInsets();
+  const { paddingTop, paddingBottom } = useScreenInsets();
   const route = useRoute<InterventionsListRouteProp>();
   
   const filterStatus = route.params?.filterStatus;
@@ -220,7 +220,7 @@ export default function InterventionsListScreen({ navigation }: Props) {
         renderItem={renderIntervention}
         renderSectionHeader={renderSectionHeader}
         renderSectionFooter={renderSectionFooter}
-        contentContainerStyle={[styles.listContent, { paddingBottom }]}
+        contentContainerStyle={[styles.listContent, { paddingTop, paddingBottom }]}
         showsVerticalScrollIndicator={false}
         stickySectionHeadersEnabled={false}
       />
@@ -234,7 +234,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
   },
   sectionHeader: {
     flexDirection: 'row',
