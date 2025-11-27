@@ -1,5 +1,8 @@
 import React from "react";
+import { Pressable } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useNavigation } from "@react-navigation/native";
+import { Feather } from "@expo/vector-icons";
 import ProfileScreen from "@/screens/ProfileScreen";
 import { ManageCompaniesScreen } from "@/screens/ManageCompaniesScreen";
 import { ManageUsersScreen } from "@/screens/ManageUsersScreen";
@@ -9,6 +12,26 @@ import { CloseInterventionsScreen } from "@/screens/CloseInterventionsScreen";
 import { ManageTechniciansScreen } from "@/screens/ManageTechniciansScreen";
 import { useTheme } from "@/hooks/useTheme";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
+import { Spacing } from "@/constants/theme";
+
+function BackButton() {
+  const { theme } = useTheme();
+  const navigation = useNavigation<any>();
+
+  const handleBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate("DashboardTab");
+    }
+  };
+
+  return (
+    <Pressable onPress={handleBack} style={{ padding: Spacing.xs }}>
+      <Feather name="chevron-left" size={24} color={theme.text} />
+    </Pressable>
+  );
+}
 
 export type ProfileStackParamList = {
   Profile: undefined;
@@ -39,6 +62,7 @@ export default function ProfileStackNavigator() {
         component={ManageCompaniesScreen}
         options={{
           title: "Gestione Ditte",
+          headerLeft: () => <BackButton />,
         }}
       />
       <Stack.Screen
@@ -46,6 +70,7 @@ export default function ProfileStackNavigator() {
         component={ManageUsersScreen}
         options={{
           title: "Gestione Utenti",
+          headerLeft: () => <BackButton />,
         }}
       />
       <Stack.Screen
@@ -53,6 +78,7 @@ export default function ProfileStackNavigator() {
         component={CreateInterventionScreen}
         options={{
           title: "Nuovo Intervento",
+          headerLeft: () => <BackButton />,
         }}
       />
       <Stack.Screen
@@ -60,6 +86,7 @@ export default function ProfileStackNavigator() {
         component={CompanyAccountScreen}
         options={{
           title: "Account Ditta",
+          headerLeft: () => <BackButton />,
         }}
       />
       <Stack.Screen
@@ -67,6 +94,7 @@ export default function ProfileStackNavigator() {
         component={CloseInterventionsScreen}
         options={{
           title: "Chiudi Interventi",
+          headerLeft: () => <BackButton />,
         }}
       />
       <Stack.Screen
@@ -74,6 +102,7 @@ export default function ProfileStackNavigator() {
         component={ManageTechniciansScreen}
         options={{
           title: "Gestione Tecnici",
+          headerLeft: () => <BackButton />,
         }}
       />
     </Stack.Navigator>
