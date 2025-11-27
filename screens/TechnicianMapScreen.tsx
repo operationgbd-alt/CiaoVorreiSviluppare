@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, StyleSheet, Platform, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 import { useApp } from '@/store/AppContext';
@@ -49,6 +49,15 @@ export function TechnicianMapScreen() {
           Posizione Tecnici
         </ThemedText>
       </ThemedView>
+      
+      {Platform.OS !== 'web' ? (
+        <ThemedView style={[styles.infoBox, { backgroundColor: theme.primaryLight }]}>
+          <Feather name="info" size={16} color={theme.primary} />
+          <ThemedText type="caption" style={{ color: theme.primary, marginLeft: Spacing.sm, flex: 1 }}>
+            La mappa interattiva sara disponibile nell'app pubblicata. Qui puoi vedere la lista dei tecnici.
+          </ThemedText>
+        </ThemedView>
+      ) : null}
 
       <View style={styles.legend}>
         <View style={[styles.legendItem, { backgroundColor: theme.success + '15' }]}>
@@ -65,20 +74,35 @@ export function TechnicianMapScreen() {
         </View>
       </View>
 
+      {technicians.length === 0 ? (
+        <ThemedView style={[styles.emptyState, { backgroundColor: theme.backgroundDefault }]}>
+          <Feather name="users" size={48} color={theme.textTertiary} />
+          <ThemedText type="body" style={{ color: theme.textSecondary, marginTop: Spacing.md, textAlign: 'center' }}>
+            Nessun tecnico con posizione GPS attiva
+          </ThemedText>
+        </ThemedView>
+      ) : null}
+
       {technicians.map((tech) => {
         const isOnline = tech.lastLocation?.isOnline;
+        const isSelected = selectedTech?.id === tech.id;
+        
         return (
           <Pressable
             key={tech.id}
             style={({ pressed }) => [
               styles.techCard,
-              { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.8 : 1 }
+              { 
+                backgroundColor: theme.backgroundDefault, 
+                opacity: pressed ? 0.8 : 1,
+                borderLeftColor: isOnline ? theme.success : theme.textSecondary,
+              }
             ]}
-            onPress={() => setSelectedTech(selectedTech?.id === tech.id ? null : tech)}
+            onPress={() => setSelectedTech(isSelected ? null : tech)}
           >
             <View style={styles.techCardHeader}>
-              <View style={[styles.avatar, { backgroundColor: theme.primaryLight }]}>
-                <ThemedText type="h4" style={{ color: theme.primary }}>
+              <View style={[styles.avatar, { backgroundColor: isOnline ? theme.success + '20' : theme.primaryLight }]}>
+                <ThemedText type="h4" style={{ color: isOnline ? theme.success : theme.primary }}>
                   {tech.name.split(' ').map(n => n[0]).join('')}
                 </ThemedText>
               </View>
@@ -116,7 +140,7 @@ export function TechnicianMapScreen() {
               </ThemedText>
             </View>
 
-            {selectedTech?.id === tech.id ? (
+            {isSelected ? (
               <View style={styles.actionButtons}>
                 <Pressable style={[styles.actionButton, { backgroundColor: theme.primary }]}>
                   <Feather name="phone" size={16} color={theme.buttonText} />
@@ -149,6 +173,14 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     marginBottom: Spacing.md,
   },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: Spacing.md,
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
   legend: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.md,
@@ -168,16 +200,33 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginRight: Spacing.sm,
   },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.xxl,
+    marginHorizontal: Spacing.md,
+    borderRadius: BorderRadius.lg,
+  },
   techCard: {
     marginHorizontal: Spacing.md,
     marginBottom: Spacing.md,
     padding: Spacing.lg,
     borderRadius: BorderRadius.lg,
+    borderLeftWidth: 4,
   },
   techCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: Spacing.md,
+  },
+  techCardInfo: {
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
+  techCardLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
   },
   avatar: {
     width: 48,
@@ -185,10 +234,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  techCardInfo: {
-    flex: 1,
-    marginLeft: Spacing.md,
   },
   onlineStatus: {
     flexDirection: 'row',
@@ -202,11 +247,6 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     marginRight: Spacing.xs,
-  },
-  techCardLocation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.xs,
   },
   actionButtons: {
     flexDirection: 'row',
