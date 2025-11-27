@@ -33,10 +33,17 @@ function ContextAwareBackButton({ routeName }: { routeName: keyof ProfileStackPa
 
   const handleBack = () => {
     if (origin === 'Dashboard') {
-      const tabNav = navigation.getParent();
-      if (tabNav) {
-        tabNav.navigate('DashboardTab');
-      }
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Profile' }],
+      });
+      
+      setTimeout(() => {
+        const tabNav = navigation.getParent();
+        if (tabNav) {
+          tabNav.navigate('DashboardTab');
+        }
+      }, 10);
     } else {
       navigation.reset({
         index: 0,
