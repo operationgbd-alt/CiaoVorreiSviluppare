@@ -102,27 +102,51 @@ export default function DashboardScreen() {
             Panoramica Globale
           </ThemedText>
           <View style={styles.masterStatsGrid}>
-            <View style={[styles.masterStatCard, { backgroundColor: theme.backgroundDefault }]}>
+            <Pressable 
+              style={({ pressed }) => [
+                styles.masterStatCard, 
+                { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 }
+              ]}
+              onPress={() => {
+                const nav = navigation.getParent() as any;
+                nav?.navigate("InterventionsTab");
+              }}
+            >
               <Feather name="briefcase" size={24} color={theme.primary} />
               <ThemedText type="h2">{globalStats.totalInterventions}</ThemedText>
               <ThemedText type="caption" style={{ color: theme.textSecondary }}>
                 Interventi Totali
               </ThemedText>
-            </View>
-            <View style={[styles.masterStatCard, { backgroundColor: theme.backgroundDefault }]}>
+            </Pressable>
+            <Pressable 
+              style={({ pressed }) => [
+                styles.masterStatCard, 
+                { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 }
+              ]}
+              onPress={() => {
+                const nav = navigation.getParent() as any;
+                nav?.navigate("ProfileTab", { screen: "ManageCompanies" });
+              }}
+            >
               <Feather name="home" size={24} color={theme.secondary} />
               <ThemedText type="h2">{globalStats.totalCompanies}</ThemedText>
               <ThemedText type="caption" style={{ color: theme.textSecondary }}>
                 Ditte
               </ThemedText>
-            </View>
-            <View style={[styles.masterStatCard, { backgroundColor: theme.backgroundDefault }]}>
+            </Pressable>
+            <Pressable 
+              style={({ pressed }) => [
+                styles.masterStatCard, 
+                { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 }
+              ]}
+              onPress={() => navigation.navigate("TechnicianMap")}
+            >
               <Feather name="users" size={24} color={theme.success} />
               <ThemedText type="h2">{globalStats.totalTechnicians}</ThemedText>
               <ThemedText type="caption" style={{ color: theme.textSecondary }}>
                 Tecnici
               </ThemedText>
-            </View>
+            </Pressable>
           </View>
 
           <ThemedText type="h4" style={[styles.sectionTitle, { marginTop: Spacing.lg }]}>
