@@ -3,6 +3,9 @@ import { StyleSheet, View, Pressable, SectionList } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
@@ -10,7 +13,6 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/store/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { Intervention, InterventionStatus, InterventionCategory } from "@/types";
-import { useScreenInsets } from "@/hooks/useScreenInsets";
 import { InterventionsStackParamList } from "@/navigation/InterventionsStackNavigator";
 
 type InterventionsListNavProp = NativeStackNavigationProp<InterventionsStackParamList, "InterventionsList">;
@@ -60,8 +62,13 @@ const STATUS_LABELS: Record<InterventionStatus, string> = {
 export default function InterventionsListScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const { interventions } = useApp();
-  const { paddingTop, paddingBottom } = useScreenInsets();
+  const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
+  const tabBarHeight = useBottomTabBarHeight();
   const route = useRoute<InterventionsListRouteProp>();
+  
+  const paddingTop = headerHeight + Spacing.md;
+  const paddingBottom = tabBarHeight + Spacing.xl;
   
   const filterStatus = route.params?.filterStatus;
 
