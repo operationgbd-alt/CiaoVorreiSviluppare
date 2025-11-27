@@ -12,6 +12,7 @@ import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/store/AppContext";
+import { useAuth } from "@/store/AuthContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { InterventionStatus, Photo } from "@/types";
 
@@ -33,6 +34,7 @@ const STATUS_CONFIG: Record<InterventionStatus, { label: string; color: string; 
   appuntamento_fissato: { label: 'Appuntamento Fissato', color: '#007AFF', icon: 'calendar' },
   in_corso: { label: 'In Corso', color: '#5856D6', icon: 'play-circle' },
   completato: { label: 'Completato', color: '#34C759', icon: 'check-circle' },
+  chiuso: { label: 'Chiuso', color: '#8E8E93', icon: 'archive' },
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -58,8 +60,12 @@ const STATUS_OPTIONS: { value: InterventionStatus; label: string }[] = [
 export default function InterventionDetailScreen({ navigation, route }: Props) {
   const { theme } = useTheme();
   const { getInterventionById, updateIntervention, addAppointment } = useApp();
+  const { user } = useAuth();
   
   const intervention = getInterventionById(route.params.interventionId);
+  
+  const isTecnico = user?.role === 'tecnico';
+  const canEdit = isTecnico;
   
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [notes, setNotes] = useState(intervention?.documentation.notes || '');
@@ -564,27 +570,29 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
               Documenti e Foto
             </ThemedText>
             
-            <View style={styles.photoButtons}>
-              <Pressable 
-                style={[styles.photoButton, { backgroundColor: theme.primary }]}
-                onPress={handleTakePhoto}
-              >
-                <Feather name="camera" size={20} color="#FFFFFF" />
-                <ThemedText type="small" style={{ color: '#FFFFFF', marginTop: Spacing.xs }}>
-                  Scatta Foto
-                </ThemedText>
-              </Pressable>
+            {canEdit ? (
+              <View style={styles.photoButtons}>
+                <Pressable 
+                  style={[styles.photoButton, { backgroundColor: theme.primary }]}
+                  onPress={handleTakePhoto}
+                >
+                  <Feather name="camera" size={20} color="#FFFFFF" />
+                  <ThemedText type="small" style={{ color: '#FFFFFF', marginTop: Spacing.xs }}>
+                    Scatta Foto
+                  </ThemedText>
+                </Pressable>
 
-              <Pressable 
-                style={[styles.photoButton, { backgroundColor: theme.secondary }]}
-                onPress={handlePickImage}
-              >
-                <Feather name="image" size={20} color="#FFFFFF" />
-                <ThemedText type="small" style={{ color: '#FFFFFF', marginTop: Spacing.xs }}>
-                  Galleria
-                </ThemedText>
-              </Pressable>
-            </View>
+                <Pressable 
+                  style={[styles.photoButton, { backgroundColor: theme.secondary }]}
+                  onPress={handlePickImage}
+                >
+                  <Feather name="image" size={20} color="#FFFFFF" />
+                  <ThemedText type="small" style={{ color: '#FFFFFF', marginTop: Spacing.xs }}>
+                    Galleria
+                  </ThemedText>
+                </Pressable>
+              </View>
+            ) : null}
 
             {intervention.documentation.photos.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosScroll}>
@@ -592,13 +600,22 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
                   <Pressable 
                     key={photo.id} 
                     style={styles.photoThumbnail}
-                    onLongPress={() => handleDeletePhoto(photo.id)}
+                    onLongPress={canEdit ? () => handleDeletePhoto(photo.id) : undefined}
                   >
                     <Image source={{ uri: photo.uri }} style={styles.photoImage} />
                   </Pressable>
                 ))}
               </ScrollView>
-            ) : null}
+            ) : (
+              !canEdit ? (
+                <View style={[styles.emptyState, { backgroundColor: theme.backgroundSecondary }]}>
+                  <Feather name="image" size={24} color={theme.textTertiary} />
+                  <ThemedText type="caption" style={{ color: theme.textTertiary, marginTop: Spacing.xs }}>
+                    Nessuna foto caricata
+                  </ThemedText>
+                </View>
+              ) : null
+            )}
 
             {/* Posizione GPS */}
             <ThemedText type="body" style={{ fontWeight: '600', marginTop: Spacing.lg, marginBottom: Spacing.sm }}>
@@ -617,99 +634,121 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
                   </ThemedText>
                 </View>
               </View>
-            ) : null}
+            ) : (
+              !canEdit ? (
+                <View style={[styles.emptyState, { backgroundColor: theme.backgroundSecondary }]}>
+                  <Feather name="map-pin" size={24} color={theme.textTertiary} />
+                  <ThemedText type="caption" style={{ color: theme.textTertiary, marginTop: Spacing.xs }}>
+                    Posizione non ancora registrata
+                  </ThemedText>
+                </View>
+              ) : null
+            )}
 
-            <Button 
-              onPress={handleSendLocation} 
-              disabled={isLoadingLocation}
-              style={{ backgroundColor: theme.success }}
-            >
-              {isLoadingLocation ? 'Acquisizione GPS...' : 'Invia Posizione'}
-            </Button>
+            {canEdit ? (
+              <Button 
+                onPress={handleSendLocation} 
+                disabled={isLoadingLocation}
+                style={{ backgroundColor: theme.success }}
+              >
+                {isLoadingLocation ? 'Acquisizione GPS...' : 'Invia Posizione'}
+              </Button>
+            ) : null}
 
             {/* Note */}
             <ThemedText type="body" style={{ fontWeight: '600', marginTop: Spacing.lg, marginBottom: Spacing.sm }}>
               Note Intervento
             </ThemedText>
 
-            <TextInput
-              style={[styles.notesInputLarge, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-              placeholder="Inserisci note sull'intervento..."
-              placeholderTextColor={theme.textTertiary}
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              numberOfLines={4}
+            {canEdit ? (
+              <>
+                <TextInput
+                  style={[styles.notesInputLarge, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+                  placeholder="Inserisci note sull'intervento..."
+                  placeholderTextColor={theme.textTertiary}
+                  value={notes}
+                  onChangeText={setNotes}
+                  multiline
+                  numberOfLines={4}
+                />
+                <Button onPress={handleSaveNotes} style={{ marginTop: Spacing.sm }}>
+                  Salva Note
+                </Button>
+              </>
+            ) : (
+              <View style={[styles.notesDisplay, { backgroundColor: theme.backgroundSecondary }]}>
+                <ThemedText type="body" style={{ color: notes ? theme.text : theme.textTertiary }}>
+                  {notes || 'Nessuna nota inserita'}
+                </ThemedText>
+              </View>
+            )}
+          </View>
+        ) : null}
+      </Card>
+
+      {/* 5. ESITA INTERVENTO - Solo per Tecnici */}
+      {canEdit ? (
+        <Card style={styles.section} onPress={() => toggleSection('esita')}>
+          <View style={styles.sectionHeader}>
+            <Feather name="check-square" size={18} color={theme.primary} />
+            <ThemedText type="h3" style={{ marginLeft: Spacing.sm, flex: 1 }}>
+              Esita Intervento
+            </ThemedText>
+            <Feather 
+              name={expandedSection === 'esita' ? 'chevron-up' : 'chevron-down'} 
+              size={20} 
+              color={theme.textSecondary} 
             />
-
-            <Button onPress={handleSaveNotes} style={{ marginTop: Spacing.sm }}>
-              Salva Note
-            </Button>
           </View>
-        ) : null}
-      </Card>
 
-      {/* 5. ESITA INTERVENTO */}
-      <Card style={styles.section} onPress={() => toggleSection('esita')}>
-        <View style={styles.sectionHeader}>
-          <Feather name="check-square" size={18} color={theme.primary} />
-          <ThemedText type="h3" style={{ marginLeft: Spacing.sm, flex: 1 }}>
-            Esita Intervento
-          </ThemedText>
-          <Feather 
-            name={expandedSection === 'esita' ? 'chevron-up' : 'chevron-down'} 
-            size={20} 
-            color={theme.textSecondary} 
-          />
-        </View>
-
-        {expandedSection === 'esita' ? (
-          <View style={styles.statusOptions}>
-            {STATUS_OPTIONS.map((option) => {
-              const config = STATUS_CONFIG[option.value];
-              const isSelected = intervention.status === option.value;
-              
-              return (
-                <Pressable
-                  key={option.value}
-                  style={[
-                    styles.statusOption,
-                    { 
-                      backgroundColor: isSelected ? config.color + '20' : theme.backgroundSecondary,
-                      borderColor: isSelected ? config.color : 'transparent',
-                    }
-                  ]}
-                  onPress={() => handleChangeStatus(option.value)}
-                >
-                  <Feather 
-                    name={config.icon as any} 
-                    size={20} 
-                    color={isSelected ? config.color : theme.textSecondary} 
-                  />
-                  <ThemedText 
-                    type="body" 
-                    style={{ 
-                      marginLeft: Spacing.sm, 
-                      color: isSelected ? config.color : theme.text,
-                      fontWeight: isSelected ? '600' : '400',
-                    }}
+          {expandedSection === 'esita' ? (
+            <View style={styles.statusOptions}>
+              {STATUS_OPTIONS.map((option) => {
+                const config = STATUS_CONFIG[option.value];
+                const isSelected = intervention.status === option.value;
+                
+                return (
+                  <Pressable
+                    key={option.value}
+                    style={[
+                      styles.statusOption,
+                      { 
+                        backgroundColor: isSelected ? config.color + '20' : theme.backgroundSecondary,
+                        borderColor: isSelected ? config.color : 'transparent',
+                      }
+                    ]}
+                    onPress={() => handleChangeStatus(option.value)}
                   >
-                    {option.label}
-                  </ThemedText>
-                  {isSelected ? (
                     <Feather 
-                      name="check" 
-                      size={18} 
-                      color={config.color} 
-                      style={{ marginLeft: 'auto' }}
+                      name={config.icon as any} 
+                      size={20} 
+                      color={isSelected ? config.color : theme.textSecondary} 
                     />
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </View>
-        ) : null}
-      </Card>
+                    <ThemedText 
+                      type="body" 
+                      style={{ 
+                        marginLeft: Spacing.sm, 
+                        color: isSelected ? config.color : theme.text,
+                        fontWeight: isSelected ? '600' : '400',
+                      }}
+                    >
+                      {option.label}
+                    </ThemedText>
+                    {isSelected ? (
+                      <Feather 
+                        name="check" 
+                        size={18} 
+                        color={config.color} 
+                        style={{ marginLeft: 'auto' }}
+                      />
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+        </Card>
+      ) : null}
 
       <View style={{ height: Spacing['3xl'] }} />
     </ScreenKeyboardAwareScrollView>
@@ -858,5 +897,17 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     borderWidth: 2,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.md,
+  },
+  notesDisplay: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.sm,
+    minHeight: 60,
   },
 });
