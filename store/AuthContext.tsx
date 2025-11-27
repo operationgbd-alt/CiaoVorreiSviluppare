@@ -74,6 +74,30 @@ const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = {
       companyName: 'GBD B&A S.r.l.',
     },
   },
+  solarpro: {
+    password: 'ditta123',
+    user: {
+      id: 'ditta-2',
+      username: 'solarpro',
+      role: 'ditta',
+      name: 'Solar Pro',
+      email: 'info@solarpro.it',
+      companyId: 'company-2',
+      companyName: 'Solar Pro S.r.l.',
+    },
+  },
+  luca: {
+    password: 'tecnico123',
+    user: {
+      id: 'tech-3',
+      username: 'luca',
+      role: 'tecnico',
+      name: 'Luca Verdi',
+      email: 'luca@solarpro.it',
+      companyId: 'company-2',
+      companyName: 'Solar Pro S.r.l.',
+    },
+  },
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
