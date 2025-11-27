@@ -20,13 +20,22 @@ import { Spacing } from "@/constants/theme";
 function BackButton() {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
+  const routes = useNavigationState((state) => state.routes);
   const stackIndex = useNavigationState((state) => state.index);
 
   const handleBack = () => {
-    if (stackIndex > 0) {
+    if (stackIndex > 0 && routes[stackIndex - 1]?.name !== routes[stackIndex]?.name) {
       navigation.goBack();
     } else {
-      navigation.navigate("Dashboard");
+      const parent = navigation.getParent();
+      if (parent?.canGoBack()) {
+        parent.goBack();
+      } else {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Dashboard' }],
+        });
+      }
     }
   };
 
