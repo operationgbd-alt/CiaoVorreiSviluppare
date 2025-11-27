@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, StyleSheet, Platform, Pressable } from 'react-native';
-import MapView, { Marker, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
+import { View, StyleSheet, Platform, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 import { useApp } from '@/store/AppContext';
@@ -9,6 +8,20 @@ import { ThemedView } from '@/components/ThemedView';
 import { Card } from '@/components/Card';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { User } from '@/types';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+let MapView: any = null;
+let Marker: any = null;
+let Callout: any = null;
+let PROVIDER_GOOGLE: any = null;
+
+if (Platform.OS !== 'web') {
+  const maps = require('react-native-maps');
+  MapView = maps.default;
+  Marker = maps.Marker;
+  Callout = maps.Callout;
+  PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
+}
 
 const ITALY_CENTER = {
   latitude: 43.0,
@@ -36,6 +49,7 @@ export function TechnicianMapScreen() {
   const { theme } = useTheme();
   const { users } = useApp();
   const [selectedTech, setSelectedTech] = useState<User | null>(null);
+  const insets = useSafeAreaInsets();
   
   const technicians = useMemo(() => 
     users.filter(u => u.role === 'tecnico' && u.lastLocation),
@@ -44,6 +58,112 @@ export function TechnicianMapScreen() {
 
   const onlineTechnicians = technicians.filter(t => t.lastLocation?.isOnline);
   const offlineTechnicians = technicians.filter(t => !t.lastLocation?.isOnline);
+
+  if (Platform.OS === 'web') {
+    return (
+      <ScrollView 
+        style={[styles.webContainer, { backgroundColor: theme.backgroundRoot }]}
+        contentContainerStyle={{ paddingBottom: insets.bottom + Spacing.xl }}
+      >
+        <ThemedView style={[styles.webHeader, { backgroundColor: theme.backgroundDefault }]}>
+          <Feather name="map-pin" size={24} color={theme.primary} />
+          <ThemedText type="h3" style={{ marginLeft: Spacing.md }}>
+            Posizione Tecnici
+          </ThemedText>
+        </ThemedView>
+        
+        <ThemedText type="caption" style={{ color: theme.textSecondary, paddingHorizontal: Spacing.md, marginBottom: Spacing.md }}>
+          La mappa interattiva e disponibile solo su dispositivi mobili. Di seguito la lista dei tecnici con le loro posizioni.
+        </ThemedText>
+
+        <View style={styles.webLegend}>
+          <View style={[styles.webLegendItem, { backgroundColor: '#34C75915' }]}>
+            <View style={[styles.legendDot, { backgroundColor: '#34C759' }]} />
+            <ThemedText type="body" style={{ color: '#34C759', fontWeight: '600' }}>
+              Online ({onlineTechnicians.length})
+            </ThemedText>
+          </View>
+          <View style={[styles.webLegendItem, { backgroundColor: '#8E8E9315' }]}>
+            <View style={[styles.legendDot, { backgroundColor: '#8E8E93' }]} />
+            <ThemedText type="body" style={{ color: '#8E8E93', fontWeight: '600' }}>
+              Offline ({offlineTechnicians.length})
+            </ThemedText>
+          </View>
+        </View>
+
+        {technicians.map((tech) => {
+          const isOnline = tech.lastLocation?.isOnline;
+          return (
+            <Pressable
+              key={tech.id}
+              style={({ pressed }) => [
+                styles.techCard,
+                { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.8 : 1 }
+              ]}
+              onPress={() => setSelectedTech(selectedTech?.id === tech.id ? null : tech)}
+            >
+              <View style={styles.techCardHeader}>
+                <View style={[styles.avatar, { backgroundColor: theme.primaryLight }]}>
+                  <ThemedText type="h4" style={{ color: theme.primary }}>
+                    {tech.name.split(' ').map(n => n[0]).join('')}
+                  </ThemedText>
+                </View>
+                <View style={styles.techCardInfo}>
+                  <ThemedText type="h4">{tech.name}</ThemedText>
+                  <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                    {tech.companyName}
+                  </ThemedText>
+                </View>
+                <View style={[
+                  styles.onlineStatus, 
+                  { backgroundColor: isOnline ? '#34C75920' : '#8E8E9320' }
+                ]}>
+                  <View style={[
+                    styles.statusDot, 
+                    { backgroundColor: isOnline ? '#34C759' : '#8E8E93' }
+                  ]} />
+                  <ThemedText type="caption" style={{ color: isOnline ? '#34C759' : '#8E8E93' }}>
+                    {isOnline ? 'Online' : 'Offline'}
+                  </ThemedText>
+                </View>
+              </View>
+              
+              <View style={styles.techCardLocation}>
+                <Feather name="map-pin" size={14} color={theme.primary} />
+                <ThemedText type="small" style={{ marginLeft: Spacing.sm, flex: 1 }}>
+                  {tech.lastLocation?.address || 'Posizione sconosciuta'}
+                </ThemedText>
+              </View>
+              
+              <View style={styles.techCardLocation}>
+                <Feather name="clock" size={14} color={theme.textSecondary} />
+                <ThemedText type="caption" style={{ marginLeft: Spacing.sm, color: theme.textSecondary }}>
+                  Ultimo aggiornamento: {tech.lastLocation ? formatTimeAgo(tech.lastLocation.timestamp) : 'N/D'}
+                </ThemedText>
+              </View>
+
+              {selectedTech?.id === tech.id ? (
+                <View style={styles.actionButtons}>
+                  <Pressable style={[styles.actionButton, { backgroundColor: theme.primary }]}>
+                    <Feather name="phone" size={16} color="#FFF" />
+                    <ThemedText type="small" style={{ color: '#FFF', marginLeft: Spacing.xs }}>
+                      Chiama
+                    </ThemedText>
+                  </Pressable>
+                  <Pressable style={[styles.actionButton, { backgroundColor: theme.primaryLight }]}>
+                    <Feather name="message-circle" size={16} color={theme.primary} />
+                    <ThemedText type="small" style={{ color: theme.primary, marginLeft: Spacing.xs }}>
+                      Messaggio
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              ) : null}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -291,5 +411,47 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
+  },
+  webContainer: {
+    flex: 1,
+  },
+  webHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  webLegend: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.lg,
+    gap: Spacing.md,
+  },
+  webLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  techCard: {
+    marginHorizontal: Spacing.md,
+    marginBottom: Spacing.md,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+  },
+  techCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  techCardInfo: {
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
+  techCardLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
   },
 });
