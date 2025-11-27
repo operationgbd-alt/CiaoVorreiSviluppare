@@ -1,6 +1,11 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Intervention, Appointment, Company, User } from '@/types';
 import { useAuth } from './AuthContext';
+
+const COMPANIES_STORAGE_KEY = 'solartech_companies';
+const USERS_STORAGE_KEY = 'solartech_users';
+const INTERVENTIONS_STORAGE_KEY = 'solartech_interventions';
 
 interface AppContextType {
   interventions: Intervention[];
@@ -518,6 +523,88 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [appointmentsData, setAppointmentsData] = useState<Appointment[]>(allAppointments);
   const [companiesData, setCompaniesData] = useState<Company[]>(initialCompanies);
   const [usersData, setUsersData] = useState<User[]>(initialUsers);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  useEffect(() => {
+    const loadStoredData = async () => {
+      try {
+        const [storedCompanies, storedUsers, storedInterventions] = await Promise.all([
+          AsyncStorage.getItem(COMPANIES_STORAGE_KEY),
+          AsyncStorage.getItem(USERS_STORAGE_KEY),
+          AsyncStorage.getItem(INTERVENTIONS_STORAGE_KEY),
+        ]);
+
+        if (storedCompanies) {
+          const parsed = JSON.parse(storedCompanies);
+          const mergedCompanies = [...initialCompanies];
+          parsed.forEach((c: Company) => {
+            if (!mergedCompanies.find(mc => mc.id === c.id)) {
+              mergedCompanies.push(c);
+            }
+          });
+          setCompaniesData(mergedCompanies);
+        }
+
+        if (storedUsers) {
+          const parsed = JSON.parse(storedUsers);
+          const mergedUsers = [...initialUsers];
+          parsed.forEach((u: User) => {
+            if (!mergedUsers.find(mu => mu.id === u.id)) {
+              mergedUsers.push(u);
+            }
+          });
+          setUsersData(mergedUsers);
+        }
+
+        if (storedInterventions) {
+          const parsed = JSON.parse(storedInterventions);
+          const mergedInterventions = [...allInterventions];
+          parsed.forEach((i: Intervention) => {
+            if (!mergedInterventions.find(mi => mi.id === i.id)) {
+              mergedInterventions.push(i);
+            }
+          });
+          setInterventionsData(mergedInterventions);
+        }
+      } catch (error) {
+        console.error('Error loading stored data:', error);
+      } finally {
+        setIsDataLoaded(true);
+      }
+    };
+
+    loadStoredData();
+  }, []);
+
+  useEffect(() => {
+    if (!isDataLoaded) return;
+    const newCompanies = companiesData.filter(c => !initialCompanies.find(ic => ic.id === c.id));
+    if (newCompanies.length > 0) {
+      AsyncStorage.setItem(COMPANIES_STORAGE_KEY, JSON.stringify(newCompanies));
+    } else {
+      AsyncStorage.removeItem(COMPANIES_STORAGE_KEY);
+    }
+  }, [companiesData, isDataLoaded]);
+
+  useEffect(() => {
+    if (!isDataLoaded) return;
+    const newUsers = usersData.filter(u => !initialUsers.find(iu => iu.id === u.id));
+    if (newUsers.length > 0) {
+      AsyncStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(newUsers));
+    } else {
+      AsyncStorage.removeItem(USERS_STORAGE_KEY);
+    }
+  }, [usersData, isDataLoaded]);
+
+  useEffect(() => {
+    if (!isDataLoaded) return;
+    const newInterventions = interventionsData.filter(i => !allInterventions.find(ai => ai.id === i.id));
+    if (newInterventions.length > 0) {
+      AsyncStorage.setItem(INTERVENTIONS_STORAGE_KEY, JSON.stringify(newInterventions));
+    } else {
+      AsyncStorage.removeItem(INTERVENTIONS_STORAGE_KEY);
+    }
+  }, [interventionsData, isDataLoaded]);
 
   const interventions = useMemo(() => {
     if (!user) return [];
