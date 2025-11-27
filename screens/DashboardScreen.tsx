@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, View, Pressable } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
@@ -125,7 +125,18 @@ export default function DashboardScreen() {
               ]}
               onPress={() => {
                 const nav = navigation.getParent() as any;
-                nav?.navigate("ProfileTab", { screen: "ManageCompanies" });
+                nav?.navigate("ProfileTab");
+                setTimeout(() => {
+                  nav?.dispatch(
+                    CommonActions.navigate({
+                      name: "ProfileTab",
+                      params: {
+                        screen: "ManageCompanies",
+                        initial: false,
+                      },
+                    })
+                  );
+                }, 50);
               }}
             >
               <Feather name="home" size={24} color={theme.secondary} />
