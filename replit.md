@@ -226,6 +226,18 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
     - Accesso a Account Ditta dalla pagina Profilo
   - Intervention type esteso con campi chiusura: closedAt, closedBy, emailSentTo
   - 3 interventi non assegnati per testing assegnazione bulk
+- 2025-11-27: Implementato GPS tracking tecnici (MASTER only)
+  - TechnicianMapScreen: mappa interattiva con posizione tecnici
+    - Su mobile: MapView con marker colorati (verde online, grigio offline)
+    - Su web: lista fallback con card tecnici e posizione
+    - Callout con info tecnico, ditta e ultimo aggiornamento
+    - Card dettaglio con pulsanti Chiama/Messaggio
+    - Legenda online/offline con conteggio
+  - User type esteso con campo lastLocation (latitude, longitude, address, timestamp, isOnline)
+  - Dashboard MASTER: pulsante "Mappa Tecnici" per navigare alla mappa
+  - Demo data con 3 tecnici in citta italiane (Milano, Torino, Roma)
+  - Navigazione DashboardStackNavigator aggiornata
+  - Tutti i colori usano theme Colors constants
 
 ## Development Notes
 - Hot Module Reloading attivo per modifiche codice

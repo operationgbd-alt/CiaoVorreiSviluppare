@@ -77,15 +77,15 @@ export function TechnicianMapScreen() {
         </ThemedText>
 
         <View style={styles.webLegend}>
-          <View style={[styles.webLegendItem, { backgroundColor: '#34C75915' }]}>
-            <View style={[styles.legendDot, { backgroundColor: '#34C759' }]} />
-            <ThemedText type="body" style={{ color: '#34C759', fontWeight: '600' }}>
+          <View style={[styles.webLegendItem, { backgroundColor: theme.success + '15' }]}>
+            <View style={[styles.legendDot, { backgroundColor: theme.success }]} />
+            <ThemedText type="body" style={{ color: theme.success, fontWeight: '600' }}>
               Online ({onlineTechnicians.length})
             </ThemedText>
           </View>
-          <View style={[styles.webLegendItem, { backgroundColor: '#8E8E9315' }]}>
-            <View style={[styles.legendDot, { backgroundColor: '#8E8E93' }]} />
-            <ThemedText type="body" style={{ color: '#8E8E93', fontWeight: '600' }}>
+          <View style={[styles.webLegendItem, { backgroundColor: theme.textSecondary + '15' }]}>
+            <View style={[styles.legendDot, { backgroundColor: theme.textSecondary }]} />
+            <ThemedText type="body" style={{ color: theme.textSecondary, fontWeight: '600' }}>
               Offline ({offlineTechnicians.length})
             </ThemedText>
           </View>
@@ -116,13 +116,13 @@ export function TechnicianMapScreen() {
                 </View>
                 <View style={[
                   styles.onlineStatus, 
-                  { backgroundColor: isOnline ? '#34C75920' : '#8E8E9320' }
+                  { backgroundColor: isOnline ? theme.success + '20' : theme.textSecondary + '20' }
                 ]}>
                   <View style={[
                     styles.statusDot, 
-                    { backgroundColor: isOnline ? '#34C759' : '#8E8E93' }
+                    { backgroundColor: isOnline ? theme.success : theme.textSecondary }
                   ]} />
-                  <ThemedText type="caption" style={{ color: isOnline ? '#34C759' : '#8E8E93' }}>
+                  <ThemedText type="caption" style={{ color: isOnline ? theme.success : theme.textSecondary }}>
                     {isOnline ? 'Online' : 'Offline'}
                   </ThemedText>
                 </View>
@@ -145,8 +145,8 @@ export function TechnicianMapScreen() {
               {selectedTech?.id === tech.id ? (
                 <View style={styles.actionButtons}>
                   <Pressable style={[styles.actionButton, { backgroundColor: theme.primary }]}>
-                    <Feather name="phone" size={16} color="#FFF" />
-                    <ThemedText type="small" style={{ color: '#FFF', marginLeft: Spacing.xs }}>
+                    <Feather name="phone" size={16} color={theme.buttonText} />
+                    <ThemedText type="small" style={{ color: theme.buttonText, marginLeft: Spacing.xs }}>
                       Chiama
                     </ThemedText>
                   </Pressable>
@@ -187,23 +187,23 @@ export function TechnicianMapScreen() {
               }}
               title={tech.name}
               description={tech.lastLocation.address}
-              pinColor={isOnline ? '#34C759' : '#8E8E93'}
+              pinColor={isOnline ? theme.success : theme.textSecondary}
               onPress={() => setSelectedTech(tech)}
             >
               <Callout>
                 <View style={styles.callout}>
-                  <ThemedText type="h4" style={{ color: '#000' }}>
+                  <ThemedText type="h4" style={{ color: theme.text }}>
                     {tech.name}
                   </ThemedText>
-                  <ThemedText type="small" style={{ color: '#666' }}>
+                  <ThemedText type="small" style={{ color: theme.textSecondary }}>
                     {tech.companyName}
                   </ThemedText>
-                  <ThemedText type="caption" style={{ color: '#888' }}>
+                  <ThemedText type="caption" style={{ color: theme.textTertiary }}>
                     {tech.lastLocation.address}
                   </ThemedText>
-                  <View style={[styles.statusBadge, { backgroundColor: isOnline ? '#34C75920' : '#8E8E9320' }]}>
-                    <View style={[styles.statusDot, { backgroundColor: isOnline ? '#34C759' : '#8E8E93' }]} />
-                    <ThemedText type="caption" style={{ color: isOnline ? '#34C759' : '#8E8E93' }}>
+                  <View style={[styles.statusBadge, { backgroundColor: isOnline ? theme.success + '20' : theme.textSecondary + '20' }]}>
+                    <View style={[styles.statusDot, { backgroundColor: isOnline ? theme.success : theme.textSecondary }]} />
+                    <ThemedText type="caption" style={{ color: isOnline ? theme.success : theme.textSecondary }}>
                       {isOnline ? 'Online' : 'Offline'} - {formatTimeAgo(tech.lastLocation.timestamp)}
                     </ThemedText>
                   </View>
@@ -216,11 +216,11 @@ export function TechnicianMapScreen() {
 
       <ThemedView style={[styles.legend, { backgroundColor: theme.backgroundRoot }]}>
         <View style={styles.legendRow}>
-          <View style={[styles.legendDot, { backgroundColor: '#34C759' }]} />
+          <View style={[styles.legendDot, { backgroundColor: theme.success }]} />
           <ThemedText type="small">Online ({onlineTechnicians.length})</ThemedText>
         </View>
         <View style={styles.legendRow}>
-          <View style={[styles.legendDot, { backgroundColor: '#8E8E93' }]} />
+          <View style={[styles.legendDot, { backgroundColor: theme.textSecondary }]} />
           <ThemedText type="small">Offline ({offlineTechnicians.length})</ThemedText>
         </View>
       </ThemedView>
@@ -248,14 +248,14 @@ export function TechnicianMapScreen() {
             </View>
             <View style={[
               styles.onlineStatus, 
-              { backgroundColor: selectedTech.lastLocation?.isOnline ? '#34C75920' : '#8E8E9320' }
+              { backgroundColor: selectedTech.lastLocation?.isOnline ? theme.success + '20' : theme.textSecondary + '20' }
             ]}>
               <View style={[
                 styles.statusDot, 
-                { backgroundColor: selectedTech.lastLocation?.isOnline ? '#34C759' : '#8E8E93' }
+                { backgroundColor: selectedTech.lastLocation?.isOnline ? theme.success : theme.textSecondary }
               ]} />
               <ThemedText type="caption" style={{ 
-                color: selectedTech.lastLocation?.isOnline ? '#34C759' : '#8E8E93' 
+                color: selectedTech.lastLocation?.isOnline ? theme.success : theme.textSecondary 
               }}>
                 {selectedTech.lastLocation?.isOnline ? 'Online' : 'Offline'}
               </ThemedText>
@@ -280,8 +280,8 @@ export function TechnicianMapScreen() {
 
           <View style={styles.actionButtons}>
             <Pressable style={[styles.actionButton, { backgroundColor: theme.primary }]}>
-              <Feather name="phone" size={16} color="#FFF" />
-              <ThemedText type="small" style={{ color: '#FFF', marginLeft: Spacing.xs }}>
+              <Feather name="phone" size={16} color={theme.buttonText} />
+              <ThemedText type="small" style={{ color: theme.buttonText, marginLeft: Spacing.xs }}>
                 Chiama
               </ThemedText>
             </Pressable>
