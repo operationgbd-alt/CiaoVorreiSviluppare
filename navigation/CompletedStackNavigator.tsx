@@ -1,9 +1,13 @@
 import React from "react";
+import { Pressable } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useNavigation } from "@react-navigation/native";
+import { Feather } from "@expo/vector-icons";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
 import { useTheme } from "@/hooks/useTheme";
 import CompletedInterventionsScreen from "@/screens/CompletedInterventionsScreen";
 import InterventionDetailScreen from "@/screens/InterventionDetailScreen";
+import { Spacing } from "@/constants/theme";
 
 export type CompletedStackParamList = {
   CompletedList: undefined;
@@ -11,6 +15,20 @@ export type CompletedStackParamList = {
 };
 
 const Stack = createNativeStackNavigator<CompletedStackParamList>();
+
+function BackToDashboardButton() {
+  const { theme } = useTheme();
+  const navigation = useNavigation<any>();
+
+  return (
+    <Pressable
+      onPress={() => navigation.navigate("DashboardTab")}
+      style={{ padding: Spacing.xs }}
+    >
+      <Feather name="chevron-left" size={24} color={theme.text} />
+    </Pressable>
+  );
+}
 
 export default function CompletedStackNavigator() {
   const { theme, isDark } = useTheme();
@@ -23,6 +41,7 @@ export default function CompletedStackNavigator() {
         component={CompletedInterventionsScreen}
         options={{
           title: "Completati",
+          headerLeft: () => <BackToDashboardButton />,
         }}
       />
       <Stack.Screen
