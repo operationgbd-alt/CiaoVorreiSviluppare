@@ -211,6 +211,21 @@ Applicazione mobile cross-platform (Android e iOS) per tecnici installatori di i
   - Card "In corso" naviga a lista filtrata per status 'in_corso'
   - Card "Completati" naviga a tab separato CompletedTab
   - InterventionsListScreen ora accetta parametro filterStatus da route
+- 2025-11-27: Implementate funzionalità DITTA complete
+  - CompanyAccountScreen: pagina account ditta
+    - Visualizza profilo azienda (nome, indirizzo, telefono, email)
+    - Statistiche interventi per stato (nuovi, programmati, in corso, completati, chiusi)
+    - Lista tecnici con badge conteggio interventi attivi
+    - Pulsanti azione: "Chiudi Interventi Completati", "Report Mensile"
+  - CloseInterventionsScreen: chiusura definitiva interventi
+    - Lista interventi con status 'completato' pronti per la chiusura
+    - Selezione singola/multipla con checkbox
+    - Campo email per invio report
+    - Cambio stato a 'chiuso' con metadata (closedAt, closedBy, emailSentTo)
+  - ProfileScreen con sezione "Gestione Ditta" per ruolo DITTA:
+    - Accesso a Account Ditta dalla pagina Profilo
+  - Intervention type esteso con campi chiusura: closedAt, closedBy, emailSentTo
+  - 3 interventi non assegnati per testing assegnazione bulk
 
 ## Development Notes
 - Hot Module Reloading attivo per modifiche codice
