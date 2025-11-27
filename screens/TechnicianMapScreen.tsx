@@ -1,34 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { View, StyleSheet, Platform, Pressable, ScrollView } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 import { useApp } from '@/store/AppContext';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { Card } from '@/components/Card';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { User } from '@/types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-let MapView: any = null;
-let Marker: any = null;
-let Callout: any = null;
-let PROVIDER_GOOGLE: any = null;
-
-if (Platform.OS !== 'web') {
-  const maps = require('react-native-maps');
-  MapView = maps.default;
-  Marker = maps.Marker;
-  Callout = maps.Callout;
-  PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
-}
-
-const ITALY_CENTER = {
-  latitude: 43.0,
-  longitude: 12.0,
-  latitudeDelta: 8,
-  longitudeDelta: 8,
-};
 
 function formatTimeAgo(timestamp: number): string {
   const now = Date.now();
