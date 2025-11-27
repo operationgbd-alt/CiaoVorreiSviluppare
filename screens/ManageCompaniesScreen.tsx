@@ -68,6 +68,8 @@ export function ManageCompaniesScreen() {
       address: companyAddress,
       phone: companyPhone,
       email: companyEmail,
+      username: username,
+      password: password,
     });
 
     try {
@@ -190,6 +192,31 @@ export function ManageCompaniesScreen() {
             <ThemedText type="small" style={[styles.detailText, { color: theme.textSecondary }]}>
               {company.email}
             </ThemedText>
+          </View>
+        ) : null}
+
+        {company.username ? (
+          <View style={[styles.credentialsBox, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}>
+            <View style={styles.credentialsBoxHeader}>
+              <Feather name="key" size={14} color={theme.primary} />
+              <ThemedText type="small" style={{ color: theme.primary, fontWeight: '600', marginLeft: Spacing.xs }}>
+                Credenziali Accesso
+              </ThemedText>
+            </View>
+            <View style={styles.credentialRow}>
+              <Feather name="user" size={12} color={theme.text} />
+              <ThemedText type="small" style={{ marginLeft: Spacing.xs }}>
+                {company.username}
+              </ThemedText>
+            </View>
+            {company.password ? (
+              <View style={styles.credentialRow}>
+                <Feather name="lock" size={12} color={theme.text} />
+                <ThemedText type="small" style={{ marginLeft: Spacing.xs }}>
+                  {company.password}
+                </ThemedText>
+              </View>
+            ) : null}
           </View>
         ) : null}
       </Card>
@@ -460,5 +487,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: Spacing['3xl'],
+  },
+  credentialsBox: {
+    marginTop: Spacing.md,
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  credentialsBoxHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  credentialRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: Spacing.xs,
   },
 });

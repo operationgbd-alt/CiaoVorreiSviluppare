@@ -105,6 +105,8 @@ export interface Company {
   address: string;
   phone: string;
   email: string;
+  username?: string;
+  password?: string;
   createdAt: number;
 }
 

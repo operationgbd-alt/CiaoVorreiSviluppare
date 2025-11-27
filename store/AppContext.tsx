@@ -50,6 +50,8 @@ const initialCompanies: Company[] = [
     address: 'Via Milano 123, Milano',
     phone: '+39 02 12345678',
     email: 'info@gbd-ba.it',
+    username: 'ditta',
+    password: 'ditta123',
     createdAt: Date.now() - 86400000 * 30,
   },
   {
@@ -58,6 +60,8 @@ const initialCompanies: Company[] = [
     address: 'Via Roma 45, Roma',
     phone: '+39 06 87654321',
     email: 'info@solarpro.it',
+    username: 'solarpro',
+    password: 'solar123',
     createdAt: Date.now() - 86400000 * 20,
   },
 ];
