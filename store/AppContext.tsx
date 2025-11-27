@@ -105,6 +105,13 @@ const initialUsers: User[] = [
     phone: '+39 333 1234567',
     companyId: 'company-1',
     companyName: 'GBD B&A S.r.l.',
+    lastLocation: {
+      latitude: 45.4642,
+      longitude: 9.1900,
+      address: 'Via Roma 45, Milano',
+      timestamp: Date.now() - 300000,
+      isOnline: true,
+    },
     createdAt: Date.now() - 86400000 * 25,
   },
   {
@@ -116,6 +123,13 @@ const initialUsers: User[] = [
     phone: '+39 333 7654321',
     companyId: 'company-1',
     companyName: 'GBD B&A S.r.l.',
+    lastLocation: {
+      latitude: 45.0703,
+      longitude: 7.6869,
+      address: 'Corso Vittorio Emanuele 120, Torino',
+      timestamp: Date.now() - 600000,
+      isOnline: true,
+    },
     createdAt: Date.now() - 86400000 * 20,
   },
   {
@@ -127,6 +141,13 @@ const initialUsers: User[] = [
     phone: '+39 333 9988776',
     companyId: 'company-2',
     companyName: 'Solar Pro S.r.l.',
+    lastLocation: {
+      latitude: 41.9028,
+      longitude: 12.4964,
+      address: 'Via del Corso 15, Roma',
+      timestamp: Date.now() - 1800000,
+      isOnline: false,
+    },
     createdAt: Date.now() - 86400000 * 15,
   },
 ];

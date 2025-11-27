@@ -6,6 +6,7 @@ import AppointmentFormScreen from "@/screens/AppointmentFormScreen";
 import { CompanyInterventionsScreen } from "@/screens/CompanyInterventionsScreen";
 import { CreateInterventionScreen } from "@/screens/CreateInterventionScreen";
 import { BulkAssignScreen } from "@/screens/BulkAssignScreen";
+import { TechnicianMapScreen } from "@/screens/TechnicianMapScreen";
 import { HeaderTitle } from "@/components/HeaderTitle";
 import { useTheme } from "@/hooks/useTheme";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
@@ -18,6 +19,7 @@ export type DashboardStackParamList = {
   CompanyInterventions: { companyId: string; companyName: string };
   CreateIntervention: undefined;
   BulkAssign: undefined;
+  TechnicianMap: undefined;
 };
 
 const Stack = createNativeStackNavigator<DashboardStackParamList>();
@@ -72,6 +74,13 @@ export default function DashboardStackNavigator() {
         options={{
           headerTitle: "Assegna Interventi",
           presentation: "modal",
+        }}
+      />
+      <Stack.Screen
+        name="TechnicianMap"
+        component={TechnicianMapScreen}
+        options={{
+          headerTitle: "Mappa Tecnici",
         }}
       />
     </Stack.Navigator>

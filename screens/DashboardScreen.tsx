@@ -190,6 +190,36 @@ export default function DashboardScreen() {
               </View>
             </Pressable>
           ) : null}
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.mapButton,
+              { backgroundColor: theme.success + '15', borderColor: theme.success, opacity: pressed ? 0.7 : 1 }
+            ]}
+            onPress={() => navigation.navigate("TechnicianMap")}
+          >
+            <View style={styles.companyInfo}>
+              <View style={[styles.companyIcon, { backgroundColor: theme.success + '30' }]}>
+                <Feather name="map-pin" size={16} color={theme.success} />
+              </View>
+              <View>
+                <ThemedText type="body" style={{ fontWeight: '600' }}>
+                  Mappa Tecnici
+                </ThemedText>
+                <ThemedText type="caption" style={{ color: theme.textSecondary }}>
+                  Monitora posizione tecnici operativi
+                </ThemedText>
+              </View>
+            </View>
+            <View style={styles.companyInfoRight}>
+              <View style={[styles.countBadge, { backgroundColor: theme.success + '30' }]}>
+                <ThemedText type="body" style={{ color: theme.success, fontWeight: '600' }}>
+                  {globalStats.totalTechnicians}
+                </ThemedText>
+              </View>
+              <Feather name="chevron-right" size={18} color={theme.success} />
+            </View>
+          </Pressable>
         </View>
       ) : null}
 
@@ -473,6 +503,15 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     borderWidth: 1,
     borderStyle: "dashed",
+  },
+  mapButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginTop: Spacing.md,
+    borderWidth: 1,
   },
   companyInfo: {
     flexDirection: "row",

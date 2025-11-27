@@ -108,6 +108,14 @@ export interface Company {
   createdAt: number;
 }
 
+export interface TechnicianLocation {
+  latitude: number;
+  longitude: number;
+  address?: string;
+  timestamp: number;
+  isOnline: boolean;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -117,5 +125,6 @@ export interface User {
   phone?: string;
   companyId: string | null;
   companyName: string | null;
+  lastLocation?: TechnicianLocation;
   createdAt: number;
 }
