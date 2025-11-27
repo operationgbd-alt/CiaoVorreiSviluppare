@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useNavigationState } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
 import { useTheme } from "@/hooks/useTheme";
@@ -16,15 +16,21 @@ export type CompletedStackParamList = {
 
 const Stack = createNativeStackNavigator<CompletedStackParamList>();
 
-function BackToDashboardButton() {
+function BackButton() {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
+  const stackIndex = useNavigationState((state) => state.index);
+
+  const handleBack = () => {
+    if (stackIndex > 0) {
+      navigation.goBack();
+    } else {
+      navigation.navigate("CompletedList");
+    }
+  };
 
   return (
-    <Pressable
-      onPress={() => navigation.navigate("DashboardTab")}
-      style={{ padding: Spacing.xs }}
-    >
+    <Pressable onPress={handleBack} style={{ padding: Spacing.xs }}>
       <Feather name="chevron-left" size={24} color={theme.text} />
     </Pressable>
   );
@@ -41,7 +47,6 @@ export default function CompletedStackNavigator() {
         component={CompletedInterventionsScreen}
         options={{
           title: "Completati",
-          headerLeft: () => <BackToDashboardButton />,
         }}
       />
       <Stack.Screen
@@ -49,6 +54,7 @@ export default function CompletedStackNavigator() {
         component={InterventionDetailScreen as any}
         options={{
           title: "Dettaglio",
+          headerLeft: () => <BackButton />,
         }}
       />
     </Stack.Navigator>

@@ -3,7 +3,6 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
-import { StackActions } from "@react-navigation/native";
 import DashboardStackNavigator from "@/navigation/DashboardStackNavigator";
 import InterventionsStackNavigator from "@/navigation/InterventionsStackNavigator";
 import CompletedStackNavigator from "@/navigation/CompletedStackNavigator";
@@ -87,16 +86,6 @@ export default function MainTabNavigator() {
             <Feather name="user" size={size} color={color} />
           ),
         }}
-        listeners={({ navigation }) => ({
-          tabPress: (e) => {
-            const state = navigation.getState();
-            const profileTabRoute = state.routes.find((r: any) => r.name === 'ProfileTab');
-            if (profileTabRoute?.state && profileTabRoute.state.routes.length > 1) {
-              e.preventDefault();
-              (navigation as any).navigate('ProfileTab', { screen: 'Profile' });
-            }
-          },
-        })}
       />
     </Tab.Navigator>
   );

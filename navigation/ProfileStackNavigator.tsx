@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useNavigationState } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import ProfileScreen from "@/screens/ProfileScreen";
 import { ManageCompaniesScreen } from "@/screens/ManageCompaniesScreen";
@@ -17,12 +17,13 @@ import { Spacing } from "@/constants/theme";
 function BackButton() {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
+  const stackIndex = useNavigationState((state) => state.index);
 
   const handleBack = () => {
-    if (navigation.canGoBack()) {
+    if (stackIndex > 0) {
       navigation.goBack();
     } else {
-      navigation.navigate("DashboardTab");
+      navigation.navigate("Profile");
     }
   };
 
