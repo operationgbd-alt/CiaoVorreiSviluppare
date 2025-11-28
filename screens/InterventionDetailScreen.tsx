@@ -1,10 +1,11 @@
-import React, { useState, useLayoutEffect } from "react";
-import { StyleSheet, View, Pressable, Alert, Linking, Platform, TextInput, ScrollView, Image } from "react-native";
+import React, { useState, useLayoutEffect, useEffect, useCallback } from "react";
+import { StyleSheet, View, Pressable, Alert, Linking, Platform, TextInput, ScrollView, Image, ActivityIndicator } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareScrollView";
 import { ThemedText } from "@/components/ThemedText";
@@ -15,6 +16,7 @@ import { useApp } from "@/store/AppContext";
 import { useAuth } from "@/store/AuthContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { InterventionStatus, Photo } from "@/types";
+import { api, PhotoMeta } from "@/services/api";
 
 type InterventionsStackParamList = {
   InterventionsList: undefined;
@@ -70,6 +72,9 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
   const canAssignTechnician = isMasterOrDitta;
   
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [serverPhotos, setServerPhotos] = useState<PhotoMeta[]>([]);
+  const [isLoadingPhotos, setIsLoadingPhotos] = useState(false);
   const [notes, setNotes] = useState(intervention?.documentation.notes || '');
   const [appointmentDate, setAppointmentDate] = useState<Date>(
     intervention?.appointment?.date ? new Date(intervention.appointment.date) : new Date()
@@ -79,6 +84,25 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
   const [appointmentNotes, setAppointmentNotes] = useState(intervention?.appointment?.notes || '');
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [selectedTechnicianId, setSelectedTechnicianId] = useState<string | null>(intervention?.technicianId || null);
+
+  const loadServerPhotos = useCallback(async () => {
+    if (!intervention) return;
+    setIsLoadingPhotos(true);
+    try {
+      const response = await api.getInterventionPhotos(intervention.id);
+      if (response.success && response.data) {
+        setServerPhotos(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading server photos:', error);
+    } finally {
+      setIsLoadingPhotos(false);
+    }
+  }, [intervention?.id]);
+
+  useEffect(() => {
+    loadServerPhotos();
+  }, [loadServerPhotos]);
 
   const availableTechnicians = users.filter(u => {
     if (u.role !== 'tecnico') return false;
@@ -238,6 +262,39 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
     }
   };
 
+  const uploadPhotoToServer = async (uri: string): Promise<boolean> => {
+    try {
+      let base64Data: string;
+      
+      if (Platform.OS === 'web') {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        base64Data = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      } else {
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: 'base64',
+        });
+        base64Data = `data:image/jpeg;base64,${base64}`;
+      }
+
+      const response = await api.uploadPhoto({
+        interventionId: intervention.id,
+        data: base64Data,
+        mimeType: 'image/jpeg',
+        uploadedById: user?.id || 'unknown',
+      });
+
+      return response.success;
+    } catch (error) {
+      console.error('Upload error:', error);
+      return false;
+    }
+  };
+
   const handleTakePhoto = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -249,24 +306,35 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.8,
+        quality: 0.7,
+        base64: false,
       });
 
       if (!result.canceled && result.assets[0]) {
-        const newPhoto: Photo = {
-          id: `photo-${Date.now()}`,
-          uri: result.assets[0].uri,
-          timestamp: Date.now(),
-        };
+        setIsUploadingPhoto(true);
+        const success = await uploadPhotoToServer(result.assets[0].uri);
+        setIsUploadingPhoto(false);
 
-        updateIntervention(intervention.id, {
-          documentation: {
-            ...intervention.documentation,
-            photos: [...intervention.documentation.photos, newPhoto],
-          },
-        });
+        if (success) {
+          await loadServerPhotos();
+          Alert.alert('Foto Caricata', 'La foto e stata caricata sul server con successo.');
+        } else {
+          const newPhoto: Photo = {
+            id: `photo-${Date.now()}`,
+            uri: result.assets[0].uri,
+            timestamp: Date.now(),
+          };
+          updateIntervention(intervention.id, {
+            documentation: {
+              ...intervention.documentation,
+              photos: [...intervention.documentation.photos, newPhoto],
+            },
+          });
+          Alert.alert('Foto Salvata Localmente', 'La foto e stata salvata sul dispositivo.');
+        }
       }
     } catch (error) {
+      setIsUploadingPhoto(false);
       Alert.alert('Errore', 'Impossibile scattare la foto.');
     }
   };
@@ -282,25 +350,46 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.8,
+        quality: 0.7,
         allowsMultipleSelection: true,
       });
 
       if (!result.canceled && result.assets.length > 0) {
-        const newPhotos: Photo[] = result.assets.map((asset, index) => ({
-          id: `photo-${Date.now()}-${index}`,
-          uri: asset.uri,
-          timestamp: Date.now(),
-        }));
+        setIsUploadingPhoto(true);
+        let uploadedCount = 0;
+        let localCount = 0;
 
-        updateIntervention(intervention.id, {
-          documentation: {
-            ...intervention.documentation,
-            photos: [...intervention.documentation.photos, ...newPhotos],
-          },
-        });
+        for (const asset of result.assets) {
+          const success = await uploadPhotoToServer(asset.uri);
+          if (success) {
+            uploadedCount++;
+          } else {
+            localCount++;
+            const newPhoto: Photo = {
+              id: `photo-${Date.now()}-${localCount}`,
+              uri: asset.uri,
+              timestamp: Date.now(),
+            };
+            updateIntervention(intervention.id, {
+              documentation: {
+                ...intervention.documentation,
+                photos: [...intervention.documentation.photos, newPhoto],
+              },
+            });
+          }
+        }
+
+        setIsUploadingPhoto(false);
+        await loadServerPhotos();
+
+        if (uploadedCount > 0) {
+          Alert.alert('Foto Caricate', `${uploadedCount} foto caricate sul server.`);
+        } else if (localCount > 0) {
+          Alert.alert('Foto Salvate Localmente', `${localCount} foto salvate sul dispositivo.`);
+        }
       }
     } catch (error) {
+      setIsUploadingPhoto(false);
       Alert.alert('Errore', 'Impossibile caricare le immagini.');
     }
   };
@@ -345,7 +434,7 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
     Alert.alert('Stato Aggiornato', `Intervento ora: ${STATUS_CONFIG[newStatus].label}`);
   };
 
-  const handleDeletePhoto = (photoId: string) => {
+  const handleDeletePhoto = (photoId: string, isServerPhoto: boolean = false) => {
     Alert.alert(
       'Elimina Foto',
       'Sei sicuro di voler eliminare questa foto?',
@@ -354,13 +443,22 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
         {
           text: 'Elimina',
           style: 'destructive',
-          onPress: () => {
-            updateIntervention(intervention.id, {
-              documentation: {
-                ...intervention.documentation,
-                photos: intervention.documentation.photos.filter(p => p.id !== photoId),
-              },
-            });
+          onPress: async () => {
+            if (isServerPhoto) {
+              const response = await api.deletePhoto(photoId);
+              if (response.success) {
+                await loadServerPhotos();
+              } else {
+                Alert.alert('Errore', 'Impossibile eliminare la foto dal server.');
+              }
+            } else {
+              updateIntervention(intervention.id, {
+                documentation: {
+                  ...intervention.documentation,
+                  photos: intervention.documentation.photos.filter(p => p.id !== photoId),
+                },
+              });
+            }
           },
         },
       ]

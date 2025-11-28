@@ -219,7 +219,51 @@ class ApiService {
       method: 'POST',
     });
   }
+
+  async uploadPhoto(data: {
+    interventionId: string;
+    data: string;
+    mimeType?: string;
+    caption?: string;
+    uploadedById: string;
+  }): Promise<ApiResponse<PhotoMeta>> {
+    return this.request<PhotoMeta>('/photos', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getInterventionPhotos(interventionId: string): Promise<ApiResponse<PhotoMeta[]>> {
+    return this.request<PhotoMeta[]>(`/photos/intervention/${interventionId}`);
+  }
+
+  async getPhoto(id: string): Promise<ApiResponse<Photo>> {
+    return this.request<Photo>(`/photos/${id}`);
+  }
+
+  async deletePhoto(id: string): Promise<ApiResponse<{ success: boolean; id: string }>> {
+    return this.request<{ success: boolean; id: string }>(`/photos/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  getPhotoImageUrl(id: string): string {
+    return `${API_BASE_URL}/photos/${id}/image`;
+  }
+}
+
+interface PhotoMeta {
+  id: string;
+  interventionId: string;
+  mimeType: string;
+  caption: string | null;
+  uploadedById: string;
+  createdAt: string;
+}
+
+interface Photo extends PhotoMeta {
+  data: string;
 }
 
 export const api = new ApiService();
-export type { LoginResponse, User, Company, Intervention, ApiResponse };
+export type { LoginResponse, User, Company, Intervention, ApiResponse, PhotoMeta, Photo };
