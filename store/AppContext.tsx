@@ -557,10 +557,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
 
         if (storedInterventions) {
-          const parsed = JSON.parse(storedInterventions);
-          const mergedInterventions = [...allInterventions];
-          parsed.forEach((i: Intervention) => {
-            if (!mergedInterventions.find(mi => mi.id === i.id)) {
+          const parsed: Intervention[] = JSON.parse(storedInterventions);
+          const storedMap = new Map<string, Intervention>(parsed.map((i) => [i.id, i]));
+          const mergedInterventions: Intervention[] = allInterventions.map(i => 
+            storedMap.has(i.id) ? storedMap.get(i.id)! : i
+          );
+          parsed.forEach((i) => {
+            if (!allInterventions.find(ai => ai.id === i.id)) {
               mergedInterventions.push(i);
             }
           });
@@ -598,9 +601,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isDataLoaded) return;
-    const newInterventions = interventionsData.filter(i => !allInterventions.find(ai => ai.id === i.id));
-    if (newInterventions.length > 0) {
-      AsyncStorage.setItem(INTERVENTIONS_STORAGE_KEY, JSON.stringify(newInterventions));
+    const modifiedOrNewInterventions = interventionsData.filter(i => {
+      const original = allInterventions.find(ai => ai.id === i.id);
+      if (!original) return true;
+      return JSON.stringify(i) !== JSON.stringify(original);
+    });
+    if (modifiedOrNewInterventions.length > 0) {
+      AsyncStorage.setItem(INTERVENTIONS_STORAGE_KEY, JSON.stringify(interventionsData));
     } else {
       AsyncStorage.removeItem(INTERVENTIONS_STORAGE_KEY);
     }
