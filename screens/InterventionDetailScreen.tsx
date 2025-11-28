@@ -1032,8 +1032,8 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        {/* Genera Report PDF - Solo per MASTER e DITTA */}
-        {isMasterOrDitta ? (
+        {/* Genera Report PDF - Solo per MASTER e DITTA, solo per interventi completati o chiusi */}
+        {isMasterOrDitta && (intervention.status === 'completato' || intervention.status === 'chiuso') ? (
           <View style={{ marginTop: Spacing.xl }}>
             <View style={[styles.divider, { backgroundColor: theme.border }]} />
             <Button 
