@@ -566,11 +566,16 @@ export const generateReportHTML = (data: ReportData): string => {
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
         </svg>
       </div>
-      <div>
+      <div style="flex: 1;">
         <div class="gps-coords">
           Lat: ${data.gps.latitude.toFixed(6)} | Lon: ${data.gps.longitude.toFixed(6)}
         </div>
         <div class="gps-timestamp">Rilevato il ${formatDate(data.gps.timestamp)}</div>
+        <a href="https://www.google.com/maps?q=${data.gps.latitude},${data.gps.longitude}" 
+           target="_blank" 
+           style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #0066CC; color: white; text-decoration: none; border-radius: 6px; font-size: 11px; font-weight: 600;">
+          Apri in Google Maps
+        </a>
       </div>
     </div>
   </div>
