@@ -559,6 +559,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         if (storedInterventions) {
           const parsed: Intervention[] = JSON.parse(storedInterventions);
+          console.log('[LOAD] Found stored interventions:', parsed.length);
+          console.log('[LOAD] Assigned companyIds:', parsed.filter(i => i.companyId).map(i => ({ id: i.id, companyId: i.companyId })));
           const storedMap = new Map<string, Intervention>(parsed.map((i) => [i.id, i]));
           const mergedInterventions: Intervention[] = allInterventions.map(i => 
             storedMap.has(i.id) ? storedMap.get(i.id)! : i
@@ -568,7 +570,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
               mergedInterventions.push(i);
             }
           });
+          console.log('[LOAD] Merged interventions:', mergedInterventions.length);
           setInterventionsData(mergedInterventions);
+        } else {
+          console.log('[LOAD] No stored interventions found, using defaults');
         }
       } catch (error) {
         console.error('Error loading stored data:', error);
@@ -602,15 +607,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isDataLoaded) return;
-    const modifiedOrNewInterventions = interventionsData.filter(i => {
+    
+    const hasAnyModification = interventionsData.some(i => {
       const original = allInterventions.find(ai => ai.id === i.id);
       if (!original) return true;
-      return JSON.stringify(i) !== JSON.stringify(original);
+      return i.companyId !== original.companyId || 
+             i.status !== original.status ||
+             i.technicianId !== original.technicianId ||
+             i.documentation?.notes !== original.documentation?.notes ||
+             JSON.stringify(i.documentation?.photos) !== JSON.stringify(original.documentation?.photos) ||
+             JSON.stringify(i.location) !== JSON.stringify(original.location);
     });
-    if (modifiedOrNewInterventions.length > 0) {
-      AsyncStorage.setItem(INTERVENTIONS_STORAGE_KEY, JSON.stringify(interventionsData));
-    } else {
-      AsyncStorage.removeItem(INTERVENTIONS_STORAGE_KEY);
+    
+    if (hasAnyModification) {
+      console.log('[SAVE] Saving interventions to AsyncStorage...', interventionsData.length);
+      AsyncStorage.setItem(INTERVENTIONS_STORAGE_KEY, JSON.stringify(interventionsData))
+        .then(() => console.log('[SAVE] Interventions saved successfully'))
+        .catch(err => console.error('[SAVE] Error saving interventions:', err));
     }
   }, [interventionsData, isDataLoaded]);
 
