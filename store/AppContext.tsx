@@ -619,7 +619,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       case 'master':
         return interventionsData;
       case 'ditta':
-        return interventionsData.filter(i => i.companyId === user.companyId);
+        console.log('[DEBUG] DITTA Login - user.companyId:', user.companyId);
+        console.log('[DEBUG] DITTA Login - user.companyName:', user.companyName);
+        console.log('[DEBUG] All interventions companyIds:', interventionsData.map(i => ({ id: i.id, companyId: i.companyId, companyName: i.companyName })));
+        const filtered = interventionsData.filter(i => i.companyId === user.companyId);
+        console.log('[DEBUG] Filtered interventions count:', filtered.length);
+        return filtered;
       case 'tecnico':
         return interventionsData.filter(i =>
           i.companyId === user.companyId &&
