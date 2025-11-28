@@ -35,7 +35,7 @@ SolarTech is a cross-platform mobile application (Android and iOS) designed for 
     - **GPS Acquisition**: Records technician location when starting an intervention.
     - **Documentation**: Captures photos and notes for work performed.
     - **User and Company Management**: MASTER users can perform CRUD operations on companies and users, including bulk assignment of interventions. DITTA users can manage their own technicians.
-    - **Reporting**: Automated PDF report generation (planned), email sending of reports, and digital client signature (planned).
+    - **Reporting**: Server-side PDF report generation using Puppeteer with HTML templates. Reports are role-restricted (MASTER/DITTA only) with SQL-level tenant isolation. Email integration via expo-mail-composer to operation.gbd@gruppo-phoenix.com.
     - **Real-time Tracking**: TechnicianMapScreen (MASTER only) displays technician locations with online/offline status.
     - **Credential Management**: System for creating and managing user and company credentials.
     - **Role-based field data acquisition**: Only TECNICO can acquire GPS, take/upload photos, modify notes, and change status; DITTA and MASTER have read-only access.
@@ -49,6 +49,18 @@ SolarTech is a cross-platform mobile application (Android and iOS) designed for 
   - DELETE /api/photos/:id - Delete a photo
 - **Visual Indicators**: Server photos show a cloud icon, local photos show a device icon
 - **Fallback**: If server upload fails, photos are saved locally on the device
+
+## PDF Report System
+- **Server-side Generation**: PDF reports created using Puppeteer with HTML templates
+- **API Endpoints**:
+  - POST /api/reports/intervention/:id - Generate PDF report for an intervention
+- **Security**:
+  - Role check: Only MASTER and DITTA users can generate reports
+  - Tenant isolation: DITTA users can only access reports for their own company's interventions
+  - SQL-level filtering: Company filter applied directly in database queries (not post-fetch)
+  - No information disclosure: Unauthorized requests return 404 (not 403) to prevent ID probing
+- **Report Content**: Company info, intervention details, technician data, photos, GPS coordinates, notes
+- **Email Integration**: Reports can be sent via expo-mail-composer to operation.gbd@gruppo-phoenix.com
 
 ## External Dependencies
 - **PostgreSQL**: Database for persistent data storage, including photo storage.
