@@ -30,13 +30,15 @@ export function TechnicianMapScreen() {
   const [selectedTech, setSelectedTech] = useState<User | null>(null);
   const insets = useSafeAreaInsets();
   
-  const technicians = useMemo(() => 
-    users.filter(u => u.role === 'tecnico' && u.lastLocation),
+  const allTechnicians = useMemo(() => 
+    users.filter(u => u.role === 'tecnico'),
     [users]
   );
 
-  const onlineTechnicians = technicians.filter(t => t.lastLocation?.isOnline);
-  const offlineTechnicians = technicians.filter(t => !t.lastLocation?.isOnline);
+  const techniciansWithLocation = allTechnicians.filter(t => t.lastLocation);
+  const techniciansWithoutLocation = allTechnicians.filter(t => !t.lastLocation);
+  const onlineTechnicians = techniciansWithLocation.filter(t => t.lastLocation?.isOnline);
+  const offlineTechnicians = techniciansWithLocation.filter(t => !t.lastLocation?.isOnline);
 
   return (
     <ScrollView 
@@ -72,18 +74,26 @@ export function TechnicianMapScreen() {
             Offline ({offlineTechnicians.length})
           </ThemedText>
         </View>
+        {techniciansWithoutLocation.length > 0 ? (
+          <View style={[styles.legendItem, { backgroundColor: theme.secondary + '15' }]}>
+            <View style={[styles.legendDot, { backgroundColor: theme.secondary }]} />
+            <ThemedText type="body" style={{ color: theme.secondary, fontWeight: '600' }}>
+              No GPS ({techniciansWithoutLocation.length})
+            </ThemedText>
+          </View>
+        ) : null}
       </View>
 
-      {technicians.length === 0 ? (
+      {allTechnicians.length === 0 ? (
         <ThemedView style={[styles.emptyState, { backgroundColor: theme.backgroundDefault }]}>
           <Feather name="users" size={48} color={theme.textTertiary} />
           <ThemedText type="body" style={{ color: theme.textSecondary, marginTop: Spacing.md, textAlign: 'center' }}>
-            Nessun tecnico con posizione GPS attiva
+            Nessun tecnico registrato
           </ThemedText>
         </ThemedView>
       ) : null}
 
-      {technicians.map((tech) => {
+      {techniciansWithLocation.map((tech) => {
         const isOnline = tech.lastLocation?.isOnline;
         const isSelected = selectedTech?.id === tech.id;
         
@@ -159,6 +169,76 @@ export function TechnicianMapScreen() {
           </Pressable>
         );
       })}
+
+      {techniciansWithoutLocation.length > 0 ? (
+        <View style={styles.noGpsSection}>
+          <ThemedText type="h4" style={{ marginHorizontal: Spacing.md, marginBottom: Spacing.md, color: theme.secondary }}>
+            Tecnici senza posizione GPS
+          </ThemedText>
+          {techniciansWithoutLocation.map((tech) => {
+            const isSelected = selectedTech?.id === tech.id;
+            
+            return (
+              <Pressable
+                key={tech.id}
+                style={({ pressed }) => [
+                  styles.techCard,
+                  { 
+                    backgroundColor: theme.backgroundDefault, 
+                    opacity: pressed ? 0.8 : 1,
+                    borderLeftColor: theme.secondary,
+                  }
+                ]}
+                onPress={() => setSelectedTech(isSelected ? null : tech)}
+              >
+                <View style={styles.techCardHeader}>
+                  <View style={[styles.avatar, { backgroundColor: theme.secondary + '20' }]}>
+                    <ThemedText type="h4" style={{ color: theme.secondary }}>
+                      {tech.name.split(' ').map(n => n[0]).join('')}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.techCardInfo}>
+                    <ThemedText type="h4">{tech.name}</ThemedText>
+                    <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                      {tech.companyName}
+                    </ThemedText>
+                  </View>
+                  <View style={[styles.onlineStatus, { backgroundColor: theme.secondary + '20' }]}>
+                    <Feather name="map-pin" size={12} color={theme.secondary} />
+                    <ThemedText type="caption" style={{ color: theme.secondary, marginLeft: 4 }}>
+                      No GPS
+                    </ThemedText>
+                  </View>
+                </View>
+                
+                <View style={styles.techCardLocation}>
+                  <Feather name="alert-circle" size={14} color={theme.secondary} />
+                  <ThemedText type="small" style={{ marginLeft: Spacing.sm, flex: 1, color: theme.secondary }}>
+                    Posizione non ancora acquisita
+                  </ThemedText>
+                </View>
+
+                {isSelected ? (
+                  <View style={styles.actionButtons}>
+                    <Pressable style={[styles.actionButton, { backgroundColor: theme.primary }]}>
+                      <Feather name="phone" size={16} color={theme.buttonText} />
+                      <ThemedText type="small" style={{ color: theme.buttonText, marginLeft: Spacing.xs }}>
+                        Chiama
+                      </ThemedText>
+                    </Pressable>
+                    <Pressable style={[styles.actionButton, { backgroundColor: theme.primaryLight }]}>
+                      <Feather name="message-circle" size={16} color={theme.primary} />
+                      <ThemedText type="small" style={{ color: theme.primary, marginLeft: Spacing.xs }}>
+                        Messaggio
+                      </ThemedText>
+                    </Pressable>
+                  </View>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
@@ -183,9 +263,10 @@ const styles = StyleSheet.create({
   },
   legend: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: Spacing.md,
     marginBottom: Spacing.lg,
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   legendItem: {
     flexDirection: 'row',
@@ -203,7 +284,7 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: Spacing.xxl,
+    padding: Spacing['2xl'],
     marginHorizontal: Spacing.md,
     borderRadius: BorderRadius.lg,
   },
@@ -260,5 +341,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
+  },
+  noGpsSection: {
+    marginTop: Spacing.lg,
   },
 });
