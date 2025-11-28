@@ -723,17 +723,31 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
         ) : null}
 
         {intervention.documentation.photos.length > 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosScroll}>
-            {intervention.documentation.photos.map((photo) => (
-              <Pressable 
-                key={photo.id} 
-                style={styles.photoThumbnail}
-                onLongPress={canEdit ? () => handleDeletePhoto(photo.id) : undefined}
-              >
-                <Image source={{ uri: photo.uri }} style={styles.photoImage} />
-              </Pressable>
-            ))}
-          </ScrollView>
+          <View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosScroll}>
+              {intervention.documentation.photos.map((photo) => (
+                <View key={photo.id} style={styles.photoThumbnail}>
+                  <Pressable 
+                    onLongPress={canEdit ? () => handleDeletePhoto(photo.id) : undefined}
+                  >
+                    <Image 
+                      source={{ uri: photo.uri }} 
+                      style={styles.photoImage}
+                      onError={() => console.log('[PHOTO ERROR] Failed to load:', photo.uri?.substring(0, 50))}
+                    />
+                  </Pressable>
+                  <ThemedText type="caption" style={styles.photoTimestamp}>
+                    {new Date(photo.timestamp).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}
+                  </ThemedText>
+                </View>
+              ))}
+            </ScrollView>
+            {!canEdit ? (
+              <ThemedText type="caption" style={{ color: theme.textTertiary, marginTop: Spacing.xs, fontStyle: 'italic' }}>
+                Le foto sono visibili solo sul dispositivo dove sono state caricate
+              </ThemedText>
+            ) : null}
+          </View>
         ) : (
           <View style={[styles.emptyState, { backgroundColor: theme.backgroundSecondary }]}>
             <Feather name="image" size={24} color={theme.textTertiary} />
@@ -996,6 +1010,12 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: BorderRadius.sm,
+    backgroundColor: '#333',
+  },
+  photoTimestamp: {
+    textAlign: 'center',
+    marginTop: Spacing.xs,
+    fontSize: 10,
   },
   locationInfo: {
     flexDirection: 'row',
