@@ -16,6 +16,7 @@ export function ManageTechniciansScreen() {
   const { users, addUser, deleteUser } = useApp();
   const [showForm, setShowForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -23,6 +24,10 @@ export function ManageTechniciansScreen() {
     email: '',
     phone: '',
   });
+
+  const togglePasswordVisibility = (id: string) => {
+    setVisiblePasswords(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const companyTechnicians = users.filter(
     u => u.role === 'tecnico' && u.companyId === currentUser?.companyId
@@ -99,6 +104,7 @@ export function ManageTechniciansScreen() {
 
       addUser({
         username,
+        password,
         name,
         email,
         phone,
@@ -165,6 +171,34 @@ export function ManageTechniciansScreen() {
         >
           <Feather name="trash-2" size={18} color={theme.danger} />
         </Pressable>
+      </View>
+
+      <View style={[styles.credentialsDisplay, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}>
+        <View style={styles.credentialsDisplayHeader}>
+          <Feather name="key" size={14} color={theme.primary} />
+          <ThemedText type="small" style={{ color: theme.primary, fontWeight: '600', marginLeft: Spacing.xs }}>
+            Credenziali Accesso
+          </ThemedText>
+        </View>
+        <View style={styles.credentialRow}>
+          <ThemedText type="small" style={{ color: theme.textSecondary }}>Username:</ThemedText>
+          <ThemedText type="small" style={{ fontWeight: '600' }}>{technician.username}</ThemedText>
+        </View>
+        <View style={styles.credentialRow}>
+          <ThemedText type="small" style={{ color: theme.textSecondary }}>Password:</ThemedText>
+          <View style={styles.passwordDisplay}>
+            <ThemedText type="small" style={{ fontWeight: '600' }}>
+              {visiblePasswords[technician.id] ? (technician.password || 'N/D') : '••••••••'}
+            </ThemedText>
+            <Pressable onPress={() => togglePasswordVisibility(technician.id)}>
+              <Feather 
+                name={visiblePasswords[technician.id] ? 'eye-off' : 'eye'} 
+                size={16} 
+                color={theme.primary} 
+              />
+            </Pressable>
+          </View>
+        </View>
       </View>
 
       {technician.email ? (
@@ -434,6 +468,28 @@ const styles = StyleSheet.create({
   },
   detailText: {
     flex: 1,
+  },
+  credentialsDisplay: {
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.sm,
+  },
+  credentialsDisplayHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  credentialRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 2,
+  },
+  passwordDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
   emptyState: {
     alignItems: 'center',

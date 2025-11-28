@@ -121,6 +121,7 @@ export interface TechnicianLocation {
 export interface User {
   id: string;
   username: string;
+  password?: string;
   role: 'master' | 'ditta' | 'tecnico';
   name: string;
   email: string;
