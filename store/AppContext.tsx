@@ -634,6 +634,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [interventionsData, isDataLoaded]);
 
+  // Sync technician IDs: Fix interventions assigned to old IDs when technician logs in
+  useEffect(() => {
+    if (!user || user.role !== 'tecnico' || !isDataLoaded) return;
+
+    // Find the user in usersData by username to get the potentially different ID
+    const appContextUser = usersData.find(u => 
+      u.username === user.username && u.companyId === user.companyId
+    );
+    
+    if (!appContextUser) return;
+    
+    // If the user ID in AppContext is different from AuthContext, we need to:
+    // 1. Update the user ID in usersData
+    // 2. Update all interventions that reference the old ID
+    if (appContextUser.id !== user.id) {
+      console.log('[SYNC] ID mismatch detected for technician:', user.username);
+      console.log('[SYNC] AppContext ID:', appContextUser.id);
+      console.log('[SYNC] AuthContext ID:', user.id);
+      
+      const oldId = appContextUser.id;
+      const newId = user.id;
+      
+      // Update user ID in usersData
+      setUsersData(prev => prev.map(u => 
+        u.id === oldId ? { ...u, id: newId } : u
+      ));
+      
+      // Update interventions that reference the old technician ID
+      setInterventionsData(prev => prev.map(i => 
+        i.technicianId === oldId 
+          ? { ...i, technicianId: newId, updatedAt: Date.now() }
+          : i
+      ));
+      
+      console.log('[SYNC] Updated user and intervention IDs from', oldId, 'to', newId);
+    }
+  }, [user, usersData, isDataLoaded]);
+
   const interventions = useMemo(() => {
     if (!user) return [];
     switch (user.role) {
@@ -649,18 +687,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       case 'tecnico':
         console.log('[DEBUG] TECNICO Login - user.id:', user.id);
         console.log('[DEBUG] TECNICO Login - user.companyId:', user.companyId);
-        console.log('[DEBUG] All interventions for TECNICO:', interventionsData.map(i => ({ 
-          id: i.id, 
-          companyId: i.companyId, 
+        
+        // Find interventions for this company
+        const companyInterventions = interventionsData.filter(i => i.companyId === user.companyId);
+        console.log('[DEBUG] TECNICO - Interventions in company:', companyInterventions.map(i => ({
+          id: i.id,
+          description: i.description,
           technicianId: i.technicianId,
           technicianName: i.technicianName,
-          status: i.status 
+          matchesUserId: i.technicianId === user.id,
+          isUnassigned: i.technicianId === null
         })));
+        
         const tecnicoFiltered = interventionsData.filter(i =>
           i.companyId === user.companyId &&
           (i.technicianId === user.id || i.technicianId === null)
         );
         console.log('[DEBUG] TECNICO filtered count:', tecnicoFiltered.length);
+        console.log('[DEBUG] TECNICO filtered interventions:', tecnicoFiltered.map(i => i.description));
         return tecnicoFiltered;
       default:
         return [];
