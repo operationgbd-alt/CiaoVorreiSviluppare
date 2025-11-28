@@ -1,4 +1,23 @@
-const API_BASE_URL = 'http://localhost:3001/api';
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+
+const getApiBaseUrl = (): string => {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.location.hostname.includes('replit')) {
+      return `https://${window.location.hostname.replace('-00-', '-3001.')}/api`;
+    }
+    return 'http://localhost:3001/api';
+  }
+  
+  const debuggerHost = Constants.expoConfig?.hostUri?.split(':')[0];
+  if (debuggerHost) {
+    return `http://${debuggerHost}:3001/api`;
+  }
+  
+  return 'http://localhost:3001/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 interface ApiResponse<T> {
   success: boolean;

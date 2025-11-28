@@ -793,7 +793,7 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
 
         {/* Foto */}
         <ThemedText type="body" style={{ fontWeight: '600', marginBottom: Spacing.sm }}>
-          Foto ({intervention.documentation.photos.length})
+          Foto ({serverPhotos.length + intervention.documentation.photos.length})
         </ThemedText>
         
         {canEdit ? (
@@ -801,38 +801,79 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
             <Pressable 
               style={[styles.photoButton, { backgroundColor: theme.primary }]}
               onPress={handleTakePhoto}
+              disabled={isUploadingPhoto}
             >
-              <Feather name="camera" size={20} color="#FFFFFF" />
+              {isUploadingPhoto ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Feather name="camera" size={20} color="#FFFFFF" />
+              )}
               <ThemedText type="small" style={{ color: '#FFFFFF', marginTop: Spacing.xs }}>
-                Scatta Foto
+                {isUploadingPhoto ? 'Caricando...' : 'Scatta Foto'}
               </ThemedText>
             </Pressable>
 
             <Pressable 
               style={[styles.photoButton, { backgroundColor: theme.secondary }]}
               onPress={handlePickImage}
+              disabled={isUploadingPhoto}
             >
-              <Feather name="image" size={20} color="#FFFFFF" />
+              {isUploadingPhoto ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Feather name="image" size={20} color="#FFFFFF" />
+              )}
               <ThemedText type="small" style={{ color: '#FFFFFF', marginTop: Spacing.xs }}>
-                Galleria
+                {isUploadingPhoto ? 'Caricando...' : 'Galleria'}
               </ThemedText>
             </Pressable>
           </View>
         ) : null}
 
-        {intervention.documentation.photos.length > 0 ? (
+        {isLoadingPhotos ? (
+          <View style={[styles.emptyState, { backgroundColor: theme.backgroundSecondary }]}>
+            <ActivityIndicator size="small" color={theme.primary} />
+            <ThemedText type="caption" style={{ color: theme.textTertiary, marginTop: Spacing.xs }}>
+              Caricamento foto...
+            </ThemedText>
+          </View>
+        ) : serverPhotos.length > 0 || intervention.documentation.photos.length > 0 ? (
           <View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosScroll}>
+              {/* Foto dal server */}
+              {serverPhotos.map((photo) => (
+                <View key={photo.id} style={styles.photoThumbnail}>
+                  <Pressable 
+                    onLongPress={canEdit ? () => handleDeletePhoto(photo.id, true) : undefined}
+                  >
+                    <Image 
+                      source={{ uri: api.getPhotoImageUrl(photo.id) }} 
+                      style={styles.photoImage}
+                      onError={() => console.log('[SERVER PHOTO ERROR] Failed to load:', photo.id)}
+                    />
+                    <View style={[styles.serverPhotoIndicator, { backgroundColor: theme.success }]}>
+                      <Feather name="cloud" size={10} color="#FFFFFF" />
+                    </View>
+                  </Pressable>
+                  <ThemedText type="caption" style={styles.photoTimestamp}>
+                    {new Date(photo.createdAt).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}
+                  </ThemedText>
+                </View>
+              ))}
+              {/* Foto locali */}
               {intervention.documentation.photos.map((photo) => (
                 <View key={photo.id} style={styles.photoThumbnail}>
                   <Pressable 
-                    onLongPress={canEdit ? () => handleDeletePhoto(photo.id) : undefined}
+                    onLongPress={canEdit ? () => handleDeletePhoto(photo.id, false) : undefined}
                   >
                     <Image 
                       source={{ uri: photo.uri }} 
                       style={styles.photoImage}
-                      onError={() => console.log('[PHOTO ERROR] Failed to load:', photo.uri?.substring(0, 50))}
+                      onError={() => console.log('[LOCAL PHOTO ERROR] Failed to load:', photo.uri?.substring(0, 50))}
                     />
+                    <View style={[styles.serverPhotoIndicator, { backgroundColor: theme.textTertiary }]}>
+                      <Feather name="smartphone" size={10} color="#FFFFFF" />
+                    </View>
                   </Pressable>
                   <ThemedText type="caption" style={styles.photoTimestamp}>
                     {new Date(photo.timestamp).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}
@@ -840,11 +881,9 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
                 </View>
               ))}
             </ScrollView>
-            {!canEdit ? (
-              <ThemedText type="caption" style={{ color: theme.textTertiary, marginTop: Spacing.xs, fontStyle: 'italic' }}>
-                Le foto sono visibili solo sul dispositivo dove sono state caricate
-              </ThemedText>
-            ) : null}
+            <ThemedText type="caption" style={{ color: theme.textTertiary, marginTop: Spacing.xs }}>
+              {serverPhotos.length > 0 ? 'Le foto con icona cloud sono visibili su tutti i dispositivi.' : 'Le foto locali sono visibili solo su questo dispositivo.'}
+            </ThemedText>
           </View>
         ) : (
           <View style={[styles.emptyState, { backgroundColor: theme.backgroundSecondary }]}>
@@ -1114,6 +1153,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: Spacing.xs,
     fontSize: 10,
+  },
+  serverPhotoIndicator: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   locationInfo: {
     flexDirection: 'row',
