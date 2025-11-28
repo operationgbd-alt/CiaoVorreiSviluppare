@@ -34,11 +34,13 @@ export default function DashboardScreen() {
   const navigation = useNavigation<DashboardNavProp>();
   const { theme } = useTheme();
   const { user } = useAuth();
-  const { interventions, appointments, getGlobalStats, unassignedInterventions } = useApp();
+  const { interventions, appointments, getGlobalStats, unassignedInterventions, users } = useApp();
   const insets = useSafeAreaInsets();
 
   const isMaster = user?.role === 'master';
-  const globalStats = isMaster ? getGlobalStats() : null;
+  
+  const techniciansCount = users.filter(u => u.role === 'tecnico').length;
+  const globalStats = isMaster ? { ...getGlobalStats(), totalTechnicians: techniciansCount } : null;
 
   const today = new Date();
   const formattedDate = today.toLocaleDateString("it-IT", {
