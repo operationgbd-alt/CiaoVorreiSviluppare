@@ -40,11 +40,22 @@ SolarTech is a cross-platform mobile application (Android and iOS) designed for 
     - **Credential Management**: System for creating and managing user and company credentials.
     - **Role-based field data acquisition**: Only TECNICO can acquire GPS, take/upload photos, modify notes, and change status; DITTA and MASTER have read-only access.
 
+## Photo Storage System
+- **Server-side Storage**: Photos are stored in PostgreSQL as base64 data, enabling cross-device visibility
+- **API Endpoints**:
+  - POST /api/photos - Upload photo with base64 data
+  - GET /api/photos/:id/image - Retrieve photo as image
+  - GET /api/photos/intervention/:id - List all photos for an intervention
+  - DELETE /api/photos/:id - Delete a photo
+- **Visual Indicators**: Server photos show a cloud icon, local photos show a device icon
+- **Fallback**: If server upload fails, photos are saved locally on the device
+
 ## External Dependencies
-- **PostgreSQL**: Database for persistent data storage.
+- **PostgreSQL**: Database for persistent data storage, including photo storage.
 - **Express.js**: Backend framework for API services.
 - **JWT (JSON Web Tokens)**: For user authentication and authorization.
 - **bcrypt**: For password hashing.
 - **expo-location**: For accessing device GPS capabilities.
 - **expo-image-picker**: For accessing device camera and photo gallery.
+- **expo-file-system**: For converting photos to base64 for server upload.
 - **expo-mail-composer**: For composing and sending emails.
