@@ -226,10 +226,10 @@ export default function CompletedInterventionsScreen({ navigation }: Props) {
             {generatingReportId === item.id ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <Feather name="file-text" size={16} color="#FFFFFF" />
+              <Feather name="send" size={16} color="#FFFFFF" />
             )}
             <ThemedText type="body" style={{ color: '#FFFFFF', marginLeft: Spacing.sm, fontWeight: '600' }}>
-              {generatingReportId === item.id ? 'Generazione...' : 'Genera Report PDF'}
+              {generatingReportId === item.id ? 'Invio in corso...' : 'INVIA REPORT'}
             </ThemedText>
           </Pressable>
         ) : null}
