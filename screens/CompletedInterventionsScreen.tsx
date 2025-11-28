@@ -56,6 +56,63 @@ export default function CompletedInterventionsScreen({ navigation }: Props) {
         companyId: user.companyId,
       } : undefined;
       
+      let photosForReport: any[] = [];
+      
+      try {
+        const serverPhotosResponse = await api.getInterventionPhotos(intervention.id);
+        if (serverPhotosResponse.success && serverPhotosResponse.data) {
+          for (const photo of serverPhotosResponse.data) {
+            try {
+              const photoDataResponse = await api.getPhoto(photo.id);
+              if (photoDataResponse.success && photoDataResponse.data?.data) {
+                photosForReport.push({
+                  id: photo.id,
+                  data: photoDataResponse.data.data,
+                  mimeType: photo.mimeType || 'image/jpeg',
+                  caption: photo.caption || `Foto`,
+                  timestamp: new Date(photo.createdAt).getTime(),
+                });
+              }
+            } catch (e) {
+              console.log('[REPORT] Failed to fetch photo data:', photo.id);
+            }
+          }
+        }
+      } catch (e) {
+        console.log('[REPORT] Failed to fetch server photos, using local');
+      }
+      
+      if (photosForReport.length === 0 && intervention.documentation?.photos?.length > 0) {
+        for (const photo of intervention.documentation.photos) {
+          if (photo.uri) {
+            try {
+              if (photo.uri.startsWith('data:')) {
+                photosForReport.push({
+                  id: photo.id,
+                  data: photo.uri,
+                  mimeType: 'image/jpeg',
+                  caption: photo.caption || `Foto`,
+                  timestamp: photo.timestamp,
+                });
+              } else if (Platform.OS !== 'web' && photo.uri.startsWith('file://')) {
+                const base64 = await FileSystem.readAsStringAsync(photo.uri, { encoding: 'base64' });
+                photosForReport.push({
+                  id: photo.id,
+                  data: `data:image/jpeg;base64,${base64}`,
+                  mimeType: 'image/jpeg',
+                  caption: photo.caption || `Foto`,
+                  timestamp: photo.timestamp,
+                });
+              }
+            } catch (e) {
+              console.log('[REPORT] Failed to convert local photo:', photo.id);
+            }
+          }
+        }
+      }
+      
+      console.log('[REPORT] Total photos for report:', photosForReport.length);
+      
       const interventionData = {
         id: intervention.id,
         number: intervention.number,
@@ -70,7 +127,10 @@ export default function CompletedInterventionsScreen({ navigation }: Props) {
         companyId: intervention.companyId,
         companyName: intervention.companyName,
         appointment: intervention.appointment,
-        documentation: intervention.documentation,
+        documentation: {
+          ...intervention.documentation,
+          photos: photosForReport,
+        },
       };
       
       const response = await api.generateReport(intervention.id, 'base64', demoUser, interventionData);

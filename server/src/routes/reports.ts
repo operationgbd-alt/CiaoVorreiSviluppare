@@ -56,12 +56,41 @@ router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: R
       }
 
       if (interventionData.documentation?.photos) {
-        photos = interventionData.documentation.photos.map((p: any) => ({
-          id: p.id,
-          photo_data: p.uri?.startsWith('data:') ? p.uri.split(',')[1] : null,
-          description: p.caption,
-          created_at: p.takenAt ? new Date(p.takenAt) : new Date()
-        }));
+        console.log('[REPORT] Processing photos:', interventionData.documentation.photos.length);
+        photos = interventionData.documentation.photos
+          .filter((p: any) => {
+            const hasValidData = (p.data && p.data.includes('base64')) || (p.uri && p.uri.includes('base64'));
+            if (!hasValidData) {
+              console.log('[REPORT] Skipping photo without base64 data:', p.id);
+            }
+            return hasValidData;
+          })
+          .map((p: any, index: number) => {
+            let photoData = '';
+            let mimeType = 'image/jpeg';
+            
+            const source = p.data || p.uri || '';
+            if (source.includes('data:')) {
+              const matches = source.match(/data:([^;]+);base64,(.+)/);
+              if (matches) {
+                mimeType = matches[1];
+                photoData = matches[2];
+              }
+            } else if (source.includes('base64')) {
+              photoData = source;
+            }
+            
+            console.log(`[REPORT] Photo ${index + 1}: has data = ${photoData.length > 0}, mime = ${mimeType}`);
+            
+            return {
+              id: p.id,
+              photo_data: photoData,
+              mime_type: p.mimeType || mimeType,
+              description: p.caption || `Foto ${index + 1}`,
+              created_at: p.timestamp ? new Date(p.timestamp) : (p.takenAt ? new Date(p.takenAt) : new Date())
+            };
+          });
+        console.log('[REPORT] Valid photos for report:', photos.length);
       }
     } else {
       let interventionResult;
@@ -110,7 +139,7 @@ router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: R
       }
 
       const photosResult = await pool.query(
-        `SELECT id, intervention_id, photo_data, file_name, mime_type, description, created_at
+        `SELECT id, intervention_id, data as photo_data, mime_type, caption as description, created_at
          FROM photos 
          WHERE intervention_id = $1 
          ORDER BY created_at ASC`,
