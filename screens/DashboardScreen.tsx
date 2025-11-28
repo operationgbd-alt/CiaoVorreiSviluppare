@@ -34,8 +34,10 @@ export default function DashboardScreen() {
   const navigation = useNavigation<DashboardNavProp>();
   const { theme } = useTheme();
   const { user } = useAuth();
-  const { interventions, appointments, getGlobalStats, unassignedInterventions } = useApp();
+  const { interventions, appointments, getGlobalStats, unassignedInterventions, getAllInterventionsData } = useApp();
   const insets = useSafeAreaInsets();
+  
+  const allInterventionsDebug = getAllInterventionsData ? getAllInterventionsData() : [];
 
   const isMaster = user?.role === 'master';
   const globalStats = isMaster ? getGlobalStats() : null;
@@ -95,6 +97,22 @@ export default function DashboardScreen() {
           </View>
         </View>
       </View>
+
+      {user?.role === 'ditta' ? (
+        <View style={[styles.debugPanel, { backgroundColor: '#FFF3CD', borderColor: '#FFE082' }]}>
+          <ThemedText style={{ fontWeight: 'bold', color: '#856404' }}>Debug Info:</ThemedText>
+          <ThemedText style={{ color: '#856404', fontSize: 12 }}>User CompanyId: {user?.companyId || 'UNDEFINED'}</ThemedText>
+          <ThemedText style={{ color: '#856404', fontSize: 12 }}>User CompanyName: {user?.companyName || 'UNDEFINED'}</ThemedText>
+          <ThemedText style={{ color: '#856404', fontSize: 12 }}>Filtered Interventions: {interventions.length}</ThemedText>
+          <ThemedText style={{ color: '#856404', fontSize: 12 }}>All Interventions: {allInterventionsDebug.length}</ThemedText>
+          <ThemedText style={{ color: '#856404', fontSize: 12, marginTop: 4 }}>Assigned CompanyIds:</ThemedText>
+          {allInterventionsDebug.filter(i => i.companyId).slice(0, 5).map((i, idx) => (
+            <ThemedText key={idx} style={{ color: '#856404', fontSize: 10 }}>
+              - {i.number}: {i.companyId} ({i.companyName})
+            </ThemedText>
+          ))}
+        </View>
+      ) : null}
 
       {isMaster && globalStats ? (
         <View style={styles.masterSection}>
@@ -475,6 +493,12 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
+  debugPanel: {
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+    borderWidth: 1,
+  },
   welcomeCard: {
     borderRadius: BorderRadius.md,
     padding: Spacing.lg,

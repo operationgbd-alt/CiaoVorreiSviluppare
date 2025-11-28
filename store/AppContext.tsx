@@ -30,6 +30,7 @@ interface AppContextType {
   deleteUser: (id: string) => void;
   getCompanyById: (id: string) => Company | undefined;
   getUsersByCompany: (companyId: string) => User[];
+  getAllInterventionsData: () => Intervention[];
   getGlobalStats: () => {
     totalInterventions: number;
     byStatus: Record<string, number>;
@@ -822,6 +823,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         deleteUser,
         getCompanyById,
         getUsersByCompany,
+        getAllInterventionsData: () => interventionsData,
         getGlobalStats,
       }}
     >
