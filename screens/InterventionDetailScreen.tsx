@@ -59,13 +59,15 @@ const STATUS_OPTIONS: { value: InterventionStatus; label: string }[] = [
 
 export default function InterventionDetailScreen({ navigation, route }: Props) {
   const { theme } = useTheme();
-  const { getInterventionById, updateIntervention, addAppointment } = useApp();
+  const { getInterventionById, updateIntervention, addAppointment, users } = useApp();
   const { user } = useAuth();
   
   const intervention = getInterventionById(route.params.interventionId);
   
   const isTecnico = user?.role === 'tecnico';
+  const isMasterOrDitta = user?.role === 'master' || user?.role === 'ditta';
   const canEdit = isTecnico;
+  const canAssignTechnician = isMasterOrDitta;
   
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [notes, setNotes] = useState(intervention?.documentation.notes || '');
@@ -76,6 +78,18 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [appointmentNotes, setAppointmentNotes] = useState(intervention?.appointment?.notes || '');
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState<string | null>(intervention?.technicianId || null);
+
+  const availableTechnicians = users.filter(u => {
+    if (u.role !== 'tecnico') return false;
+    if (user?.role === 'master') {
+      return u.companyId === intervention?.companyId;
+    }
+    if (user?.role === 'ditta') {
+      return u.companyId === user.companyId;
+    }
+    return false;
+  });
 
   useLayoutEffect(() => {
     if (intervention) {
@@ -357,6 +371,37 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
+  const handleAssignTechnician = (technicianId: string | null) => {
+    setSelectedTechnicianId(technicianId);
+    
+    if (technicianId) {
+      const technician = availableTechnicians.find(t => t.id === technicianId);
+      updateIntervention(intervention.id, {
+        technicianId: technicianId,
+        technicianName: technician?.name || null,
+      });
+      
+      const msg = `Intervento assegnato a ${technician?.name}`;
+      if (Platform.OS === 'web') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Tecnico Assegnato', msg);
+      }
+    } else {
+      updateIntervention(intervention.id, {
+        technicianId: null,
+        technicianName: null,
+      });
+      
+      const msg = 'Assegnazione tecnico rimossa';
+      if (Platform.OS === 'web') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Assegnazione Rimossa', msg);
+      }
+    }
+  };
+
   return (
     <ScreenKeyboardAwareScrollView>
       <View style={[styles.statusBanner, { backgroundColor: statusConfig.color + '15' }]}>
@@ -399,7 +444,114 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
           <ThemedText type="caption" style={{ color: theme.textSecondary }}>Assegnato il</ThemedText>
           <ThemedText type="body">{formatDate(intervention.assignedAt)}</ThemedText>
         </View>
+
+        {intervention.technicianName ? (
+          <View style={styles.detailRow}>
+            <ThemedText type="caption" style={{ color: theme.textSecondary }}>Tecnico Assegnato</ThemedText>
+            <View style={[styles.categoryBadge, { backgroundColor: theme.success + '15' }]}>
+              <Feather name="user" size={14} color={theme.success} style={{ marginRight: Spacing.xs }} />
+              <ThemedText type="body" style={{ color: theme.success, fontWeight: '600' }}>
+                {intervention.technicianName}
+              </ThemedText>
+            </View>
+          </View>
+        ) : null}
       </Card>
+
+      {/* ASSEGNAZIONE TECNICO - Solo per MASTER e DITTA */}
+      {canAssignTechnician && intervention.companyId ? (
+        <Card style={styles.section} onPress={() => toggleSection('assegnazione')}>
+          <View style={styles.sectionHeader}>
+            <Feather name="user-plus" size={18} color={theme.primary} />
+            <ThemedText type="h3" style={{ marginLeft: Spacing.sm, flex: 1 }}>
+              Assegna Tecnico
+            </ThemedText>
+            <Feather 
+              name={expandedSection === 'assegnazione' ? 'chevron-up' : 'chevron-down'} 
+              size={20} 
+              color={theme.textSecondary} 
+            />
+          </View>
+
+          {intervention.technicianName ? (
+            <View style={styles.currentTechnician}>
+              <Feather name="user-check" size={16} color={theme.success} />
+              <ThemedText type="body" style={{ marginLeft: Spacing.sm, color: theme.success, fontWeight: '600' }}>
+                Assegnato a: {intervention.technicianName}
+              </ThemedText>
+            </View>
+          ) : (
+            <View style={styles.currentTechnician}>
+              <Feather name="alert-circle" size={16} color={theme.secondary} />
+              <ThemedText type="body" style={{ marginLeft: Spacing.sm, color: theme.secondary }}>
+                Nessun tecnico assegnato
+              </ThemedText>
+            </View>
+          )}
+
+          {expandedSection === 'assegnazione' ? (
+            <View style={styles.technicianList}>
+              {availableTechnicians.length === 0 ? (
+                <ThemedText type="body" style={{ color: theme.textSecondary, textAlign: 'center', padding: Spacing.md }}>
+                  Nessun tecnico disponibile per questa ditta
+                </ThemedText>
+              ) : (
+                <>
+                  {availableTechnicians.map(tech => (
+                    <Pressable
+                      key={tech.id}
+                      style={[
+                        styles.technicianItem,
+                        { backgroundColor: theme.backgroundSecondary },
+                        selectedTechnicianId === tech.id && { 
+                          backgroundColor: theme.primary + '20',
+                          borderColor: theme.primary,
+                          borderWidth: 2,
+                        },
+                      ]}
+                      onPress={() => handleAssignTechnician(tech.id)}
+                    >
+                      <View style={[
+                        styles.technicianAvatar,
+                        { backgroundColor: selectedTechnicianId === tech.id ? theme.primary : theme.textTertiary },
+                      ]}>
+                        <ThemedText style={{ color: '#FFFFFF', fontWeight: '600' }}>
+                          {tech.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        </ThemedText>
+                      </View>
+                      <View style={{ flex: 1, marginLeft: Spacing.md }}>
+                        <ThemedText type="body" style={{ fontWeight: '600' }}>
+                          {tech.name}
+                        </ThemedText>
+                        <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                          {tech.email}
+                        </ThemedText>
+                      </View>
+                      {selectedTechnicianId === tech.id ? (
+                        <Feather name="check-circle" size={24} color={theme.primary} />
+                      ) : (
+                        <Feather name="circle" size={24} color={theme.textTertiary} />
+                      )}
+                    </Pressable>
+                  ))}
+
+                  {selectedTechnicianId ? (
+                    <Pressable
+                      style={[styles.removeAssignmentButton, { backgroundColor: theme.danger + '15' }]}
+                      onPress={() => handleAssignTechnician(null)}
+                    >
+                      <Feather name="user-x" size={18} color={theme.danger} />
+                      <ThemedText type="body" style={{ color: theme.danger, marginLeft: Spacing.sm, fontWeight: '600' }}>
+                        Rimuovi Assegnazione
+                      </ThemedText>
+                    </Pressable>
+                  ) : null}
+                </>
+              )}
+            </View>
+          ) : null}
+        </Card>
+      ) : null}
 
       {/* 2. CLIENTE */}
       <Card style={styles.section}>
@@ -909,5 +1061,35 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.sm,
     minHeight: 60,
+  },
+  currentTechnician: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  technicianList: {
+    marginTop: Spacing.md,
+    gap: Spacing.sm,
+  },
+  technicianItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  technicianAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeAssignmentButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.sm,
   },
 });
