@@ -51,16 +51,20 @@ SolarTech is a cross-platform mobile application (Android and iOS) designed for 
 - **Fallback**: If server upload fails, photos are saved locally on the device
 
 ## PDF Report System
-- **Server-side Generation**: PDF reports created using Puppeteer with HTML templates
+- **Server-side Generation**: PDF reports created using Puppeteer with HTML templates and Nix Chromium
 - **API Endpoints**:
   - POST /api/reports/intervention/:id - Generate PDF report for an intervention
+  - Accepts `interventionData` in request body for demo/local interventions
+  - Accepts `demoUser` in request body for authentication fallback
 - **Security**:
-  - Role check: Only MASTER and DITTA users can generate reports
+  - Role check: Only MASTER and DITTA users can generate reports (case-insensitive)
   - Tenant isolation: DITTA users can only access reports for their own company's interventions
   - SQL-level filtering: Company filter applied directly in database queries (not post-fetch)
   - No information disclosure: Unauthorized requests return 404 (not 403) to prevent ID probing
+  - Demo user authentication: Accepts user data from request body when no JWT token present
 - **Report Content**: Company info, intervention details, technician data, photos, GPS coordinates, notes
 - **Email Integration**: Reports can be sent via expo-mail-composer to operation.gbd@gruppo-phoenix.com
+- **Technical Note**: Uses Nix Chromium (/nix/store/.../bin/chromium) for PDF generation due to Replit environment constraints
 
 ## External Dependencies
 - **PostgreSQL**: Database for persistent data storage, including photo storage.

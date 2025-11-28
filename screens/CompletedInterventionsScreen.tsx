@@ -49,7 +49,31 @@ export default function CompletedInterventionsScreen({ navigation }: Props) {
     setGeneratingReportId(intervention.id);
     
     try {
-      const response = await api.generateReport(intervention.id, 'base64');
+      const demoUser = user ? {
+        id: user.id,
+        name: user.name,
+        role: user.role,
+        companyId: user.companyId,
+      } : undefined;
+      
+      const interventionData = {
+        id: intervention.id,
+        number: intervention.number,
+        category: intervention.category,
+        priority: intervention.priority,
+        status: intervention.status,
+        description: intervention.description,
+        assignedAt: intervention.assignedAt,
+        client: intervention.client,
+        technicianId: intervention.technicianId,
+        technicianName: intervention.technicianName,
+        companyId: intervention.companyId,
+        companyName: intervention.companyName,
+        appointment: intervention.appointment,
+        documentation: intervention.documentation,
+      };
+      
+      const response = await api.generateReport(intervention.id, 'base64', demoUser, interventionData);
       
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Errore nella generazione del report');

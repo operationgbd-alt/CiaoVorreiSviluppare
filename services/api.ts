@@ -279,9 +279,19 @@ class ApiService {
     return `${API_BASE_URL}/photos/${id}/image`;
   }
 
-  async generateReport(interventionId: string, format: 'pdf' | 'base64' = 'base64'): Promise<ApiResponse<ReportResponse>> {
+  async generateReport(
+    interventionId: string, 
+    format: 'pdf' | 'base64' = 'base64',
+    demoUser?: { id: string; name: string; role: string; companyId?: string | null },
+    interventionData?: any
+  ): Promise<ApiResponse<ReportResponse>> {
+    const body: any = {};
+    if (demoUser) body.demoUser = demoUser;
+    if (interventionData) body.interventionData = interventionData;
+    
     return this.request<ReportResponse>(`/reports/intervention/${interventionId}?format=${format}`, {
       method: 'POST',
+      body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
     });
   }
 
