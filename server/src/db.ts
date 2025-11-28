@@ -72,6 +72,16 @@ export async function initializeDatabase() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
+      CREATE TABLE IF NOT EXISTS photos (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        intervention_id UUID NOT NULL,
+        data TEXT NOT NULL,
+        mime_type VARCHAR(50) DEFAULT 'image/jpeg',
+        caption TEXT,
+        uploaded_by_id UUID NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
       CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
       CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
       CREATE INDEX IF NOT EXISTS idx_users_company ON users(company_id);
@@ -80,6 +90,7 @@ export async function initializeDatabase() {
       CREATE INDEX IF NOT EXISTS idx_interventions_company ON interventions(company_id);
       CREATE INDEX IF NOT EXISTS idx_interventions_technician ON interventions(technician_id);
       CREATE INDEX IF NOT EXISTS idx_interventions_category ON interventions(category);
+      CREATE INDEX IF NOT EXISTS idx_photos_intervention ON photos(intervention_id);
 
       ALTER TABLE users 
         DROP CONSTRAINT IF EXISTS fk_users_company,
