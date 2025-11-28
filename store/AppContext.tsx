@@ -537,13 +537,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         if (storedCompanies) {
           const parsed = JSON.parse(storedCompanies);
+          console.log('[LOAD] Found stored companies:', parsed.length, parsed.map((c: Company) => ({ id: c.id, name: c.name })));
           const mergedCompanies = [...initialCompanies];
           parsed.forEach((c: Company) => {
             if (!mergedCompanies.find(mc => mc.id === c.id)) {
               mergedCompanies.push(c);
             }
           });
+          console.log('[LOAD] Merged companies:', mergedCompanies.length);
           setCompaniesData(mergedCompanies);
+        } else {
+          console.log('[LOAD] No stored companies found');
         }
 
         if (storedUsers) {
@@ -589,7 +593,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!isDataLoaded) return;
     const newCompanies = companiesData.filter(c => !initialCompanies.find(ic => ic.id === c.id));
     if (newCompanies.length > 0) {
-      AsyncStorage.setItem(COMPANIES_STORAGE_KEY, JSON.stringify(newCompanies));
+      console.log('[SAVE] Saving companies:', newCompanies.length, newCompanies.map(c => ({ id: c.id, name: c.name })));
+      AsyncStorage.setItem(COMPANIES_STORAGE_KEY, JSON.stringify(newCompanies))
+        .then(() => console.log('[SAVE] Companies saved successfully'))
+        .catch(err => console.error('[SAVE] Error saving companies:', err));
     } else {
       AsyncStorage.removeItem(COMPANIES_STORAGE_KEY);
     }
@@ -740,7 +747,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       id: companyId,
       createdAt: Date.now(),
     };
-    setCompaniesData(prev => [...prev, newCompany]);
+    setCompaniesData(prev => {
+      const updated = [...prev, newCompany];
+      const toSave = updated.filter(c => !initialCompanies.find(ic => ic.id === c.id));
+      console.log('[SAVE IMMEDIATE] Saving company:', newCompany.name, 'with id:', companyId);
+      AsyncStorage.setItem(COMPANIES_STORAGE_KEY, JSON.stringify(toSave))
+        .then(() => console.log('[SAVE IMMEDIATE] Company saved'))
+        .catch(err => console.error('[SAVE IMMEDIATE] Error:', err));
+      return updated;
+    });
     return companyId;
   }, []);
 

@@ -129,7 +129,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       const storedRegisteredUsers = await AsyncStorage.getItem(REGISTERED_USERS_KEY);
       if (storedRegisteredUsers) {
-        setRegisteredUsers(JSON.parse(storedRegisteredUsers));
+        const parsed = JSON.parse(storedRegisteredUsers);
+        console.log('[AUTH LOAD] Found registered users:', Object.keys(parsed));
+        setRegisteredUsers(parsed);
+      } else {
+        console.log('[AUTH LOAD] No registered users found');
       }
     } catch (error) {
       console.error('Error loading stored auth:', error);
@@ -164,13 +168,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: true };
     }
 
+    console.log('[AUTH LOGIN] Checking registered users for:', username.toLowerCase());
+    console.log('[AUTH LOGIN] Available registered users:', Object.keys(registeredUsers));
     const registeredAccount = registeredUsers[username.toLowerCase()];
     if (registeredAccount && registeredAccount.password === password) {
+      console.log('[AUTH LOGIN] Found registered user:', registeredAccount.user.username);
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(registeredAccount.user));
       setUser(registeredAccount.user);
       return { success: true };
     }
 
+    console.log('[AUTH LOGIN] No matching account found');
     return { success: false, error: 'Credenziali non valide' };
   }, [registeredUsers]);
 
@@ -201,11 +209,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     try {
+      console.log('[AUTH REGISTER] Saving user:', usernameKey, 'with companyId:', userData.companyId);
       await AsyncStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(updatedRegisteredUsers));
+      console.log('[AUTH REGISTER] User saved successfully');
       setRegisteredUsers(updatedRegisteredUsers);
       return { success: true, userId };
     } catch (error) {
-      console.error('Error registering user:', error);
+      console.error('[AUTH REGISTER] Error registering user:', error);
       return { success: false, userId: '', error: 'Errore durante la registrazione' };
     }
   }, [registeredUsers]);
