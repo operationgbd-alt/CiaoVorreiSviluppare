@@ -269,6 +269,16 @@ class ApiService {
   getPhotoImageUrl(id: string): string {
     return `${API_BASE_URL}/photos/${id}/image`;
   }
+
+  async generateReport(interventionId: string, format: 'pdf' | 'base64' = 'base64'): Promise<ApiResponse<ReportResponse>> {
+    return this.request<ReportResponse>(`/reports/intervention/${interventionId}?format=${format}`, {
+      method: 'POST',
+    });
+  }
+
+  getReportUrl(interventionId: string): string {
+    return `${API_BASE_URL}/reports/intervention/${interventionId}`;
+  }
 }
 
 interface PhotoMeta {
@@ -284,5 +294,12 @@ interface Photo extends PhotoMeta {
   data: string;
 }
 
+interface ReportResponse {
+  success: boolean;
+  data: string;
+  filename: string;
+  mimeType: string;
+}
+
 export const api = new ApiService();
-export type { LoginResponse, User, Company, Intervention, ApiResponse, PhotoMeta, Photo };
+export type { LoginResponse, User, Company, Intervention, ApiResponse, PhotoMeta, Photo, ReportResponse };

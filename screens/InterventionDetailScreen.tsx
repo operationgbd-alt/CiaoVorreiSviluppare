@@ -6,6 +6,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
+import * as MailComposer from "expo-mail-composer";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareScrollView";
 import { ThemedText } from "@/components/ThemedText";
@@ -75,6 +76,7 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [serverPhotos, setServerPhotos] = useState<PhotoMeta[]>([]);
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [notes, setNotes] = useState(intervention?.documentation.notes || '');
   const [appointmentDate, setAppointmentDate] = useState<Date>(
     intervention?.appointment?.date ? new Date(intervention.appointment.date) : new Date()
@@ -463,6 +465,78 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
         },
       ]
     );
+  };
+
+  const handleGenerateReport = async () => {
+    setIsGeneratingReport(true);
+    
+    try {
+      const response = await api.generateReport(intervention.id, 'base64');
+      
+      if (!response.success || !response.data) {
+        Alert.alert('Errore', response.error || 'Impossibile generare il report.');
+        setIsGeneratingReport(false);
+        return;
+      }
+
+      const reportData = response.data as any;
+      const base64Data = reportData.data;
+      const filename = reportData.filename || `Report_${intervention.number}.pdf`;
+
+      if (Platform.OS === 'web') {
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        Alert.alert('Report Generato', 'Il PDF e stato scaricato con successo.');
+      } else {
+        const cacheDir = FileSystem.cacheDirectory || FileSystem.documentDirectory || '';
+        const fileUri = `${cacheDir}${filename}`;
+        await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+          encoding: 'base64',
+        });
+
+        const isAvailable = await MailComposer.isAvailableAsync();
+        
+        if (isAvailable) {
+          Alert.alert(
+            'Report Generato',
+            'Vuoi inviare il report via email?',
+            [
+              { text: 'No', style: 'cancel' },
+              {
+                text: 'Invia Email',
+                onPress: async () => {
+                  await MailComposer.composeAsync({
+                    recipients: ['operation.gbd@gruppo-phoenix.com'],
+                    subject: `Report Intervento ${intervention.number} - ${intervention.client.name}`,
+                    body: `In allegato il report dell'intervento ${intervention.number} per il cliente ${intervention.client.name}.\n\nIndirizzo: ${intervention.client.address} ${intervention.client.civicNumber}, ${intervention.client.city}\nCategoria: ${intervention.category}\nStato: ${intervention.status}`,
+                    attachments: [fileUri],
+                  });
+                },
+              },
+            ]
+          );
+        } else {
+          Alert.alert('Report Salvato', `Il report e stato salvato sul dispositivo. Apri l'app File per trovarlo.`);
+        }
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+      Alert.alert('Errore', 'Si e verificato un errore durante la generazione del report.');
+    } finally {
+      setIsGeneratingReport(false);
+    }
   };
 
   const toggleSection = (section: string) => {
@@ -957,6 +1031,35 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
             </ThemedText>
           </View>
         )}
+
+        {/* Genera Report PDF - Solo per MASTER e DITTA */}
+        {isMasterOrDitta ? (
+          <View style={{ marginTop: Spacing.xl }}>
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <Button 
+              onPress={handleGenerateReport} 
+              disabled={isGeneratingReport}
+              style={{ 
+                backgroundColor: '#5856D6',
+                marginTop: Spacing.lg,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                {isGeneratingReport ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" style={{ marginRight: Spacing.sm }} />
+                ) : (
+                  <Feather name="file-text" size={18} color="#FFFFFF" style={{ marginRight: Spacing.sm }} />
+                )}
+                <ThemedText type="body" style={{ color: '#FFFFFF', fontWeight: '600' }}>
+                  {isGeneratingReport ? 'Generazione in corso...' : 'Genera Report PDF'}
+                </ThemedText>
+              </View>
+            </Button>
+            <ThemedText type="caption" style={{ color: theme.textTertiary, marginTop: Spacing.sm, textAlign: 'center' }}>
+              Il report verra inviato a operation.gbd@gruppo-phoenix.com
+            </ThemedText>
+          </View>
+        ) : null}
       </Card>
 
       {/* 5. ESITA INTERVENTO - Solo per Tecnici */}
@@ -1228,5 +1331,9 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     marginTop: Spacing.sm,
+  },
+  divider: {
+    height: 1,
+    marginVertical: Spacing.md,
   },
 });
