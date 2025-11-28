@@ -26,6 +26,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/pg": "^8.15.6",
     "bcryptjs": "^3.0.3",
+    "concurrently": "^9.2.1",
     "cors": "^2.8.5",
     "expo": "^54.0.23",
     "expo-blur": "^15.0.7",

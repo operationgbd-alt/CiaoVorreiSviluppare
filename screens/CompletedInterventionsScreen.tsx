@@ -95,7 +95,15 @@ export default function CompletedInterventionsScreen({ navigation }: Props) {
       }
     } catch (error) {
       console.error('Errore generazione report:', error);
-      Alert.alert('Errore', error instanceof Error ? error.message : 'Impossibile generare il report');
+      const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
+      if (errorMessage.includes('Network') || errorMessage.includes('fetch') || errorMessage.includes('Failed')) {
+        Alert.alert(
+          'Server non disponibile',
+          'Il server per la generazione dei report non e attivo. Contatta l\'amministratore o riavvia l\'applicazione.',
+        );
+      } else {
+        Alert.alert('Errore', errorMessage);
+      }
     } finally {
       setGeneratingReportId(null);
     }
