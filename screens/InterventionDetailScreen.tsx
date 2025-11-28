@@ -406,7 +406,8 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
   };
 
   const handleChangeStatus = (newStatus: InterventionStatus) => {
-    if (newStatus === 'completato' && intervention.documentation.photos.length === 0) {
+    const totalPhotos = serverPhotos.length + intervention.documentation.photos.length;
+    if (newStatus === 'completato' && totalPhotos === 0) {
       Alert.alert(
         'Documentazione Mancante',
         'Aggiungi almeno una foto prima di completare l\'intervento.',
