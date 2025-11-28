@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { StyleSheet, View, Pressable, ActivityIndicator, Alert, Platform } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as MailComposer from 'expo-mail-composer';
 import { ThemedText } from "@/components/ThemedText";
 import { ScreenFlatList } from "@/components/ScreenFlatList";

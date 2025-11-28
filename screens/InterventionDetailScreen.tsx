@@ -5,7 +5,7 @@ import { RouteProp } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import * as MailComposer from "expo-mail-composer";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareScrollView";
