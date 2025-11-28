@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, Pressable, Alert, Platform, TextInput } from 'react-native';
+import { View, StyleSheet, Pressable, Alert, Platform, TextInput, Linking } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as MailComposer from 'expo-mail-composer';
@@ -135,26 +135,31 @@ export function CloseInterventionsScreen() {
 
       if (sendEmail && emailRecipient) {
         try {
-          const isAvailable = await MailComposer.isAvailableAsync();
+          const reportBody = generateReportBody();
+          const subject = `Report Interventi Chiusi - ${new Date().toLocaleDateString('it-IT')} - ${user?.companyName || 'SolarTech'}`;
           
-          if (isAvailable) {
-            const reportBody = generateReportBody();
-            const subject = `Report Interventi Chiusi - ${new Date().toLocaleDateString('it-IT')} - ${user?.companyName || 'SolarTech'}`;
-            
-            await MailComposer.composeAsync({
-              recipients: [emailRecipient],
-              subject: subject,
-              body: reportBody,
-            });
+          if (Platform.OS === 'web') {
+            // On web, use mailto: link
+            const mailtoUrl = `mailto:${encodeURIComponent(emailRecipient)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(reportBody)}`;
+            window.open(mailtoUrl, '_blank');
           } else {
-            if (Platform.OS === 'web') {
-              window.alert('Funzionalità email non disponibile sul web. Usa l\'app su dispositivo mobile per inviare email.');
+            const isAvailable = await MailComposer.isAvailableAsync();
+            
+            if (isAvailable) {
+              await MailComposer.composeAsync({
+                recipients: [emailRecipient],
+                subject: subject,
+                body: reportBody,
+              });
             } else {
               Alert.alert('Attenzione', 'Nessuna app email configurata sul dispositivo');
             }
           }
         } catch (error) {
           console.log('Email error:', error);
+          if (Platform.OS === 'web') {
+            window.alert('Errore durante l\'apertura del client email. Verifica di avere un client email configurato.');
+          }
         }
       }
 
