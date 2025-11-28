@@ -111,7 +111,7 @@ export function ManageTechniciansScreen() {
         role: 'tecnico',
         companyId: currentUser.companyId,
         companyName: currentUser.companyName,
-      });
+      }, registerResult.userId);
 
       const successMsg = `Tecnico "${name}" creato con successo!\n\nCredenziali:\nUsername: ${username}\nPassword: ${password}`;
 

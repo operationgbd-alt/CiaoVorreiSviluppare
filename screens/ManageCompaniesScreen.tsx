@@ -103,7 +103,7 @@ export function ManageCompaniesScreen() {
         role: 'ditta',
         companyId: companyId,
         companyName: companyName,
-      });
+      }, registerResult.userId);
 
       const successMsg = `Ditta "${companyName}" creata con successo!\n\nCredenziali:\nUsername: ${username}\nPassword: ${password}`;
 

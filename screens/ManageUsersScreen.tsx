@@ -117,7 +117,7 @@ export function ManageUsersScreen() {
         role,
         companyId,
         companyName: companyName || null,
-      });
+      }, registerResult.userId);
 
       const successMsg = `Utente "${name}" creato con successo!\n\nCredenziali:\nUsername: ${username}\nPassword: ${password}`;
       

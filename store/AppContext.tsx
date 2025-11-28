@@ -25,7 +25,7 @@ interface AppContextType {
   addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => string;
   updateCompany: (id: string, updates: Partial<Company>) => void;
   deleteCompany: (id: string) => void;
-  addUser: (user: Omit<User, 'id' | 'createdAt'>) => void;
+  addUser: (user: Omit<User, 'id' | 'createdAt'>, existingId?: string) => void;
   updateUser: (id: string, updates: Partial<User>) => void;
   deleteUser: (id: string) => void;
   getCompanyById: (id: string) => Company | undefined;
@@ -647,10 +647,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.log('[DEBUG] Filtered interventions count:', filtered.length);
         return filtered;
       case 'tecnico':
-        return interventionsData.filter(i =>
+        console.log('[DEBUG] TECNICO Login - user.id:', user.id);
+        console.log('[DEBUG] TECNICO Login - user.companyId:', user.companyId);
+        console.log('[DEBUG] All interventions for TECNICO:', interventionsData.map(i => ({ 
+          id: i.id, 
+          companyId: i.companyId, 
+          technicianId: i.technicianId,
+          technicianName: i.technicianName,
+          status: i.status 
+        })));
+        const tecnicoFiltered = interventionsData.filter(i =>
           i.companyId === user.companyId &&
           (i.technicianId === user.id || i.technicianId === null)
         );
+        console.log('[DEBUG] TECNICO filtered count:', tecnicoFiltered.length);
+        return tecnicoFiltered;
       default:
         return [];
     }
@@ -767,10 +778,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCompaniesData(prev => prev.filter(c => c.id !== id));
   }, []);
 
-  const addUser = useCallback((user: Omit<User, 'id' | 'createdAt'>) => {
+  const addUser = useCallback((user: Omit<User, 'id' | 'createdAt'>, existingId?: string) => {
     const newUser: User = {
       ...user,
-      id: generateId(),
+      id: existingId || generateId(),
       createdAt: Date.now(),
     };
     setUsersData(prev => [...prev, newUser]);
