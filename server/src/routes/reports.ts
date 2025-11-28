@@ -9,16 +9,39 @@ router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: R
   const { id } = req.params;
   const { format = 'pdf' } = req.query;
 
+  if (!req.user || (req.user.role !== 'master' && req.user.role !== 'ditta')) {
+    return res.status(403).json({ error: 'Solo utenti MASTER e DITTA possono generare report' });
+  }
+
   try {
-    const interventionResult = await pool.query(
-      `SELECT 
-        i.*,
-        c.name as company_name
-      FROM interventions i
-      LEFT JOIN companies c ON i.company_id = c.id
-      WHERE i.id = $1`,
-      [id]
-    );
+    let interventionResult;
+    
+    if (req.user.role === 'master') {
+      interventionResult = await pool.query(
+        `SELECT 
+          i.*,
+          c.name as company_name
+        FROM interventions i
+        LEFT JOIN companies c ON i.company_id = c.id
+        WHERE i.id = $1`,
+        [id]
+      );
+    } else if (req.user.role === 'ditta') {
+      if (!req.user.companyId) {
+        return res.status(403).json({ error: 'Utente non associato a un\'azienda' });
+      }
+      interventionResult = await pool.query(
+        `SELECT 
+          i.*,
+          c.name as company_name
+        FROM interventions i
+        LEFT JOIN companies c ON i.company_id = c.id
+        WHERE i.id = $1 AND i.company_id = $2`,
+        [id, req.user.companyId]
+      );
+    } else {
+      return res.status(403).json({ error: 'Accesso non autorizzato' });
+    }
 
     if (interventionResult.rows.length === 0) {
       return res.status(404).json({ error: 'Intervento non trovato' });
