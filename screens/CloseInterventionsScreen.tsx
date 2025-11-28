@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, Pressable, Alert, Platform, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import * as MailComposer from 'expo-mail-composer';
 import { ScreenScrollView } from '@/components/ScreenScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { Card } from '@/components/Card';
@@ -10,6 +11,8 @@ import { useAuth } from '@/store/AuthContext';
 import { useApp } from '@/store/AppContext';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { Intervention, InterventionCategory } from '@/types';
+
+const DEFAULT_EMAIL = 'operation.gbd@gruppo-phoenix.com';
 
 const CATEGORY_CONFIG: Record<InterventionCategory, { icon: string; color: string }> = {
   sopralluogo: { icon: 'search', color: '#5856D6' },
@@ -24,8 +27,9 @@ export function CloseInterventionsScreen() {
   const { interventions, updateIntervention } = useApp();
 
   const [selectedInterventions, setSelectedInterventions] = useState<string[]>([]);
-  const [emailRecipient, setEmailRecipient] = useState('');
+  const [emailRecipient, setEmailRecipient] = useState(DEFAULT_EMAIL);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [sendEmail, setSendEmail] = useState(true);
 
   const completedInterventions = useMemo(() => 
     interventions.filter(i => i.status === 'completato'),
@@ -48,7 +52,63 @@ export function CloseInterventionsScreen() {
     setSelectedInterventions([]);
   };
 
-  const handleClose = () => {
+  const generateReportBody = () => {
+    const selectedItems = completedInterventions.filter(i => selectedInterventions.includes(i.id));
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+    let body = `REPORT INTERVENTI CHIUSI\n`;
+    body += `Data: ${dateStr} alle ${timeStr}\n`;
+    body += `Operatore: ${user?.name || 'N/D'}\n`;
+    body += `Ditta: ${user?.companyName || 'N/D'}\n`;
+    body += `\n${'='.repeat(50)}\n\n`;
+    body += `TOTALE INTERVENTI: ${selectedItems.length}\n\n`;
+
+    selectedItems.forEach((intervention, index) => {
+      const categoryLabels: Record<string, string> = {
+        sopralluogo: 'Sopralluogo',
+        installazione: 'Installazione',
+        manutenzione: 'Manutenzione',
+      };
+      
+      body += `${'-'.repeat(40)}\n`;
+      body += `INTERVENTO ${index + 1}: ${intervention.number}\n`;
+      body += `${'-'.repeat(40)}\n`;
+      body += `Categoria: ${categoryLabels[intervention.category] || intervention.category}\n`;
+      body += `Cliente: ${intervention.client.name}\n`;
+      body += `Indirizzo: ${intervention.client.address} ${intervention.client.civicNumber}, ${intervention.client.cap} ${intervention.client.city}\n`;
+      body += `Telefono: ${intervention.client.phone}\n`;
+      body += `Email: ${intervention.client.email || 'N/D'}\n`;
+      body += `Tecnico: ${intervention.technicianName || 'N/D'}\n`;
+      body += `Descrizione: ${intervention.description}\n`;
+      
+      if (intervention.documentation.notes) {
+        body += `Note lavoro: ${intervention.documentation.notes}\n`;
+      }
+      
+      if (intervention.documentation.photos && intervention.documentation.photos.length > 0) {
+        body += `Foto allegate: ${intervention.documentation.photos.length}\n`;
+      }
+      
+      if (intervention.location) {
+        body += `Posizione GPS: ${intervention.location.latitude}, ${intervention.location.longitude}\n`;
+        if (intervention.location.address) {
+          body += `Indirizzo GPS: ${intervention.location.address}\n`;
+        }
+      }
+      
+      body += `\n`;
+    });
+
+    body += `${'='.repeat(50)}\n`;
+    body += `Fine Report\n`;
+    body += `Generato automaticamente da SolarTech App\n`;
+
+    return body;
+  };
+
+  const handleClose = async () => {
     if (selectedInterventions.length === 0) {
       const msg = 'Seleziona almeno un intervento da chiudere';
       if (Platform.OS === 'web') {
@@ -59,9 +119,9 @@ export function CloseInterventionsScreen() {
       return;
     }
 
-    const confirmMsg = `Stai per chiudere definitivamente ${selectedInterventions.length} interventi.${emailRecipient ? ` Un report verrà inviato a ${emailRecipient}.` : ''} Procedere?`;
+    const confirmMsg = `Stai per chiudere definitivamente ${selectedInterventions.length} interventi.${sendEmail && emailRecipient ? ` Un report verrà inviato a ${emailRecipient}.` : ''} Procedere?`;
 
-    const doClose = () => {
+    const doClose = async () => {
       setIsProcessing(true);
       
       selectedInterventions.forEach(id => {
@@ -69,13 +129,38 @@ export function CloseInterventionsScreen() {
           status: 'chiuso',
           closedAt: Date.now(),
           closedBy: user?.name || 'Sistema',
-          emailSentTo: emailRecipient || undefined,
+          emailSentTo: sendEmail && emailRecipient ? emailRecipient : undefined,
         });
       });
 
+      if (sendEmail && emailRecipient) {
+        try {
+          const isAvailable = await MailComposer.isAvailableAsync();
+          
+          if (isAvailable) {
+            const reportBody = generateReportBody();
+            const subject = `Report Interventi Chiusi - ${new Date().toLocaleDateString('it-IT')} - ${user?.companyName || 'SolarTech'}`;
+            
+            await MailComposer.composeAsync({
+              recipients: [emailRecipient],
+              subject: subject,
+              body: reportBody,
+            });
+          } else {
+            if (Platform.OS === 'web') {
+              window.alert('Funzionalità email non disponibile sul web. Usa l\'app su dispositivo mobile per inviare email.');
+            } else {
+              Alert.alert('Attenzione', 'Nessuna app email configurata sul dispositivo');
+            }
+          }
+        } catch (error) {
+          console.log('Email error:', error);
+        }
+      }
+
       setTimeout(() => {
         setIsProcessing(false);
-        const successMsg = `${selectedInterventions.length} interventi chiusi con successo!${emailRecipient ? ` Report inviato a ${emailRecipient}.` : ''}`;
+        const successMsg = `${selectedInterventions.length} interventi chiusi con successo!`;
         if (Platform.OS === 'web') {
           window.alert(successMsg);
         } else {
@@ -214,22 +299,54 @@ export function CloseInterventionsScreen() {
 
       <Card style={styles.section}>
         <ThemedText type="h4" style={styles.sectionTitle}>Invia Report via Email</ThemedText>
-        <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.md }}>
-          Inserisci un indirizzo email per ricevere il report degli interventi chiusi (opzionale)
-        </ThemedText>
-        <View style={[styles.inputContainer, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
-          <Feather name="mail" size={18} color={theme.textSecondary} />
-          <TextInput
-            style={[styles.input, { color: theme.text }]}
-            placeholder="email@esempio.it"
-            placeholderTextColor={theme.textTertiary}
-            value={emailRecipient}
-            onChangeText={setEmailRecipient}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
+        
+        <Pressable
+          style={styles.toggleRow}
+          onPress={() => setSendEmail(!sendEmail)}
+        >
+          <View style={[
+            styles.toggleBox,
+            { borderColor: sendEmail ? theme.success : theme.border },
+            sendEmail && { backgroundColor: theme.success },
+          ]}>
+            {sendEmail ? <Feather name="check" size={14} color="#FFFFFF" /> : null}
+          </View>
+          <ThemedText type="body" style={{ flex: 1 }}>
+            Invia report via email
+          </ThemedText>
+        </Pressable>
+
+        {sendEmail ? (
+          <View style={{ marginTop: Spacing.md }}>
+            <ThemedText type="small" style={{ color: theme.textSecondary, marginBottom: Spacing.sm }}>
+              Destinatario:
+            </ThemedText>
+            <View style={[styles.inputContainer, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
+              <Feather name="mail" size={18} color={theme.textSecondary} />
+              <TextInput
+                style={[styles.input, { color: theme.text }]}
+                placeholder="email@esempio.it"
+                placeholderTextColor={theme.textTertiary}
+                value={emailRecipient}
+                onChangeText={setEmailRecipient}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+            <View style={[styles.defaultEmailNote, { backgroundColor: theme.primaryLight }]}>
+              <Feather name="info" size={14} color={theme.primary} />
+              <ThemedText type="caption" style={{ color: theme.primary, marginLeft: Spacing.xs, flex: 1 }}>
+                Email predefinita: {DEFAULT_EMAIL}
+              </ThemedText>
+              <Pressable onPress={() => setEmailRecipient(DEFAULT_EMAIL)}>
+                <ThemedText type="caption" style={{ color: theme.primary, fontWeight: '600' }}>
+                  Ripristina
+                </ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
       </Card>
 
       <Pressable
@@ -362,5 +479,26 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 16,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  toggleBox: {
+    width: 24,
+    height: 24,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  defaultEmailNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+    marginTop: Spacing.sm,
   },
 });
