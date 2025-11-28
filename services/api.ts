@@ -4,17 +4,26 @@ import Constants from 'expo-constants';
 const getApiBaseUrl = (): string => {
   if (Platform.OS === 'web') {
     if (typeof window !== 'undefined' && window.location.hostname.includes('replit')) {
-      return `https://${window.location.hostname.replace('-00-', '-3001.')}/api`;
+      // Web on Replit: proxy serves /api on same domain
+      return `https://${window.location.hostname}/api`;
     }
-    return 'http://localhost:3001/api';
+    return 'http://localhost:8081/api';
   }
   
+  // For Expo Go on mobile, use public Replit URL
+  // Proxy server handles routing /api to backend
+  const replitDomain = Constants.expoConfig?.hostUri?.split(':')[0];
+  if (replitDomain && replitDomain.includes('replit')) {
+    return `https://${replitDomain}/api`;
+  }
+  
+  // Fallback for local development
   const debuggerHost = Constants.expoConfig?.hostUri?.split(':')[0];
   if (debuggerHost) {
-    return `http://${debuggerHost}:3001/api`;
+    return `http://${debuggerHost}:8081/api`;
   }
   
-  return 'http://localhost:3001/api';
+  return 'http://localhost:8081/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();

@@ -10,7 +10,7 @@ import reportRoutes from './routes/reports';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '3001', 10);
+const PORT = parseInt(process.env.SERVER_PORT || '3001', 10);
 
 app.use(cors({
   origin: '*',
