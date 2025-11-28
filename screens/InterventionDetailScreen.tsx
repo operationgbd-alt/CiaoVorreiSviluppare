@@ -684,158 +684,128 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
         ) : null}
       </Card>
 
-      {/* 4. GESTISCI INTERVENTO */}
-      <Card style={styles.section} onPress={() => toggleSection('gestisci')}>
+      {/* 4. DOCUMENTAZIONE - Visibile per tutti */}
+      <Card style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Feather name="tool" size={18} color={theme.primary} />
+          <Feather name="folder" size={18} color={theme.primary} />
           <ThemedText type="h3" style={{ marginLeft: Spacing.sm, flex: 1 }}>
-            Gestisci Intervento
+            Documentazione
           </ThemedText>
-          <Feather 
-            name={expandedSection === 'gestisci' ? 'chevron-up' : 'chevron-down'} 
-            size={20} 
-            color={theme.textSecondary} 
-          />
         </View>
 
-        <View style={styles.quickStats}>
-          <View style={styles.statItem}>
-            <Feather name="camera" size={16} color={theme.textSecondary} />
-            <ThemedText type="body" style={{ marginLeft: Spacing.xs }}>
-              {intervention.documentation.photos.length} foto
-            </ThemedText>
-          </View>
-          {intervention.location ? (
-            <View style={styles.statItem}>
-              <Feather name="map-pin" size={16} color={theme.success} />
-              <ThemedText type="body" style={{ marginLeft: Spacing.xs, color: theme.success }}>
-                GPS inviato
+        {/* Foto */}
+        <ThemedText type="body" style={{ fontWeight: '600', marginBottom: Spacing.sm }}>
+          Foto ({intervention.documentation.photos.length})
+        </ThemedText>
+        
+        {canEdit ? (
+          <View style={styles.photoButtons}>
+            <Pressable 
+              style={[styles.photoButton, { backgroundColor: theme.primary }]}
+              onPress={handleTakePhoto}
+            >
+              <Feather name="camera" size={20} color="#FFFFFF" />
+              <ThemedText type="small" style={{ color: '#FFFFFF', marginTop: Spacing.xs }}>
+                Scatta Foto
               </ThemedText>
-            </View>
-          ) : null}
-        </View>
+            </Pressable>
 
-        {expandedSection === 'gestisci' ? (
-          <View style={styles.manageContent}>
-            {/* Foto */}
-            <ThemedText type="body" style={{ fontWeight: '600', marginBottom: Spacing.sm }}>
-              Documenti e Foto
-            </ThemedText>
-            
-            {canEdit ? (
-              <View style={styles.photoButtons}>
-                <Pressable 
-                  style={[styles.photoButton, { backgroundColor: theme.primary }]}
-                  onPress={handleTakePhoto}
-                >
-                  <Feather name="camera" size={20} color="#FFFFFF" />
-                  <ThemedText type="small" style={{ color: '#FFFFFF', marginTop: Spacing.xs }}>
-                    Scatta Foto
-                  </ThemedText>
-                </Pressable>
-
-                <Pressable 
-                  style={[styles.photoButton, { backgroundColor: theme.secondary }]}
-                  onPress={handlePickImage}
-                >
-                  <Feather name="image" size={20} color="#FFFFFF" />
-                  <ThemedText type="small" style={{ color: '#FFFFFF', marginTop: Spacing.xs }}>
-                    Galleria
-                  </ThemedText>
-                </Pressable>
-              </View>
-            ) : null}
-
-            {intervention.documentation.photos.length > 0 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosScroll}>
-                {intervention.documentation.photos.map((photo) => (
-                  <Pressable 
-                    key={photo.id} 
-                    style={styles.photoThumbnail}
-                    onLongPress={canEdit ? () => handleDeletePhoto(photo.id) : undefined}
-                  >
-                    <Image source={{ uri: photo.uri }} style={styles.photoImage} />
-                  </Pressable>
-                ))}
-              </ScrollView>
-            ) : (
-              !canEdit ? (
-                <View style={[styles.emptyState, { backgroundColor: theme.backgroundSecondary }]}>
-                  <Feather name="image" size={24} color={theme.textTertiary} />
-                  <ThemedText type="caption" style={{ color: theme.textTertiary, marginTop: Spacing.xs }}>
-                    Nessuna foto caricata
-                  </ThemedText>
-                </View>
-              ) : null
-            )}
-
-            {/* Posizione GPS */}
-            <ThemedText type="body" style={{ fontWeight: '600', marginTop: Spacing.lg, marginBottom: Spacing.sm }}>
-              Posizione GPS
-            </ThemedText>
-
-            {intervention.location ? (
-              <View style={[styles.locationInfo, { backgroundColor: theme.success + '15' }]}>
-                <Feather name="check-circle" size={16} color={theme.success} />
-                <View style={{ marginLeft: Spacing.sm, flex: 1 }}>
-                  <ThemedText type="small" style={{ color: theme.success, fontWeight: '600' }}>
-                    Posizione registrata
-                  </ThemedText>
-                  <ThemedText type="caption" style={{ color: theme.textSecondary }}>
-                    {intervention.location.address || `${intervention.location.latitude.toFixed(4)}, ${intervention.location.longitude.toFixed(4)}`}
-                  </ThemedText>
-                </View>
-              </View>
-            ) : (
-              !canEdit ? (
-                <View style={[styles.emptyState, { backgroundColor: theme.backgroundSecondary }]}>
-                  <Feather name="map-pin" size={24} color={theme.textTertiary} />
-                  <ThemedText type="caption" style={{ color: theme.textTertiary, marginTop: Spacing.xs }}>
-                    Posizione non ancora registrata
-                  </ThemedText>
-                </View>
-              ) : null
-            )}
-
-            {canEdit ? (
-              <Button 
-                onPress={handleSendLocation} 
-                disabled={isLoadingLocation}
-                style={{ backgroundColor: theme.success }}
-              >
-                {isLoadingLocation ? 'Acquisizione GPS...' : 'Invia Posizione'}
-              </Button>
-            ) : null}
-
-            {/* Note */}
-            <ThemedText type="body" style={{ fontWeight: '600', marginTop: Spacing.lg, marginBottom: Spacing.sm }}>
-              Note Intervento
-            </ThemedText>
-
-            {canEdit ? (
-              <>
-                <TextInput
-                  style={[styles.notesInputLarge, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-                  placeholder="Inserisci note sull'intervento..."
-                  placeholderTextColor={theme.textTertiary}
-                  value={notes}
-                  onChangeText={setNotes}
-                  multiline
-                  numberOfLines={4}
-                />
-                <Button onPress={handleSaveNotes} style={{ marginTop: Spacing.sm }}>
-                  Salva Note
-                </Button>
-              </>
-            ) : (
-              <View style={[styles.notesDisplay, { backgroundColor: theme.backgroundSecondary }]}>
-                <ThemedText type="body" style={{ color: notes ? theme.text : theme.textTertiary }}>
-                  {notes || 'Nessuna nota inserita'}
-                </ThemedText>
-              </View>
-            )}
+            <Pressable 
+              style={[styles.photoButton, { backgroundColor: theme.secondary }]}
+              onPress={handlePickImage}
+            >
+              <Feather name="image" size={20} color="#FFFFFF" />
+              <ThemedText type="small" style={{ color: '#FFFFFF', marginTop: Spacing.xs }}>
+                Galleria
+              </ThemedText>
+            </Pressable>
           </View>
         ) : null}
+
+        {intervention.documentation.photos.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosScroll}>
+            {intervention.documentation.photos.map((photo) => (
+              <Pressable 
+                key={photo.id} 
+                style={styles.photoThumbnail}
+                onLongPress={canEdit ? () => handleDeletePhoto(photo.id) : undefined}
+              >
+                <Image source={{ uri: photo.uri }} style={styles.photoImage} />
+              </Pressable>
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={[styles.emptyState, { backgroundColor: theme.backgroundSecondary }]}>
+            <Feather name="image" size={24} color={theme.textTertiary} />
+            <ThemedText type="caption" style={{ color: theme.textTertiary, marginTop: Spacing.xs }}>
+              Nessuna foto caricata
+            </ThemedText>
+          </View>
+        )}
+
+        {/* Posizione GPS */}
+        <ThemedText type="body" style={{ fontWeight: '600', marginTop: Spacing.lg, marginBottom: Spacing.sm }}>
+          Posizione GPS
+        </ThemedText>
+
+        {intervention.location ? (
+          <View style={[styles.locationInfo, { backgroundColor: theme.success + '15' }]}>
+            <Feather name="check-circle" size={16} color={theme.success} />
+            <View style={{ marginLeft: Spacing.sm, flex: 1 }}>
+              <ThemedText type="small" style={{ color: theme.success, fontWeight: '600' }}>
+                Posizione registrata
+              </ThemedText>
+              <ThemedText type="caption" style={{ color: theme.textSecondary }}>
+                {intervention.location.address || `${intervention.location.latitude.toFixed(4)}, ${intervention.location.longitude.toFixed(4)}`}
+              </ThemedText>
+            </View>
+          </View>
+        ) : (
+          <View style={[styles.emptyState, { backgroundColor: theme.backgroundSecondary }]}>
+            <Feather name="map-pin" size={24} color={theme.textTertiary} />
+            <ThemedText type="caption" style={{ color: theme.textTertiary, marginTop: Spacing.xs }}>
+              Posizione non ancora registrata
+            </ThemedText>
+          </View>
+        )}
+
+        {canEdit ? (
+          <Button 
+            onPress={handleSendLocation} 
+            disabled={isLoadingLocation}
+            style={{ backgroundColor: theme.success, marginTop: Spacing.sm }}
+          >
+            {isLoadingLocation ? 'Acquisizione GPS...' : 'Invia Posizione'}
+          </Button>
+        ) : null}
+
+        {/* Note */}
+        <ThemedText type="body" style={{ fontWeight: '600', marginTop: Spacing.lg, marginBottom: Spacing.sm }}>
+          Note Intervento
+        </ThemedText>
+
+        {canEdit ? (
+          <>
+            <TextInput
+              style={[styles.notesInputLarge, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+              placeholder="Inserisci note sull'intervento..."
+              placeholderTextColor={theme.textTertiary}
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={4}
+            />
+            <Button onPress={handleSaveNotes} style={{ marginTop: Spacing.sm }}>
+              Salva Note
+            </Button>
+          </>
+        ) : (
+          <View style={[styles.notesDisplay, { backgroundColor: theme.backgroundSecondary }]}>
+            <ThemedText type="body" style={{ color: notes ? theme.text : theme.textTertiary }}>
+              {notes || 'Nessuna nota inserita'}
+            </ThemedText>
+          </View>
+        )}
       </Card>
 
       {/* 5. ESITA INTERVENTO - Solo per Tecnici */}
