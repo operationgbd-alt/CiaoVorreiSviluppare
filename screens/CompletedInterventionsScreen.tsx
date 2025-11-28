@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from "react";
-import { StyleSheet, View, Pressable } from "react-native";
+import { StyleSheet, View, Pressable, ActivityIndicator, Alert, Platform } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
+import * as FileSystem from 'expo-file-system';
+import * as MailComposer from 'expo-mail-composer';
 import { ThemedText } from "@/components/ThemedText";
 import { ScreenFlatList } from "@/components/ScreenFlatList";
 import { Card } from "@/components/Card";
@@ -11,6 +13,7 @@ import { useAuth } from "@/store/AuthContext";
 import { useApp } from "@/store/AppContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { Intervention, InterventionCategory } from "@/types";
+import { api } from "@/services/api";
 
 type CompletedStackParamList = {
   CompletedList: undefined;
@@ -35,8 +38,68 @@ export default function CompletedInterventionsScreen({ navigation }: Props) {
   const { interventions, updateIntervention } = useApp();
   const [selectedIntervention, setSelectedIntervention] = useState<Intervention | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [generatingReportId, setGeneratingReportId] = useState<string | null>(null);
 
   const isDitta = user?.role === 'ditta';
+  const isMasterOrDitta = user?.role === 'master' || user?.role === 'ditta';
+
+  const handleGenerateReport = async (intervention: Intervention) => {
+    if (generatingReportId) return;
+    
+    setGeneratingReportId(intervention.id);
+    
+    try {
+      const response = await api.generateReport(intervention.id, 'base64');
+      
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Errore nella generazione del report');
+      }
+
+      const pdfBase64 = response.data.data;
+      const fileName = response.data.filename;
+      
+      if (Platform.OS === 'web') {
+        const byteCharacters = atob(pdfBase64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        
+        Alert.alert('Report Generato', 'Il report PDF e stato aperto in una nuova finestra.');
+      } else {
+        const cacheDir = FileSystem.cacheDirectory || FileSystem.documentDirectory || '';
+        const fileUri = `${cacheDir}${fileName}`;
+        await FileSystem.writeAsStringAsync(fileUri, pdfBase64, {
+          encoding: 'base64',
+        });
+
+        const canSendMail = await MailComposer.isAvailableAsync();
+        if (canSendMail) {
+          await MailComposer.composeAsync({
+            recipients: ['operation.gbd@gruppo-phoenix.com'],
+            subject: `Report Intervento ${intervention.number} - ${intervention.client.name}`,
+            body: `In allegato il report dell'intervento ${intervention.number} per il cliente ${intervention.client.name}.`,
+            attachments: [fileUri],
+          });
+          
+          updateIntervention(intervention.id, {
+            emailSentTo: 'operation.gbd@gruppo-phoenix.com',
+          });
+        } else {
+          Alert.alert('Report Generato', 'Il report e stato salvato. Configura un client email per inviarlo.');
+        }
+      }
+    } catch (error) {
+      console.error('Errore generazione report:', error);
+      Alert.alert('Errore', error instanceof Error ? error.message : 'Impossibile generare il report');
+    } finally {
+      setGeneratingReportId(null);
+    }
+  };
 
   const handleReportSent = (interventionId: string) => {
     updateIntervention(interventionId, {
@@ -154,17 +217,19 @@ export default function CompletedInterventionsScreen({ navigation }: Props) {
           </View>
         ) : null}
 
-        {isDitta && !item.emailSentTo ? (
+        {isMasterOrDitta && !item.emailSentTo ? (
           <Pressable 
-            style={[styles.sendReportButton, { backgroundColor: theme.primary }]}
-            onPress={() => {
-              setSelectedIntervention(item);
-              setShowReportModal(true);
-            }}
+            style={[styles.generateReportButton, { backgroundColor: '#5856D6' }]}
+            onPress={() => handleGenerateReport(item)}
+            disabled={generatingReportId === item.id}
           >
-            <Feather name="mail" size={16} color="#FFFFFF" />
+            {generatingReportId === item.id ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Feather name="file-text" size={16} color="#FFFFFF" />
+            )}
             <ThemedText type="body" style={{ color: '#FFFFFF', marginLeft: Spacing.sm, fontWeight: '600' }}>
-              Invia Report a GBD
+              {generatingReportId === item.id ? 'Generazione...' : 'Genera Report PDF'}
             </ThemedText>
           </Pressable>
         ) : null}
@@ -300,6 +365,15 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
   },
   sendReportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.md,
+    marginHorizontal: Spacing.md,
+    marginBottom: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  generateReportButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
