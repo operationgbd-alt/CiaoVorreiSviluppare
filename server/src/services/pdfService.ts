@@ -93,25 +93,48 @@ export async function generatePDF(data: ReportInput): Promise<Buffer> {
       '--disable-dev-shm-usage',
       '--disable-gpu',
       '--single-process',
+      '--no-zygote',
+      '--disable-extensions',
+      '--disable-background-networking',
+      '--disable-default-apps',
+      '--disable-sync',
+      '--disable-translate',
+      '--hide-scrollbars',
+      '--metrics-recording-only',
+      '--mute-audio',
+      '--no-first-run',
+      '--safebrowsing-disable-auto-update',
     ],
   };
   
   // Use custom Chromium path if specified (Replit/Nix environment)
   if (process.env.CHROMIUM_PATH) {
+    console.log('[PDF] Using CHROMIUM_PATH:', process.env.CHROMIUM_PATH);
     launchOptions.executablePath = process.env.CHROMIUM_PATH;
   } else if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    console.log('[PDF] Using PUPPETEER_EXECUTABLE_PATH:', process.env.PUPPETEER_EXECUTABLE_PATH);
     launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
   } else {
     // Check for Nix store Chromium (Replit)
     const fs = await import('fs');
     const nixChromiumPath = '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium';
     if (fs.existsSync(nixChromiumPath)) {
+      console.log('[PDF] Using Nix Chromium:', nixChromiumPath);
       launchOptions.executablePath = nixChromiumPath;
+    } else {
+      console.log('[PDF] Using Puppeteer bundled Chromium');
     }
-    // Otherwise let Puppeteer use its bundled Chromium (Railway)
   }
   
-  const browser = await puppeteer.launch(launchOptions);
+  console.log('[PDF] Launching browser with options:', JSON.stringify(launchOptions, null, 2));
+  
+  let browser;
+  try {
+    browser = await puppeteer.launch(launchOptions);
+  } catch (launchError: any) {
+    console.error('[PDF] Failed to launch browser:', launchError.message);
+    throw new Error(`Impossibile avviare il browser per la generazione PDF: ${launchError.message}`);
+  }
 
   try {
     const page = await browser.newPage();

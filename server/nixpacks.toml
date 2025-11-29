@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs_18", "chromium"]
+nixPkgs = ["nodejs_18", "chromium", "libuuid"]
 
 [phases.install]
 cmds = ["npm install"]
@@ -12,4 +12,5 @@ cmd = "npm start"
 
 [variables]
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
-PUPPETEER_EXECUTABLE_PATH = "/nix/store/chromium/bin/chromium"
+PUPPETEER_EXECUTABLE_PATH = "/usr/bin/chromium"
+CHROMIUM_PATH = "/usr/bin/chromium"
