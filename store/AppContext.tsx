@@ -673,10 +673,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [user, usersData, isDataLoaded]);
 
   const interventions = useMemo(() => {
-    if (!user) return [];
+    if (!user) {
+      console.log('[INTERVENTIONS] No user, returning empty array');
+      return [];
+    }
     const role = user.role?.toLowerCase();
+    console.log('[INTERVENTIONS] User role:', user.role, '-> normalized:', role);
+    console.log('[INTERVENTIONS] Total interventionsData:', interventionsData.length);
     switch (role) {
       case 'master':
+        console.log('[INTERVENTIONS] MASTER - returning all', interventionsData.length, 'interventions');
         return interventionsData;
       case 'ditta':
         console.log('[DEBUG] DITTA Login - user.companyId:', user.companyId);
