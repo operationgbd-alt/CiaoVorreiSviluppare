@@ -631,4 +631,65 @@ router.patch('/:id', async (req: AuthRequest, res: Response, next) => {
   }
 });
 
+// DELETE singolo intervento - solo MASTER
+router.delete('/:id', requireRole('MASTER'), async (req: AuthRequest, res: Response, next) => {
+  try {
+    const { id } = req.params;
+    
+    // Verifica che l'intervento esista
+    const interventionResult = await pool.query<Intervention>(
+      'SELECT * FROM interventions WHERE id = $1',
+      [id]
+    );
+    
+    if (interventionResult.rows.length === 0) {
+      throw new AppError('Intervento non trovato', 404);
+    }
+    
+    // Elimina prima le foto associate
+    await pool.query('DELETE FROM photos WHERE intervention_id = $1', [id]);
+    
+    // Elimina l'intervento
+    await pool.query('DELETE FROM interventions WHERE id = $1', [id]);
+    
+    res.json({
+      success: true,
+      message: 'Intervento eliminato con successo',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE multipli interventi - solo MASTER
+router.post('/bulk-delete', requireRole('MASTER'), async (req: AuthRequest, res: Response, next) => {
+  try {
+    const { ids } = req.body;
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      throw new AppError('Lista di ID interventi obbligatoria', 400);
+    }
+    
+    // Elimina prima le foto associate a tutti gli interventi
+    await pool.query(
+      'DELETE FROM photos WHERE intervention_id = ANY($1::uuid[])',
+      [ids]
+    );
+    
+    // Elimina gli interventi
+    const result = await pool.query(
+      'DELETE FROM interventions WHERE id = ANY($1::uuid[]) RETURNING id',
+      [ids]
+    );
+    
+    res.json({
+      success: true,
+      message: `${result.rowCount} interventi eliminati con successo`,
+      deletedCount: result.rowCount,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

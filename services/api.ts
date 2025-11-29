@@ -267,6 +267,19 @@ class ApiService {
     });
   }
 
+  async deleteIntervention(id: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>(`/interventions/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async deleteInterventions(ids: string[]): Promise<ApiResponse<{ message: string; deletedCount: number }>> {
+    return this.request<{ message: string; deletedCount: number }>('/interventions/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    });
+  }
+
   async uploadPhoto(data: {
     interventionId: string;
     data: string;
