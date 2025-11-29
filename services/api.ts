@@ -2,6 +2,20 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 const getApiBaseUrl = (): string => {
+  // Production URL from app.json extra config (set during EAS Build)
+  const productionApiUrl = Constants.expoConfig?.extra?.apiUrl;
+  
+  // If production URL is set and we're in a standalone build, use it
+  if (productionApiUrl && !__DEV__) {
+    return productionApiUrl;
+  }
+  
+  // Also check if production URL is set even in dev (for testing)
+  if (productionApiUrl && Constants.executionEnvironment === 'standalone') {
+    return productionApiUrl;
+  }
+  
+  // Development mode
   if (Platform.OS === 'web') {
     if (typeof window !== 'undefined' && window.location.hostname.includes('replit')) {
       // Web on Replit: proxy serves /api on same domain
@@ -27,6 +41,11 @@ const getApiBaseUrl = (): string => {
 };
 
 const API_BASE_URL = getApiBaseUrl();
+
+// Log the API URL in development for debugging
+if (__DEV__) {
+  console.log('[API] Base URL:', API_BASE_URL);
+}
 
 interface ApiResponse<T> {
   success: boolean;

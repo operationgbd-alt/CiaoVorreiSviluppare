@@ -14,8 +14,14 @@
       }
     },
     "production": {
+      "env": {
+        "API_URL": "https://YOUR_RAILWAY_URL.railway.app/api"
+      },
       "android": {
         "buildType": "apk"
+      },
+      "ios": {
+        "simulator": false
       }
     }
   },

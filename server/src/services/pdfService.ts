@@ -85,9 +85,8 @@ export async function generatePDF(data: ReportInput): Promise<Buffer> {
 
   const html = generateReportHTML(reportData);
 
-  const browser = await puppeteer.launch({
+  const launchOptions: any = {
     headless: true,
-    executablePath: process.env.CHROMIUM_PATH || '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -95,7 +94,24 @@ export async function generatePDF(data: ReportInput): Promise<Buffer> {
       '--disable-gpu',
       '--single-process',
     ],
-  });
+  };
+  
+  // Use custom Chromium path if specified (Replit/Nix environment)
+  if (process.env.CHROMIUM_PATH) {
+    launchOptions.executablePath = process.env.CHROMIUM_PATH;
+  } else if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+  } else {
+    // Check for Nix store Chromium (Replit)
+    const fs = await import('fs');
+    const nixChromiumPath = '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium';
+    if (fs.existsSync(nixChromiumPath)) {
+      launchOptions.executablePath = nixChromiumPath;
+    }
+    // Otherwise let Puppeteer use its bundled Chromium (Railway)
+  }
+  
+  const browser = await puppeteer.launch(launchOptions);
 
   try {
     const page = await browser.newPage();
