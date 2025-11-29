@@ -75,3 +75,19 @@ SolarTech is a cross-platform mobile application (Android and iOS) designed for 
 - **expo-image-picker**: For accessing device camera and photo gallery.
 - **expo-file-system**: For converting photos to base64 for server upload.
 - **expo-mail-composer**: For composing and sending emails.
+
+## Production Deployment
+
+### Backend (Railway)
+- **URL**: `https://api-backend-production-c189.up.railway.app`
+- **Health Check**: `https://api-backend-production-c189.up.railway.app/api/health`
+- **Database**: PostgreSQL on Railway (auto-configured)
+- **Environment Variables**: DATABASE_URL, JWT_SECRET, NODE_ENV=production
+
+### Mobile App (EAS Build)
+- **Configuration**: `eas.json` with production profile pointing to Railway backend
+- **Android APK**: Generated via `eas build --platform android --profile production`
+- **iOS IPA**: Requires Apple Developer account ($99/year)
+
+### Build Instructions
+See `BUILD_APK.md` for detailed instructions on generating APK/IPA files.
