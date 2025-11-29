@@ -62,17 +62,20 @@ const STATUS_OPTIONS: { value: InterventionStatus; label: string }[] = [
 
 export default function InterventionDetailScreen({ navigation, route }: Props) {
   const { theme } = useTheme();
-  const { getInterventionById, updateIntervention, addAppointment, users } = useApp();
+  const { getInterventionById, updateIntervention, deleteIntervention, addAppointment, users } = useApp();
   const { user } = useAuth();
   
   const intervention = getInterventionById(route.params.interventionId);
   
   const isTecnico = user?.role === 'tecnico';
+  const isMaster = user?.role === 'master';
   const isMasterOrDitta = user?.role === 'master' || user?.role === 'ditta';
   const canEdit = isTecnico;
   const canAssignTechnician = isMasterOrDitta;
+  const canDelete = isMaster;
   
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [serverPhotos, setServerPhotos] = useState<PhotoMeta[]>([]);
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(false);
@@ -500,6 +503,39 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
         Alert.alert('Assegnazione Rimossa', msg);
       }
     }
+  };
+
+  const handleDeleteIntervention = async () => {
+    Alert.alert(
+      'Elimina Intervento',
+      `Sei sicuro di voler eliminare definitivamente l'intervento ${intervention.number}?\n\nQuesta azione non può essere annullata.`,
+      [
+        { text: 'Annulla', style: 'cancel' },
+        {
+          text: 'Elimina',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              const response = await api.deleteIntervention(intervention.id);
+              if (response.success) {
+                deleteIntervention(intervention.id);
+                Alert.alert('Successo', 'Intervento eliminato con successo', [
+                  { text: 'OK', onPress: () => navigation.goBack() }
+                ]);
+              } else {
+                Alert.alert('Errore', response.error || 'Impossibile eliminare l\'intervento');
+              }
+            } catch (error) {
+              console.error('Error deleting intervention:', error);
+              Alert.alert('Errore', 'Si è verificato un errore durante l\'eliminazione');
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -1026,6 +1062,39 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
         </Card>
       ) : null}
 
+      {/* 6. ELIMINA INTERVENTO - Solo per MASTER */}
+      {canDelete ? (
+        <Card style={[styles.section, { borderColor: theme.danger + '30', borderWidth: 1 }]}>
+          <View style={styles.sectionHeader}>
+            <Feather name="trash-2" size={18} color={theme.danger} />
+            <ThemedText type="h3" style={{ marginLeft: Spacing.sm, color: theme.danger }}>
+              Zona Pericolosa
+            </ThemedText>
+          </View>
+
+          <ThemedText type="body" style={{ color: theme.textSecondary, marginBottom: Spacing.md }}>
+            Eliminando questo intervento verranno rimosse anche tutte le foto e i dati associati. Questa azione non può essere annullata.
+          </ThemedText>
+
+          <Pressable
+            style={[styles.deleteButton, { backgroundColor: theme.danger }]}
+            onPress={handleDeleteIntervention}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <>
+                <Feather name="trash-2" size={20} color="#FFFFFF" />
+                <ThemedText type="body" style={{ color: '#FFFFFF', marginLeft: Spacing.sm, fontWeight: '600' }}>
+                  Elimina Intervento
+                </ThemedText>
+              </>
+            )}
+          </Pressable>
+        </Card>
+      ) : null}
+
       <View style={{ height: Spacing['3xl'] }} />
     </ScreenKeyboardAwareScrollView>
   );
@@ -1235,5 +1304,12 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     marginVertical: Spacing.md,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
   },
 });
