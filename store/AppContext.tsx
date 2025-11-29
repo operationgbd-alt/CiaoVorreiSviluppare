@@ -674,7 +674,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const interventions = useMemo(() => {
     if (!user) return [];
-    switch (user.role) {
+    const role = user.role?.toLowerCase();
+    switch (role) {
       case 'master':
         return interventionsData;
       case 'ditta':
@@ -721,15 +722,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const companies = useMemo(() => {
     if (!user) return [];
-    if (user.role === 'master') return companiesData;
-    if (user.role === 'ditta') return companiesData.filter(c => c.id === user.companyId);
+    const role = user.role?.toLowerCase();
+    if (role === 'master') return companiesData;
+    if (role === 'ditta') return companiesData.filter(c => c.id === user.companyId);
     return [];
   }, [user, companiesData]);
 
   const users = useMemo(() => {
     if (!user) return [];
-    if (user.role === 'master') return usersData;
-    if (user.role === 'ditta') return usersData.filter(u => u.companyId === user.companyId);
+    const role = user.role?.toLowerCase();
+    if (role === 'master') return usersData;
+    if (role === 'ditta') return usersData.filter(u => u.companyId === user.companyId);
     return [];
   }, [user, usersData]);
 
