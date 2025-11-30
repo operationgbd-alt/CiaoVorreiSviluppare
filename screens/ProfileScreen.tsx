@@ -3,6 +3,8 @@ import { StyleSheet, View, Pressable, Alert, Switch, Platform } from "react-nati
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { reloadAppAsync } from "expo";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
@@ -49,6 +51,42 @@ export default function ProfileScreen() {
           },
         },
       ]);
+    }
+  };
+
+  const handleClearCache = async () => {
+    const clearData = async () => {
+      try {
+        await AsyncStorage.multiRemove([
+          '@solartech_companies',
+          '@solartech_users', 
+          '@solartech_interventions',
+          '@solartech_registered_users',
+        ]);
+        if (Platform.OS === 'web') {
+          window.location.reload();
+        } else {
+          await reloadAppAsync();
+        }
+      } catch (error) {
+        console.error('Error clearing cache:', error);
+        Alert.alert("Errore", "Impossibile pulire la cache");
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm("Questo elimina tutti i dati locali e ricarica l'app. Continuare?")) {
+        clearData();
+      }
+    } else {
+      Alert.alert(
+        "Pulisci Cache",
+        "Questo elimina tutti i dati locali e ricarica l'app. I dati sul server non verranno modificati.",
+        [
+          { text: "Annulla", style: "cancel" },
+          { text: "Pulisci", style: "destructive", onPress: clearData },
+        ]
+      );
     }
   };
 
@@ -253,6 +291,14 @@ export default function ProfileScreen() {
             "Automatico",
             undefined,
             () => Alert.alert("Info", "Funzionalita in arrivo")
+          )}
+          {renderSettingItem(
+            "trash-2",
+            "Pulisci Cache",
+            "Elimina dati locali e ricarica",
+            undefined,
+            handleClearCache,
+            true
           )}
         </View>
       </View>
