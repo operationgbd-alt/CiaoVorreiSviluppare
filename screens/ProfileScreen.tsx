@@ -13,12 +13,12 @@ import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 type ProfileScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList, 'Profile'>;
 
 const getRoleLabel = (role: string) => {
-  switch (role) {
-    case 'master':
+  switch (role?.toUpperCase()) {
+    case 'MASTER':
       return 'Amministratore';
-    case 'ditta':
+    case 'DITTA':
       return 'Ditta Installatrice';
-    case 'tecnico':
+    case 'TECNICO':
       return 'Tecnico';
     default:
       return role;
@@ -30,8 +30,8 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   
-  const isMaster = user?.role === 'master';
-  const isDitta = user?.role === 'ditta';
+  const isMaster = user?.role?.toUpperCase() === 'MASTER';
+  const isDitta = user?.role?.toUpperCase() === 'DITTA';
 
   const handleLogout = () => {
     if (Platform.OS === 'web') {
@@ -108,13 +108,13 @@ export default function ProfileScreen() {
         <ThemedText type="small" style={{ color: theme.textSecondary }}>
           {user?.email}
         </ThemedText>
-        <View style={[styles.roleBadge, { backgroundColor: user?.role === 'master' ? theme.danger + '20' : user?.role === 'ditta' ? theme.secondary + '20' : theme.primaryLight }]}>
+        <View style={[styles.roleBadge, { backgroundColor: isMaster ? theme.danger + '20' : isDitta ? theme.secondary + '20' : theme.primaryLight }]}>
           <Feather 
-            name={user?.role === 'master' ? 'shield' : user?.role === 'ditta' ? 'home' : 'tool'} 
+            name={isMaster ? 'shield' : isDitta ? 'home' : 'tool'} 
             size={14} 
-            color={user?.role === 'master' ? theme.danger : user?.role === 'ditta' ? theme.secondary : theme.primary} 
+            color={isMaster ? theme.danger : isDitta ? theme.secondary : theme.primary} 
           />
-          <ThemedText type="caption" style={{ color: user?.role === 'master' ? theme.danger : user?.role === 'ditta' ? theme.secondary : theme.primary, marginLeft: Spacing.xs }}>
+          <ThemedText type="caption" style={{ color: isMaster ? theme.danger : isDitta ? theme.secondary : theme.primary, marginLeft: Spacing.xs }}>
             {getRoleLabel(user?.role || '')}
           </ThemedText>
         </View>
