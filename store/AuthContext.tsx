@@ -122,6 +122,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadStoredAuth = useCallback(async () => {
     try {
+      const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
+      if (storedToken) {
+        api.setToken(storedToken);
+        console.log('[AUTH LOAD] Token restored from storage');
+      }
+      
       const storedUser = await AsyncStorage.getItem(USER_KEY);
       if (storedUser) {
         setUser(JSON.parse(storedUser));
