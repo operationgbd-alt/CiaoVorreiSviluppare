@@ -119,3 +119,8 @@ value = "1"
 path = "/*"
 name = "expo-sfv-version"
 value = "0"
+
+[userenv]
+
+[userenv.development]
+RAILWAY_DATABASE_URL = "postgresql://postgres:RmHIwAeLqMoMnXfTAoUAHxVxWiQhAlGo@turntable.proxy.rlwy.net:35436/railway"
