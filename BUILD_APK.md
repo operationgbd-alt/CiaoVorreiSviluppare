@@ -115,6 +115,7 @@ eas build --platform android --profile production --clear-cache
 2. **L'APK production** è per la distribuzione finale
 3. Il backend Railway è sempre attivo e accessibile
 4. Le foto e i dati sono sincronizzati sul server
+5. **Generazione PDF**: Usa PDFKit (JavaScript puro) - funziona senza Chromium su Railway
 
 ---
 

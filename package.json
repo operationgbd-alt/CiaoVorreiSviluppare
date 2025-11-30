@@ -24,6 +24,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/pdfkit": "^0.17.4",
     "@types/pg": "^8.15.6",
     "bcryptjs": "^3.0.3",
     "concurrently": "^9.2.1",

@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { pool } from '../db';
-import { generatePDF } from '../services/pdfService';
+import { generatePDFWithPDFKit } from '../services/pdfKitService';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -197,7 +197,7 @@ router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: R
       appointments,
     };
 
-    const pdfBuffer = await generatePDF(reportData);
+    const pdfBuffer = await generatePDFWithPDFKit(reportData);
 
     if (format === 'base64') {
       return res.json({

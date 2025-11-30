@@ -51,9 +51,11 @@ SolarTech is a cross-platform mobile application (Android and iOS) designed for 
 - **Fallback**: If server upload fails, photos are saved locally on the device
 
 ## PDF Report System
-- **Server-side Generation**: PDF reports created using Puppeteer with HTML templates and Nix Chromium
+- **Server-side Generation**: PDF reports created using PDFKit (JavaScript puro, no Chromium required)
+- **Implementation**: `server/src/services/pdfKitService.ts` - generates professional PDF reports
 - **API Endpoints**:
   - POST /api/reports/intervention/:id - Generate PDF report for an intervention
+  - Query param `format=base64` returns base64-encoded PDF for mobile apps
   - Accepts `interventionData` in request body for demo/local interventions
   - Accepts `demoUser` in request body for authentication fallback
 - **Security**:
@@ -64,7 +66,7 @@ SolarTech is a cross-platform mobile application (Android and iOS) designed for 
   - Demo user authentication: Accepts user data from request body when no JWT token present
 - **Report Content**: Company info, intervention details, technician data, photos, GPS coordinates, notes
 - **Email Integration**: Reports can be sent via expo-mail-composer to operation.gbd@gruppo-phoenix.com
-- **Technical Note**: Uses Nix Chromium (/nix/store/.../bin/chromium) for PDF generation due to Replit environment constraints
+- **Technical Note**: Uses PDFKit instead of Puppeteer/Chromium - works on Railway without additional dependencies
 
 ## External Dependencies
 - **PostgreSQL**: Database for persistent data storage, including photo storage.
