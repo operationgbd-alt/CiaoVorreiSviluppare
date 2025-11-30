@@ -51,7 +51,7 @@ const generateInterventionNumber = () => {
 
 const initialCompanies: Company[] = [
   {
-    id: 'company-1',
+    id: '11111111-1111-1111-1111-111111111111',
     name: 'GBD B&A S.r.l.',
     address: 'Via Milano 123, Milano',
     phone: '+39 02 12345678',
@@ -61,7 +61,7 @@ const initialCompanies: Company[] = [
     createdAt: Date.now() - 86400000 * 30,
   },
   {
-    id: 'company-2',
+    id: '22222222-2222-2222-2222-222222222222',
     name: 'Solar Pro S.r.l.',
     address: 'Via Roma 45, Roma',
     phone: '+39 06 87654321',
@@ -74,7 +74,7 @@ const initialCompanies: Company[] = [
 
 const initialUsers: User[] = [
   {
-    id: 'master-1',
+    id: '17ac45dc-2e12-4226-90f5-49db2d8ac92b',
     username: 'gbd',
     role: 'master',
     name: 'GBD Amministratore',
@@ -85,35 +85,35 @@ const initialUsers: User[] = [
     createdAt: Date.now() - 86400000 * 60,
   },
   {
-    id: 'ditta-1',
+    id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     username: 'ditta',
     role: 'ditta',
     name: 'GBD B&A',
     email: 'info@gbd-ba.it',
     phone: '+39 02 12345678',
-    companyId: 'company-1',
+    companyId: '11111111-1111-1111-1111-111111111111',
     companyName: 'GBD B&A S.r.l.',
     createdAt: Date.now() - 86400000 * 30,
   },
   {
-    id: 'ditta-2',
+    id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
     username: 'solarpro',
     role: 'ditta',
     name: 'Solar Pro',
     email: 'info@solarpro.it',
     phone: '+39 06 87654321',
-    companyId: 'company-2',
+    companyId: '22222222-2222-2222-2222-222222222222',
     companyName: 'Solar Pro S.r.l.',
     createdAt: Date.now() - 86400000 * 20,
   },
   {
-    id: 'tech-1',
+    id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
     username: 'alex',
     role: 'tecnico',
     name: 'Alessandro Rossi',
     email: 'alex@gbd-ba.it',
     phone: '+39 333 1234567',
-    companyId: 'company-1',
+    companyId: '11111111-1111-1111-1111-111111111111',
     companyName: 'GBD B&A S.r.l.',
     lastLocation: {
       latitude: 45.4642,
@@ -125,13 +125,13 @@ const initialUsers: User[] = [
     createdAt: Date.now() - 86400000 * 25,
   },
   {
-    id: 'tech-2',
+    id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
     username: 'billo',
     role: 'tecnico',
     name: 'Marco Bianchi',
     email: 'billo@gbd-ba.it',
     phone: '+39 333 7654321',
-    companyId: 'company-1',
+    companyId: '11111111-1111-1111-1111-111111111111',
     companyName: 'GBD B&A S.r.l.',
     lastLocation: {
       latitude: 45.0703,
@@ -143,13 +143,13 @@ const initialUsers: User[] = [
     createdAt: Date.now() - 86400000 * 20,
   },
   {
-    id: 'tech-3',
+    id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
     username: 'luca',
     role: 'tecnico',
     name: 'Luca Verdi',
     email: 'luca@solarpro.it',
     phone: '+39 333 9988776',
-    companyId: 'company-2',
+    companyId: '22222222-2222-2222-2222-222222222222',
     companyName: 'Solar Pro S.r.l.',
     lastLocation: {
       latitude: 41.9028,
@@ -164,7 +164,7 @@ const initialUsers: User[] = [
 
 const allInterventions: Intervention[] = [
   {
-    id: 'int-001',
+    id: '00000001-0001-0001-0001-000000000001',
     number: 'INT-2025-001',
     client: {
       name: 'Giuseppe Verdi',
@@ -175,9 +175,9 @@ const allInterventions: Intervention[] = [
       phone: '+39 02 1234567',
       email: 'g.verdi@email.it',
     },
-    companyId: 'company-1',
+    companyId: '11111111-1111-1111-1111-111111111111',
     companyName: 'GBD B&A S.r.l.',
-    technicianId: 'tech-1',
+    technicianId: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
     technicianName: 'Alessandro Rossi',
     category: 'installazione',
     description: 'Installazione impianto fotovoltaico 6kW con sistema di accumulo.',
@@ -190,7 +190,7 @@ const allInterventions: Intervention[] = [
     updatedAt: Date.now() - 86400000 * 2,
   },
   {
-    id: 'int-002',
+    id: '00000002-0002-0002-0002-000000000002',
     number: 'INT-2025-002',
     client: {
       name: 'Anna Bianchi',
@@ -201,9 +201,9 @@ const allInterventions: Intervention[] = [
       phone: '+39 011 9876543',
       email: 'a.bianchi@email.it',
     },
-    companyId: 'company-1',
+    companyId: '11111111-1111-1111-1111-111111111111',
     companyName: 'GBD B&A S.r.l.',
-    technicianId: 'tech-1',
+    technicianId: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
     technicianName: 'Alessandro Rossi',
     category: 'sopralluogo',
     description: 'Sopralluogo per verifica stato impianto esistente.',
@@ -221,7 +221,7 @@ const allInterventions: Intervention[] = [
     updatedAt: Date.now() - 3600000 * 5,
   },
   {
-    id: 'int-003',
+    id: '00000003-0003-0003-0003-000000000003',
     number: 'INT-2025-003',
     client: {
       name: 'Maria Russo',
@@ -232,9 +232,9 @@ const allInterventions: Intervention[] = [
       phone: '+39 055 1122334',
       email: 'm.russo@email.it',
     },
-    companyId: 'company-1',
+    companyId: '11111111-1111-1111-1111-111111111111',
     companyName: 'GBD B&A S.r.l.',
-    technicianId: 'tech-2',
+    technicianId: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
     technicianName: 'Marco Bianchi',
     category: 'installazione',
     description: 'Installazione sistema di accumulo aggiuntivo 5kWh.',
@@ -252,7 +252,7 @@ const allInterventions: Intervention[] = [
     updatedAt: Date.now() - 3600000 * 2,
   },
   {
-    id: 'int-004',
+    id: '00000004-0004-0004-0004-000000000004',
     number: 'INT-2025-004',
     client: {
       name: 'Luigi Esposito',
@@ -263,7 +263,7 @@ const allInterventions: Intervention[] = [
       phone: '+39 081 5554433',
       email: 'l.esposito@email.it',
     },
-    companyId: 'company-1',
+    companyId: '11111111-1111-1111-1111-111111111111',
     companyName: 'GBD B&A S.r.l.',
     technicianId: null,
     technicianName: null,
@@ -278,7 +278,7 @@ const allInterventions: Intervention[] = [
     updatedAt: Date.now() - 86400000 * 3,
   },
   {
-    id: 'int-005',
+    id: '00000005-0005-0005-0005-000000000005',
     number: 'INT-2025-005',
     client: {
       name: 'Franco Colombo',
@@ -289,9 +289,9 @@ const allInterventions: Intervention[] = [
       phone: '+39 051 9988776',
       email: 'f.colombo@email.it',
     },
-    companyId: 'company-1',
+    companyId: '11111111-1111-1111-1111-111111111111',
     companyName: 'GBD B&A S.r.l.',
-    technicianId: 'tech-1',
+    technicianId: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
     technicianName: 'Alessandro Rossi',
     category: 'installazione',
     description: 'Installazione impianto fotovoltaico 4kW residenziale.',
@@ -320,7 +320,7 @@ const allInterventions: Intervention[] = [
     updatedAt: Date.now() - 86400000,
   },
   {
-    id: 'int-006',
+    id: '00000006-0006-0006-0006-000000000006',
     number: 'INT-2025-006',
     client: {
       name: 'Roberto Mancini',
@@ -331,9 +331,9 @@ const allInterventions: Intervention[] = [
       phone: '+39 049 7766554',
       email: 'r.mancini@email.it',
     },
-    companyId: 'company-1',
+    companyId: '11111111-1111-1111-1111-111111111111',
     companyName: 'GBD B&A S.r.l.',
-    technicianId: 'tech-2',
+    technicianId: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
     technicianName: 'Marco Bianchi',
     category: 'manutenzione',
     description: 'Manutenzione ordinaria impianto 8kW.',
@@ -346,7 +346,7 @@ const allInterventions: Intervention[] = [
     updatedAt: Date.now() - 86400000 * 2,
   },
   {
-    id: 'int-007',
+    id: '00000007-0007-0007-0007-000000000007',
     number: 'INT-2025-007',
     client: {
       name: 'Giulia Ferrari',
@@ -357,9 +357,9 @@ const allInterventions: Intervention[] = [
       phone: '+39 035 4455667',
       email: 'g.ferrari@email.it',
     },
-    companyId: 'company-2',
+    companyId: '22222222-2222-2222-2222-222222222222',
     companyName: 'Solar Pro S.r.l.',
-    technicianId: 'tech-3',
+    technicianId: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
     technicianName: 'Luca Verdi',
     category: 'manutenzione',
     description: 'Sostituzione inverter guasto.',
@@ -377,7 +377,7 @@ const allInterventions: Intervention[] = [
     updatedAt: Date.now() - 3600000 * 2,
   },
   {
-    id: 'int-008',
+    id: '00000008-0008-0008-0008-000000000008',
     number: 'INT-2025-008',
     client: {
       name: 'Stefano Conti',
@@ -388,9 +388,9 @@ const allInterventions: Intervention[] = [
       phone: '+39 045 8899001',
       email: 's.conti@email.it',
     },
-    companyId: 'company-2',
+    companyId: '22222222-2222-2222-2222-222222222222',
     companyName: 'Solar Pro S.r.l.',
-    technicianId: 'tech-3',
+    technicianId: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
     technicianName: 'Luca Verdi',
     category: 'manutenzione',
     description: 'Controllo annuale sistema di accumulo.',
@@ -414,7 +414,7 @@ const allInterventions: Intervention[] = [
     updatedAt: Date.now() - 86400000 * 2,
   },
   {
-    id: 'int-009',
+    id: '00000009-0009-0009-0009-000000000009',
     number: 'INT-2025-009',
     client: {
       name: 'Roberto Neri',
@@ -440,7 +440,7 @@ const allInterventions: Intervention[] = [
     updatedAt: Date.now() - 86400000,
   },
   {
-    id: 'int-010',
+    id: '00000010-0010-0010-0010-000000000010',
     number: 'INT-2025-010',
     client: {
       name: 'Paola Galli',
@@ -466,7 +466,7 @@ const allInterventions: Intervention[] = [
     updatedAt: Date.now() - 86400000 * 2,
   },
   {
-    id: 'int-011',
+    id: '00000011-0011-0011-0011-000000000011',
     number: 'INT-2025-011',
     client: {
       name: 'Fabio Moretti',
@@ -497,7 +497,7 @@ const allAppointments: Appointment[] = [
   {
     id: 'apt-001',
     type: 'intervento',
-    interventionId: 'int-002',
+    interventionId: '00000002-0002-0002-0002-000000000002',
     clientName: 'Anna Bianchi',
     address: 'Corso Vittorio Emanuele 120, Torino',
     date: Date.now() + 86400000 * 2 + 3600000 * 10,
@@ -507,7 +507,7 @@ const allAppointments: Appointment[] = [
   {
     id: 'apt-002',
     type: 'intervento',
-    interventionId: 'int-003',
+    interventionId: '00000003-0003-0003-0003-000000000003',
     clientName: 'Maria Russo',
     address: 'Via Garibaldi 33, Firenze',
     date: Date.now() + 3600000 * 2,

@@ -91,3 +91,32 @@ SolarTech is a cross-platform mobile application (Android and iOS) designed for 
 
 ### Build Instructions
 See `BUILD_APK.md` for detailed instructions on generating APK/IPA files.
+
+## Demo Credentials (Railway Database - Synchronized)
+
+### Users
+| Ruolo | Username | Password | ID |
+|-------|----------|----------|----|
+| MASTER | gbd | password (hashed) | 17ac45dc-2e12-4226-90f5-49db2d8ac92b |
+| DITTA | ditta | password (hashed) | aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa |
+| DITTA | solarpro | password (hashed) | bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb |
+| TECNICO | alex | password (hashed) | cccccccc-cccc-cccc-cccc-cccccccccccc |
+| TECNICO | billo | password (hashed) | dddddddd-dddd-dddd-dddd-dddddddddddd |
+| TECNICO | luca | password (hashed) | eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee |
+
+### Companies
+| Nome | ID | Owner |
+|------|----|-------|
+| GBD B&A S.r.l. | 11111111-1111-1111-1111-111111111111 | ditta |
+| Solar Pro S.r.l. | 22222222-2222-2222-2222-222222222222 | solarpro |
+
+### Interventions Distribution
+- GBD B&A S.r.l.: 6 interventi (INT-2025-001 to INT-2025-006)
+- Solar Pro S.r.l.: 2 interventi (INT-2025-007 to INT-2025-008)
+- Non assegnati: 3 interventi (INT-2025-009 to INT-2025-011)
+
+### Railway Database Connection
+- Host: turntable.proxy.rlwy.net:35436
+- Database: railway
+- User: postgres
+- Note: RAILWAY_DATABASE_URL set in Replit development environment
