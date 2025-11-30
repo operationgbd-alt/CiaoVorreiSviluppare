@@ -535,6 +535,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
           AsyncStorage.getItem(INTERVENTIONS_STORAGE_KEY),
         ]);
 
+        const hasOldFormatData = (data: string | null): boolean => {
+          if (!data) return false;
+          try {
+            const parsed = JSON.parse(data);
+            return parsed.some((item: any) => 
+              item.id?.startsWith('company-') || 
+              item.id?.startsWith('int-') ||
+              item.id?.startsWith('tech-') ||
+              item.id?.startsWith('ditta-') ||
+              item.id?.startsWith('master-') ||
+              item.companyId?.startsWith('company-')
+            );
+          } catch {
+            return false;
+          }
+        };
+
+        if (hasOldFormatData(storedCompanies) || hasOldFormatData(storedUsers) || hasOldFormatData(storedInterventions)) {
+          console.log('[LOAD] Detected old format data, clearing cache...');
+          await AsyncStorage.multiRemove([
+            COMPANIES_STORAGE_KEY,
+            USERS_STORAGE_KEY,
+            INTERVENTIONS_STORAGE_KEY,
+            '@solartech_registered_users',
+          ]);
+          console.log('[LOAD] Cache cleared, using fresh data');
+          setIsDataLoaded(true);
+          return;
+        }
+
         if (storedCompanies) {
           const parsed = JSON.parse(storedCompanies);
           console.log('[LOAD] Found stored companies:', parsed.length, parsed.map((c: Company) => ({ id: c.id, name: c.name })));
