@@ -8,10 +8,15 @@ const router = Router();
 router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { format = 'pdf' } = req.query;
-  const { interventionData } = req.body;
+  const interventionData = req.body?.interventionData;
+  
+  console.log('[REPORT] Generating report for intervention:', id);
+  console.log('[REPORT] User:', req.user?.username, 'Role:', req.user?.role);
+  console.log('[REPORT] Has interventionData:', !!interventionData);
   
   const userRole = req.user?.role?.toUpperCase();
   if (!req.user || (userRole !== 'MASTER' && userRole !== 'DITTA')) {
+    console.log('[REPORT] Access denied for role:', userRole);
     return res.status(403).json({ error: 'Solo utenti MASTER e DITTA possono generare report' });
   }
 
@@ -95,6 +100,8 @@ router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: R
     } else {
       let interventionResult;
       
+      console.log('[REPORT] Fetching intervention from database, ID:', id, 'Role:', userRole);
+      
       if (userRole === 'MASTER') {
         interventionResult = await pool.query(
           `SELECT 
@@ -105,6 +112,7 @@ router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: R
           WHERE i.id = $1`,
           [id]
         );
+        console.log('[REPORT] MASTER query result rows:', interventionResult.rows.length);
       } else if (userRole === 'DITTA') {
         if (!req.user.companyId) {
           return res.status(403).json({ error: 'Utente non associato a un\'azienda' });
