@@ -107,23 +107,44 @@ export async function generatePDF(data: ReportInput): Promise<Buffer> {
     ],
   };
   
-  // Use custom Chromium path if specified (Replit/Nix environment)
-  if (process.env.CHROMIUM_PATH) {
-    console.log('[PDF] Using CHROMIUM_PATH:', process.env.CHROMIUM_PATH);
-    launchOptions.executablePath = process.env.CHROMIUM_PATH;
-  } else if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    console.log('[PDF] Using PUPPETEER_EXECUTABLE_PATH:', process.env.PUPPETEER_EXECUTABLE_PATH);
-    launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-  } else {
-    // Check for Nix store Chromium (Replit)
-    const fs = await import('fs');
-    const nixChromiumPath = '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium';
-    if (fs.existsSync(nixChromiumPath)) {
-      console.log('[PDF] Using Nix Chromium:', nixChromiumPath);
-      launchOptions.executablePath = nixChromiumPath;
-    } else {
-      console.log('[PDF] Using Puppeteer bundled Chromium');
+  // Use custom Chromium path if specified
+  const fs = await import('fs');
+  
+  // List of possible Chromium paths to try
+  const chromiumPaths = [
+    process.env.CHROMIUM_PATH,
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+  ].filter(Boolean) as string[];
+  
+  // Also search for Chromium in /nix/store (Railway/Replit)
+  try {
+    const { execSync } = await import('child_process');
+    const nixChromium = execSync('which chromium 2>/dev/null || which chromium-browser 2>/dev/null || echo ""', { encoding: 'utf-8' }).trim();
+    if (nixChromium) {
+      chromiumPaths.unshift(nixChromium);
     }
+  } catch (e) {
+    // Ignore errors from which command
+  }
+  
+  let foundPath: string | undefined;
+  for (const path of chromiumPaths) {
+    if (path && fs.existsSync(path)) {
+      foundPath = path;
+      break;
+    }
+  }
+  
+  if (foundPath) {
+    console.log('[PDF] Using Chromium at:', foundPath);
+    launchOptions.executablePath = foundPath;
+  } else {
+    console.log('[PDF] No system Chromium found, trying Puppeteer bundled Chromium');
+    console.log('[PDF] Searched paths:', chromiumPaths);
   }
   
   console.log('[PDF] Launching browser with options:', JSON.stringify(launchOptions, null, 2));
