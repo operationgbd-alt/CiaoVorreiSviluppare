@@ -151,10 +151,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await api.login(username, password);
       if (result.success && result.data) {
         const { token, user: userData } = result.data;
+        const normalizedUser = {
+          ...userData,
+          role: userData.role?.toLowerCase() as 'master' | 'ditta' | 'tecnico',
+        };
         await AsyncStorage.setItem(TOKEN_KEY, token);
-        await AsyncStorage.setItem(USER_KEY, JSON.stringify(userData));
+        await AsyncStorage.setItem(USER_KEY, JSON.stringify(normalizedUser));
         api.setToken(token);
-        setUser(userData);
+        setUser(normalizedUser);
         return { success: true };
       }
     } catch (error) {

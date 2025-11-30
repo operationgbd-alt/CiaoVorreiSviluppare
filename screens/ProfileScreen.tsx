@@ -13,12 +13,12 @@ import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 type ProfileScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList, 'Profile'>;
 
 const getRoleLabel = (role: string) => {
-  switch (role?.toUpperCase()) {
-    case 'MASTER':
+  switch (role?.toLowerCase()) {
+    case 'master':
       return 'Amministratore';
-    case 'DITTA':
+    case 'ditta':
       return 'Ditta Installatrice';
-    case 'TECNICO':
+    case 'tecnico':
       return 'Tecnico';
     default:
       return role;
@@ -30,8 +30,8 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   
-  const isMaster = user?.role?.toUpperCase() === 'MASTER';
-  const isDitta = user?.role?.toUpperCase() === 'DITTA';
+  const isMaster = user?.role === 'master';
+  const isDitta = user?.role === 'ditta';
 
   const handleLogout = () => {
     if (Platform.OS === 'web') {
