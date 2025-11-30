@@ -1,7 +1,19 @@
 import { Pool } from 'pg';
 
+// Use DATABASE_URL or DATABASE_PUBLIC_URL (Railway provides DATABASE_PUBLIC_URL)
+const connectionString = process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL;
+
+if (!connectionString) {
+  console.error('ERROR: No database connection string found!');
+  console.error('Set DATABASE_URL or DATABASE_PUBLIC_URL environment variable');
+  process.exit(1);
+}
+
+console.log('Connecting to database...');
+
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
 });
 
 export async function initializeDatabase() {
