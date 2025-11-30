@@ -174,32 +174,47 @@ router.post('/change-password', authMiddleware, async (req: AuthRequest, res: Re
   }
 });
 
-// TEMPORARY: Reset MASTER password endpoint - REMOVE AFTER USE
+// TEMPORARY: Reset/Create MASTER user endpoint - REMOVE AFTER USE
 router.post('/reset-master', async (req, res, next) => {
   try {
     const { secret, newPassword } = req.body;
     
-    // Simple secret check
     if (secret !== 'solartech-reset-2025') {
       throw new AppError('Non autorizzato', 401);
     }
     
     const hashedPassword = await bcrypt.hash(newPassword || 'master123', 10);
     
-    const result = await pool.query(
-      `UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE role = 'MASTER' RETURNING username`,
-      [hashedPassword]
+    // Check if MASTER user exists
+    const existingUser = await pool.query(
+      `SELECT id, username FROM users WHERE role = 'MASTER' LIMIT 1`
     );
     
-    if (result.rowCount === 0) {
-      throw new AppError('Nessun utente MASTER trovato', 404);
+    if (existingUser.rows.length > 0) {
+      // Update existing MASTER password
+      await pool.query(
+        `UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE role = 'MASTER'`,
+        [hashedPassword]
+      );
+      res.json({
+        success: true,
+        message: 'Password MASTER aggiornata',
+        username: existingUser.rows[0].username,
+      });
+    } else {
+      // Create new MASTER user
+      const result = await pool.query(
+        `INSERT INTO users (username, password, name, role, active) 
+         VALUES ($1, $2, $3, 'MASTER', true) 
+         RETURNING username`,
+        ['gbd', hashedPassword, 'Amministratore Master']
+      );
+      res.json({
+        success: true,
+        message: 'Utente MASTER creato',
+        username: result.rows[0].username,
+      });
     }
-    
-    res.json({
-      success: true,
-      message: `Password resettata per ${result.rowCount} utenti MASTER`,
-      users: result.rows.map(r => r.username),
-    });
   } catch (error) {
     next(error);
   }
