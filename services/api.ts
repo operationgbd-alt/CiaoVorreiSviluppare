@@ -1,37 +1,51 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
+// Hardcoded production URL - this ensures standalone APK always works
+const PRODUCTION_API_URL = 'https://api-backend-production-c189.up.railway.app/api';
+
 const getApiBaseUrl = (): string => {
-  // Production URL from app.json extra config (set during EAS Build)
-  const productionApiUrl = Constants.expoConfig?.extra?.apiUrl;
-  
-  // If production URL is set and we're in a standalone build, use it
-  if (productionApiUrl && !__DEV__) {
-    return productionApiUrl;
+  // PRIORITY 1: If NOT in development mode, ALWAYS use production URL
+  // This is the most reliable check for standalone APK builds
+  if (!__DEV__) {
+    console.log('[API] Production mode detected, using Railway URL');
+    return PRODUCTION_API_URL;
   }
   
-  // Also check if production URL is set even in dev (for testing)
-  if (productionApiUrl && Constants.executionEnvironment === 'standalone') {
-    return productionApiUrl;
+  // PRIORITY 2: Check for standalone execution (backup check)
+  if (Constants.executionEnvironment === 'standalone') {
+    console.log('[API] Standalone mode detected, using Railway URL');
+    return PRODUCTION_API_URL;
   }
   
-  // Development mode
+  // PRIORITY 3: Check app.json extra config
+  const configApiUrl = Constants.expoConfig?.extra?.apiUrl;
+  if (configApiUrl) {
+    console.log('[API] Using config apiUrl:', configApiUrl);
+    return configApiUrl;
+  }
+  
+  // DEVELOPMENT MODE BELOW
+  
+  // Web on Replit
   if (Platform.OS === 'web') {
     if (typeof window !== 'undefined' && window.location.hostname.includes('replit')) {
-      // Web on Replit: proxy serves /api on same domain
-      return `https://${window.location.hostname}/api`;
+      const url = `https://${window.location.hostname}/api`;
+      console.log('[API] Web Replit mode, using:', url);
+      return url;
     }
     return 'http://localhost:8081/api';
   }
   
-  // For Expo Go on mobile, use public Replit URL
-  // Proxy server handles routing /api to backend
+  // Expo Go on mobile - use Replit proxy
   const replitDomain = Constants.expoConfig?.hostUri?.split(':')[0];
   if (replitDomain && replitDomain.includes('replit')) {
-    return `https://${replitDomain}/api`;
+    const url = `https://${replitDomain}/api`;
+    console.log('[API] Expo Go Replit mode, using:', url);
+    return url;
   }
   
-  // Fallback for local development
+  // Local development fallback
   const debuggerHost = Constants.expoConfig?.hostUri?.split(':')[0];
   if (debuggerHost) {
     return `http://${debuggerHost}:8081/api`;
