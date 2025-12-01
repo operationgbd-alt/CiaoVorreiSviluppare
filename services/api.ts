@@ -330,6 +330,27 @@ class ApiService {
   getReportUrl(interventionId: string): string {
     return `${API_BASE_URL}/reports/intervention/${interventionId}`;
   }
+
+  async savePushToken(token: string, platform: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>('/push-tokens', {
+      method: 'POST',
+      body: JSON.stringify({ token, platform }),
+    });
+  }
+
+  async removePushToken(token: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>('/push-tokens', {
+      method: 'DELETE',
+      body: JSON.stringify({ token }),
+    });
+  }
+
+  async notifyReportSent(interventionId: string, interventionNumber: string, recipientEmail: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>(`/reports/notify-sent/${interventionId}`, {
+      method: 'POST',
+      body: JSON.stringify({ interventionNumber, recipientEmail }),
+    });
+  }
 }
 
 interface PhotoMeta {

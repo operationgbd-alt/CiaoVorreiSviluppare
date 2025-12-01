@@ -76,11 +76,11 @@ async function sendPushNotifications(messages: PushMessage[]): Promise<void> {
       body: JSON.stringify(messages),
     });
 
-    const result = await response.json();
+    const result = await response.json() as { data?: Array<{ status: string; message?: string; details?: { error?: string } }> };
     console.log('[PUSH] Notifications sent:', result);
 
     if (result.data) {
-      result.data.forEach((ticket: any, index: number) => {
+      result.data.forEach((ticket, index: number) => {
         if (ticket.status === 'error') {
           console.error(`[PUSH] Error for token ${messages[index].to}:`, ticket.message);
           if (ticket.details?.error === 'DeviceNotRegistered') {
