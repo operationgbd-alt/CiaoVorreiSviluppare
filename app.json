@@ -19,7 +19,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.solartech.app"
+      "package": "com.solartech.app",
+      "minSdkVersion": 24
     },
     "web": {
       "output": "single",

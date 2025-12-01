@@ -56,10 +56,9 @@ const getApiBaseUrl = (): string => {
 
 const API_BASE_URL = getApiBaseUrl();
 
-// Log the API URL in development for debugging
-if (__DEV__) {
-  console.log('[API] Base URL:', API_BASE_URL);
-}
+// Always log the API URL for debugging (including production)
+console.log('[API] Base URL:', API_BASE_URL);
+console.log('[API] __DEV__:', __DEV__);
 
 interface ApiResponse<T> {
   success: boolean;
@@ -162,22 +161,29 @@ class ApiService {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      const fullUrl = `${API_BASE_URL}${endpoint}`;
+      console.log('[API] Request:', options.method || 'GET', fullUrl);
+      
+      const response = await fetch(fullUrl, {
         ...options,
         headers,
       });
 
+      console.log('[API] Response status:', response.status);
       const data = await response.json();
 
       if (!response.ok) {
+        console.log('[API] Response error:', data.error);
         return {
           success: false,
           error: data.error || `HTTP ${response.status}`,
         };
       }
 
+      console.log('[API] Response success');
       return { success: true, data };
     } catch (error) {
+      console.log('[API] Network error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Errore di rete',
