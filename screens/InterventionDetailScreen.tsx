@@ -63,7 +63,7 @@ const STATUS_OPTIONS: { value: InterventionStatus; label: string }[] = [
 export default function InterventionDetailScreen({ navigation, route }: Props) {
   const { theme } = useTheme();
   const { getInterventionById, updateIntervention, deleteIntervention, addAppointment, users } = useApp();
-  const { user } = useAuth();
+  const { user, hasValidToken, isDemoMode } = useAuth();
   
   const intervention = getInterventionById(route.params.interventionId);
   
@@ -515,6 +515,15 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
   };
 
   const handleDeleteIntervention = async () => {
+    if (!hasValidToken) {
+      Alert.alert(
+        'Modalità Offline',
+        'L\'eliminazione degli interventi richiede una connessione al server.\n\nEffettua il logout e accedi nuovamente con connessione internet attiva.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     Alert.alert(
       'Elimina Intervento',
       `Sei sicuro di voler eliminare definitivamente l'intervento ${intervention.number}?\n\nQuesta azione non può essere annullata.`,

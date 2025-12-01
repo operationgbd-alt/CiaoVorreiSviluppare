@@ -64,7 +64,7 @@ const STATUS_LABELS: Record<InterventionStatus, string> = {
 export default function InterventionsListScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const { interventions, deleteIntervention } = useApp();
-  const { user } = useAuth();
+  const { user, hasValidToken } = useAuth();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
@@ -112,6 +112,15 @@ export default function InterventionsListScreen({ navigation }: Props) {
 
   const handleDeleteSelected = async () => {
     if (selectedIds.size === 0) return;
+
+    if (!hasValidToken) {
+      Alert.alert(
+        'Modalità Offline',
+        'L\'eliminazione degli interventi richiede una connessione al server.\n\nEffettua il logout e accedi nuovamente con connessione internet attiva.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
 
     Alert.alert(
       'Conferma Eliminazione',
