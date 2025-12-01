@@ -27,6 +27,8 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isDemoMode: boolean;
+  hasValidToken: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   registerUser: (userData: RegisterUserData) => Promise<{ success: boolean; userId: string; error?: string }>;
@@ -118,6 +120,8 @@ const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [hasValidToken, setHasValidToken] = useState(false);
   const [registeredUsers, setRegisteredUsers] = useState<Record<string, { password: string; user: AuthUser }>>({});
 
   const loadStoredAuth = useCallback(async () => {
@@ -125,6 +129,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
       if (storedToken) {
         api.setToken(storedToken);
+        setHasValidToken(true);
+        setIsDemoMode(false);
         console.log('[AUTH LOAD] Token restored from storage');
       }
       
@@ -169,6 +175,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await AsyncStorage.setItem(USER_KEY, JSON.stringify(normalizedUser));
         api.setToken(token);
         setUser(normalizedUser);
+        setIsDemoMode(false);
+        setHasValidToken(true);
         return { success: true };
       } else {
         console.log('[AUTH LOGIN] API login failed:', result.error);
@@ -185,7 +193,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (demoAccount && demoAccount.password === password) {
       console.log('[AUTH LOGIN] Demo account found, WARNING: no API token, limited functionality');
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(demoAccount.user));
+      await AsyncStorage.removeItem(TOKEN_KEY);
+      api.setToken(null);
       setUser(demoAccount.user);
+      setIsDemoMode(true);
+      setHasValidToken(false);
       return { success: true };
     }
 
@@ -195,7 +207,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (registeredAccount && registeredAccount.password === password) {
       console.log('[AUTH LOGIN] Found registered user:', registeredAccount.user.username);
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(registeredAccount.user));
+      await AsyncStorage.removeItem(TOKEN_KEY);
+      api.setToken(null);
       setUser(registeredAccount.user);
+      setIsDemoMode(true);
+      setHasValidToken(false);
       return { success: true };
     }
 
@@ -247,6 +263,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.removeItem(USER_KEY);
       api.setToken(null);
       setUser(null);
+      setIsDemoMode(false);
+      setHasValidToken(false);
     } catch (error) {
       console.error('Error during logout:', error);
     }
@@ -256,6 +274,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     isLoading,
     isAuthenticated: user !== null,
+    isDemoMode,
+    hasValidToken,
     login,
     logout,
     registerUser,
