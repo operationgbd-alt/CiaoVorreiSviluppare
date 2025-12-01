@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { View, StyleSheet, Platform, Pressable, ScrollView } from 'react-native';
+import React, { useMemo, useState, useRef } from 'react';
+import { View, StyleSheet, Platform, Pressable, ScrollView, Linking } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 import { useApp } from '@/store/AppContext';
@@ -8,6 +8,14 @@ import { ThemedView } from '@/components/ThemedView';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { User } from '@/types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TechnicianMap } from '@/components/TechnicianMap';
+
+const ITALY_REGION = {
+  latitude: 42.5,
+  longitude: 12.5,
+  latitudeDelta: 8,
+  longitudeDelta: 8,
+};
 
 function formatTimeAgo(timestamp: number): string {
   const now = Date.now();
@@ -29,6 +37,7 @@ export function TechnicianMapScreen() {
   const { users } = useApp();
   const [selectedTech, setSelectedTech] = useState<User | null>(null);
   const insets = useSafeAreaInsets();
+  const mapRef = useRef<any>(null);
   
   const allTechnicians = useMemo(() => 
     users.filter(u => u.role === 'tecnico'),
@@ -39,6 +48,48 @@ export function TechnicianMapScreen() {
   const techniciansWithoutLocation = allTechnicians.filter(t => !t.lastLocation);
   const onlineTechnicians = techniciansWithLocation.filter(t => t.lastLocation?.isOnline);
   const offlineTechnicians = techniciansWithLocation.filter(t => !t.lastLocation?.isOnline);
+
+  const initialRegion = useMemo(() => {
+    if (techniciansWithLocation.length > 0) {
+      const lats = techniciansWithLocation.map(t => t.lastLocation!.latitude);
+      const lngs = techniciansWithLocation.map(t => t.lastLocation!.longitude);
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+      
+      return {
+        latitude: (minLat + maxLat) / 2,
+        longitude: (minLng + maxLng) / 2,
+        latitudeDelta: Math.max(0.05, (maxLat - minLat) * 1.5),
+        longitudeDelta: Math.max(0.05, (maxLng - minLng) * 1.5),
+      };
+    }
+    return ITALY_REGION;
+  }, [techniciansWithLocation]);
+
+  const handleMarkerPress = (tech: User) => {
+    setSelectedTech(tech);
+  };
+
+  const handleCallTech = (phone?: string) => {
+    if (phone) {
+      Linking.openURL(`tel:${phone}`);
+    }
+  };
+
+  const handleCenterOnTech = (tech: User) => {
+    if (tech.lastLocation && mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: tech.lastLocation.latitude,
+        longitude: tech.lastLocation.longitude,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      }, 500);
+    }
+  };
+
+  const isNativeMap = Platform.OS !== 'web';
 
   return (
     <ScrollView 
@@ -51,38 +102,45 @@ export function TechnicianMapScreen() {
           Posizione Tecnici
         </ThemedText>
       </ThemedView>
-      
-      {Platform.OS !== 'web' ? (
-        <ThemedView style={[styles.infoBox, { backgroundColor: theme.primaryLight }]}>
-          <Feather name="info" size={16} color={theme.primary} />
-          <ThemedText type="caption" style={{ color: theme.primary, marginLeft: Spacing.sm, flex: 1 }}>
-            La mappa interattiva sara disponibile nell'app pubblicata. Qui puoi vedere la lista dei tecnici.
-          </ThemedText>
-        </ThemedView>
-      ) : null}
 
-      <View style={styles.legend}>
-        <View style={[styles.legendItem, { backgroundColor: theme.success + '15' }]}>
-          <View style={[styles.legendDot, { backgroundColor: theme.success }]} />
-          <ThemedText type="body" style={{ color: theme.success, fontWeight: '600' }}>
-            Online ({onlineTechnicians.length})
-          </ThemedText>
-        </View>
-        <View style={[styles.legendItem, { backgroundColor: theme.textSecondary + '15' }]}>
-          <View style={[styles.legendDot, { backgroundColor: theme.textSecondary }]} />
-          <ThemedText type="body" style={{ color: theme.textSecondary, fontWeight: '600' }}>
-            Offline ({offlineTechnicians.length})
-          </ThemedText>
-        </View>
-        {techniciansWithoutLocation.length > 0 ? (
-          <View style={[styles.legendItem, { backgroundColor: theme.secondary + '15' }]}>
-            <View style={[styles.legendDot, { backgroundColor: theme.secondary }]} />
-            <ThemedText type="body" style={{ color: theme.secondary, fontWeight: '600' }}>
-              No GPS ({techniciansWithoutLocation.length})
+      <TechnicianMap
+        technicians={techniciansWithLocation}
+        initialRegion={initialRegion}
+        onMarkerPress={handleMarkerPress}
+        onCallTech={handleCallTech}
+        mapRef={mapRef}
+        onlineTechnicians={onlineTechnicians}
+        offlineTechnicians={offlineTechnicians}
+      />
+
+      {!isNativeMap ? (
+        <View style={styles.legend}>
+          <View style={[styles.legendItem, { backgroundColor: theme.success + '15' }]}>
+            <View style={[styles.legendDotLarge, { backgroundColor: theme.success }]} />
+            <ThemedText type="body" style={{ color: theme.success, fontWeight: '600' }}>
+              Online ({onlineTechnicians.length})
             </ThemedText>
           </View>
-        ) : null}
-      </View>
+          <View style={[styles.legendItem, { backgroundColor: theme.textSecondary + '15' }]}>
+            <View style={[styles.legendDotLarge, { backgroundColor: theme.textSecondary }]} />
+            <ThemedText type="body" style={{ color: theme.textSecondary, fontWeight: '600' }}>
+              Offline ({offlineTechnicians.length})
+            </ThemedText>
+          </View>
+          {techniciansWithoutLocation.length > 0 ? (
+            <View style={[styles.legendItem, { backgroundColor: theme.secondary + '15' }]}>
+              <View style={[styles.legendDotLarge, { backgroundColor: theme.secondary }]} />
+              <ThemedText type="body" style={{ color: theme.secondary, fontWeight: '600' }}>
+                No GPS ({techniciansWithoutLocation.length})
+              </ThemedText>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+
+      <ThemedText type="h4" style={{ marginHorizontal: Spacing.md, marginTop: Spacing.md, marginBottom: Spacing.sm }}>
+        Lista Tecnici ({allTechnicians.length})
+      </ThemedText>
 
       {allTechnicians.length === 0 ? (
         <ThemedView style={[styles.emptyState, { backgroundColor: theme.backgroundDefault }]}>
@@ -108,7 +166,12 @@ export function TechnicianMapScreen() {
                 borderLeftColor: isOnline ? theme.success : theme.textSecondary,
               }
             ]}
-            onPress={() => setSelectedTech(isSelected ? null : tech)}
+            onPress={() => {
+              setSelectedTech(isSelected ? null : tech);
+              if (!isSelected && isNativeMap) {
+                handleCenterOnTech(tech);
+              }
+            }}
           >
             <View style={styles.techCardHeader}>
               <View style={[styles.avatar, { backgroundColor: isOnline ? theme.success + '20' : theme.primaryLight }]}>
@@ -152,18 +215,33 @@ export function TechnicianMapScreen() {
 
             {isSelected ? (
               <View style={styles.actionButtons}>
-                <Pressable style={[styles.actionButton, { backgroundColor: theme.primary }]}>
+                <Pressable 
+                  style={[styles.actionButton, { backgroundColor: theme.primary }]}
+                  onPress={() => handleCallTech(tech.phone)}
+                >
                   <Feather name="phone" size={16} color={theme.buttonText} />
                   <ThemedText type="small" style={{ color: theme.buttonText, marginLeft: Spacing.xs }}>
                     Chiama
                   </ThemedText>
                 </Pressable>
-                <Pressable style={[styles.actionButton, { backgroundColor: theme.primaryLight }]}>
-                  <Feather name="message-circle" size={16} color={theme.primary} />
-                  <ThemedText type="small" style={{ color: theme.primary, marginLeft: Spacing.xs }}>
-                    Messaggio
-                  </ThemedText>
-                </Pressable>
+                {isNativeMap ? (
+                  <Pressable 
+                    style={[styles.actionButton, { backgroundColor: theme.primaryLight }]}
+                    onPress={() => handleCenterOnTech(tech)}
+                  >
+                    <Feather name="navigation" size={16} color={theme.primary} />
+                    <ThemedText type="small" style={{ color: theme.primary, marginLeft: Spacing.xs }}>
+                      Centra Mappa
+                    </ThemedText>
+                  </Pressable>
+                ) : (
+                  <Pressable style={[styles.actionButton, { backgroundColor: theme.primaryLight }]}>
+                    <Feather name="message-circle" size={16} color={theme.primary} />
+                    <ThemedText type="small" style={{ color: theme.primary, marginLeft: Spacing.xs }}>
+                      Messaggio
+                    </ThemedText>
+                  </Pressable>
+                )}
               </View>
             ) : null}
           </Pressable>
@@ -220,7 +298,10 @@ export function TechnicianMapScreen() {
 
                 {isSelected ? (
                   <View style={styles.actionButtons}>
-                    <Pressable style={[styles.actionButton, { backgroundColor: theme.primary }]}>
+                    <Pressable 
+                      style={[styles.actionButton, { backgroundColor: theme.primary }]}
+                      onPress={() => handleCallTech(tech.phone)}
+                    >
                       <Feather name="phone" size={16} color={theme.buttonText} />
                       <ThemedText type="small" style={{ color: theme.buttonText, marginLeft: Spacing.xs }}>
                         Chiama
@@ -253,14 +334,6 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     marginBottom: Spacing.md,
   },
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: Spacing.md,
-    marginBottom: Spacing.md,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-  },
   legend: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -275,7 +348,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
   },
-  legendDot: {
+  legendDotLarge: {
     width: 10,
     height: 10,
     borderRadius: 5,
