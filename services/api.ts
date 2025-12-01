@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 // Hardcoded production URL - this ensures standalone APK always works
-const PRODUCTION_API_URL = 'https://api-backend-production-c189.up.railway.app/api';
+const PRODUCTION_API_URL = 'https://solartech-backend-production.up.railway.app/api';
 
 const getApiBaseUrl = (): string => {
   // PRIORITY 1: If NOT in development mode, ALWAYS use production URL
