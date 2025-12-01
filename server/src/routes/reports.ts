@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { pool } from '../db';
 import { generatePDFWithPDFKit } from '../services/pdfKitService';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { notifyReportSent } from '../services/pushNotificationService';
 
 const router = Router();
 
@@ -216,6 +217,41 @@ router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: R
   } catch (error) {
     console.error('Error generating report:', error);
     return res.status(500).json({ error: 'Errore nella generazione del report' });
+  }
+});
+
+router.post('/notify-sent/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { recipientEmail, interventionNumber } = req.body;
+    const user = req.user!;
+
+    const userRole = user.role?.toUpperCase();
+    if (userRole !== 'MASTER' && userRole !== 'DITTA') {
+      return res.status(403).json({ error: 'Solo utenti MASTER e DITTA possono inviare report' });
+    }
+
+    if (userRole !== 'MASTER') {
+      try {
+        await notifyReportSent(
+          interventionNumber || `INT-${id}`,
+          user.name,
+          user.role,
+          recipientEmail || 'operation.gbd@gruppo-phoenix.com'
+        );
+        console.log('[REPORT] Notification sent for report:', interventionNumber);
+      } catch (notifyError) {
+        console.error('[REPORT] Error sending notification:', notifyError);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Notification sent successfully',
+    });
+  } catch (error) {
+    console.error('Error notifying report sent:', error);
+    return res.status(500).json({ error: 'Errore nell\'invio della notifica' });
   }
 });
 

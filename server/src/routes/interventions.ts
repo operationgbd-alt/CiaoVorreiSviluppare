@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { pool, User, Company, Intervention } from '../db';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
+import { notifyStatusChange, notifyAppointmentSet } from '../services/pushNotificationService';
 
 const router = Router();
 
@@ -532,9 +533,34 @@ router.post('/:id/status', async (req: AuthRequest, res: Response, next) => {
       values
     );
     
+    const updatedIntervention = result.rows[0];
+    
+    if (user.role !== 'MASTER') {
+      try {
+        await notifyStatusChange(
+          updatedIntervention.number,
+          user.name,
+          user.role,
+          intervention.status,
+          status
+        );
+        
+        if (status === 'appuntamento_fissato' && appointmentDate) {
+          await notifyAppointmentSet(
+            updatedIntervention.number,
+            user.name,
+            user.role,
+            new Date(appointmentDate)
+          );
+        }
+      } catch (notifyError) {
+        console.error('[PUSH] Error sending notification:', notifyError);
+      }
+    }
+    
     res.json({
       success: true,
-      data: result.rows[0],
+      data: updatedIntervention,
     });
   } catch (error) {
     next(error);

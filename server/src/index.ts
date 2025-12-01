@@ -7,6 +7,7 @@ import companyRoutes from './routes/companies';
 import interventionRoutes from './routes/interventions';
 import photoRoutes from './routes/photos';
 import reportRoutes from './routes/reports';
+import pushTokenRoutes from './routes/pushTokens';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -29,6 +30,7 @@ app.use('/api/companies', companyRoutes);
 app.use('/api/interventions', interventionRoutes);
 app.use('/api/photos', photoRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/push-tokens', pushTokenRoutes);
 
 app.use(errorHandler);
 
