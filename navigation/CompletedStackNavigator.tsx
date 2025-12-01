@@ -49,6 +49,7 @@ export default function CompletedStackNavigator() {
         component={CompletedInterventionsScreen}
         options={{
           title: "Completati",
+          headerLeft: () => <BackButton />,
         }}
       />
       <Stack.Screen
