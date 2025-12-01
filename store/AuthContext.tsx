@@ -213,42 +213,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         console.log('[AUTH LOGIN] API login failed:', result.error);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.log('[AUTH LOGIN] API login network error:', error);
+      
+      // In PRODUCTION mode, do NOT fallback to demo mode - show real error
+      if (!__DEV__) {
+        const errorMessage = error?.message || 'Impossibile connettersi al server. Verifica la connessione internet.';
+        console.log('[AUTH LOGIN] Production mode - returning real error:', errorMessage);
+        return { success: false, error: errorMessage };
+      }
     }
 
-    // Fallback to demo mode ONLY if network is unavailable
-    // Demo mode provides limited functionality (no server operations like delete)
-    console.log('[AUTH LOGIN] Trying demo mode fallback...');
-    
-    const demoAccount = DEMO_ACCOUNTS[username.toLowerCase()];
-    if (demoAccount && demoAccount.password === password) {
-      console.log('[AUTH LOGIN] Demo account found, WARNING: no API token, limited functionality');
-      await AsyncStorage.setItem(USER_KEY, JSON.stringify(demoAccount.user));
-      await AsyncStorage.removeItem(TOKEN_KEY);
-      api.setToken(null);
-      setUser(demoAccount.user);
-      setIsDemoMode(true);
-      setHasValidToken(false);
-      return { success: true };
-    }
+    // Fallback to demo mode ONLY in development
+    if (__DEV__) {
+      console.log('[AUTH LOGIN] DEV MODE: Trying demo mode fallback...');
+      
+      const demoAccount = DEMO_ACCOUNTS[username.toLowerCase()];
+      if (demoAccount && demoAccount.password === password) {
+        console.log('[AUTH LOGIN] Demo account found, WARNING: no API token, limited functionality');
+        await AsyncStorage.setItem(USER_KEY, JSON.stringify(demoAccount.user));
+        await AsyncStorage.removeItem(TOKEN_KEY);
+        api.setToken(null);
+        setUser(demoAccount.user);
+        setIsDemoMode(true);
+        setHasValidToken(false);
+        return { success: true };
+      }
 
-    console.log('[AUTH LOGIN] Checking registered users for:', username.toLowerCase());
-    console.log('[AUTH LOGIN] Available registered users:', Object.keys(registeredUsers));
-    const registeredAccount = registeredUsers[username.toLowerCase()];
-    if (registeredAccount && registeredAccount.password === password) {
-      console.log('[AUTH LOGIN] Found registered user:', registeredAccount.user.username);
-      await AsyncStorage.setItem(USER_KEY, JSON.stringify(registeredAccount.user));
-      await AsyncStorage.removeItem(TOKEN_KEY);
-      api.setToken(null);
-      setUser(registeredAccount.user);
-      setIsDemoMode(true);
-      setHasValidToken(false);
-      return { success: true };
+      console.log('[AUTH LOGIN] Checking registered users for:', username.toLowerCase());
+      console.log('[AUTH LOGIN] Available registered users:', Object.keys(registeredUsers));
+      const registeredAccount = registeredUsers[username.toLowerCase()];
+      if (registeredAccount && registeredAccount.password === password) {
+        console.log('[AUTH LOGIN] Found registered user:', registeredAccount.user.username);
+        await AsyncStorage.setItem(USER_KEY, JSON.stringify(registeredAccount.user));
+        await AsyncStorage.removeItem(TOKEN_KEY);
+        api.setToken(null);
+        setUser(registeredAccount.user);
+        setIsDemoMode(true);
+        setHasValidToken(false);
+        return { success: true };
+      }
     }
 
     console.log('[AUTH LOGIN] No matching account found');
-    return { success: false, error: 'Credenziali non valide' };
+    return { success: false, error: 'Credenziali non valide o impossibile connettersi al server' };
   }, [registeredUsers]);
 
   const registerUser = useCallback(async (userData: RegisterUserData) => {
