@@ -124,19 +124,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [hasValidToken, setHasValidToken] = useState(false);
   const [registeredUsers, setRegisteredUsers] = useState<Record<string, { password: string; user: AuthUser }>>({});
 
+  // Centralized handler for 401 responses - forces logout when token expires
+  const handleUnauthorized = useCallback(async () => {
+    console.log('[AUTH] Unauthorized response received - forcing logout');
+    try {
+      await AsyncStorage.removeItem(TOKEN_KEY);
+      await AsyncStorage.removeItem(USER_KEY);
+    } catch (e) {
+      console.error('[AUTH] Error clearing storage:', e);
+    }
+    api.setToken(null);
+    setUser(null);
+    setHasValidToken(false);
+    setIsDemoMode(false);
+  }, []);
+
   const loadStoredAuth = useCallback(async () => {
     try {
+      // Register the 401 handler FIRST - this ensures any API call that returns 401
+      // will trigger a logout, even during the initial load
+      api.setOnUnauthorized(handleUnauthorized);
+      
       const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
-      if (storedToken) {
+      const storedUser = await AsyncStorage.getItem(USER_KEY);
+      
+      if (storedToken && storedUser) {
+        console.log('[AUTH LOAD] Found stored token, setting up session...');
         api.setToken(storedToken);
+        setUser(JSON.parse(storedUser));
         setHasValidToken(true);
         setIsDemoMode(false);
-        console.log('[AUTH LOAD] Token restored from storage');
-      }
-      
-      const storedUser = await AsyncStorage.getItem(USER_KEY);
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        console.log('[AUTH LOAD] Session restored - token will be validated on first API call');
+        // Note: If the token is invalid, the first API call will return 401
+        // and handleUnauthorized will be called automatically
+      } else if (storedUser && !storedToken) {
+        // User exists but no token - this was a demo mode session
+        // Force a fresh login to get a real token
+        console.log('[AUTH LOAD] Found user but NO TOKEN - was demo mode, forcing login');
+        await AsyncStorage.removeItem(USER_KEY);
+        setUser(null);
+        setHasValidToken(false);
+        setIsDemoMode(false);
+      } else {
+        console.log('[AUTH LOAD] No stored auth found, user must login');
+        setUser(null);
+        setHasValidToken(false);
       }
       
       const storedRegisteredUsers = await AsyncStorage.getItem(REGISTERED_USERS_KEY);
@@ -152,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [handleUnauthorized]);
 
   useEffect(() => {
     loadStoredAuth();

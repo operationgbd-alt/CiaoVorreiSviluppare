@@ -142,9 +142,15 @@ interface Intervention {
 
 class ApiService {
   private token: string | null = null;
+  private onUnauthorizedCallback: (() => void) | null = null;
 
   setToken(token: string | null) {
     this.token = token;
+  }
+
+  // Register callback to be called when 401 is received
+  setOnUnauthorized(callback: () => void) {
+    this.onUnauthorizedCallback = callback;
   }
 
   private async request<T>(
@@ -170,6 +176,19 @@ class ApiService {
       });
 
       console.log('[API] Response status:', response.status);
+      
+      // CRITICAL: Handle 401 Unauthorized - token is invalid
+      if (response.status === 401 || response.status === 403) {
+        console.log('[API] UNAUTHORIZED - Token invalid, triggering logout');
+        if (this.onUnauthorizedCallback) {
+          this.onUnauthorizedCallback();
+        }
+        return {
+          success: false,
+          error: 'Sessione scaduta. Effettua nuovamente il login.',
+        };
+      }
+      
       const data = await response.json();
 
       if (!response.ok) {
