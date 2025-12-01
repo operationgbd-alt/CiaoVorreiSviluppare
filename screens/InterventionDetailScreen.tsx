@@ -215,6 +215,11 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
       notifyBefore: 60,
     });
 
+    if (intervention.status === 'assegnato') {
+      api.notifyAppointmentSet(intervention.id, intervention.number, intervention.client.name, appointmentDate.toISOString())
+        .catch(err => console.log('[PUSH] Failed to notify appointment set:', err));
+    }
+
     Alert.alert('Appuntamento Salvato', 'L\'appuntamento e stato fissato con successo.');
   };
 
@@ -436,6 +441,10 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
     }
 
     updateIntervention(intervention.id, updates);
+    
+    api.notifyStatusChange(intervention.id, intervention.number, intervention.status, newStatus, intervention.client.name)
+      .catch(err => console.log('[PUSH] Failed to notify status change:', err));
+
     Alert.alert('Stato Aggiornato', `Intervento ora: ${STATUS_CONFIG[newStatus].label}`);
   };
 

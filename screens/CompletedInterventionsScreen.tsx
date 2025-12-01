@@ -173,6 +173,9 @@ export default function CompletedInterventionsScreen({ navigation }: Props) {
           updateIntervention(intervention.id, {
             emailSentTo: 'operation.gbd@gruppo-phoenix.com',
           });
+          
+          api.notifyReportSent(intervention.id, intervention.number, intervention.client?.name || 'Cliente')
+            .catch(err => console.log('[PUSH] Failed to notify report sent:', err));
         } else {
           Alert.alert('Report Generato', 'Il report e stato salvato. Configura un client email per inviarlo.');
         }

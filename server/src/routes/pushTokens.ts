@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
-import { savePushToken, removePushToken } from '../services/pushNotificationService';
+import { savePushToken, removePushToken, sendNotificationToMasters } from '../services/pushNotificationService';
 
 const router = Router();
 
@@ -56,6 +56,80 @@ router.delete('/', async (req: AuthRequest, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to remove push token',
+    });
+  }
+});
+
+router.post('/notify-appointment/:interventionId', async (req: AuthRequest, res: Response) => {
+  try {
+    const { interventionId } = req.params;
+    const { interventionNumber, clientName, appointmentDate } = req.body;
+
+    const formattedDate = new Date(appointmentDate).toLocaleDateString('it-IT', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    await sendNotificationToMasters({
+      title: 'Appuntamento Fissato',
+      body: `Intervento ${interventionNumber} - ${clientName}: appuntamento il ${formattedDate}`,
+      data: {
+        type: 'appointment_set',
+        interventionId,
+        interventionNumber,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Appointment notification sent',
+    });
+  } catch (error) {
+    console.error('[PUSH] Error sending appointment notification:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send appointment notification',
+    });
+  }
+});
+
+router.post('/notify-status/:interventionId', async (req: AuthRequest, res: Response) => {
+  try {
+    const { interventionId } = req.params;
+    const { interventionNumber, previousStatus, newStatus, clientName } = req.body;
+
+    const statusLabels: Record<string, string> = {
+      'assegnato': 'Assegnato',
+      'appuntamento_fissato': 'Appuntamento Fissato',
+      'in_corso': 'In Corso',
+      'completato': 'Completato',
+      'chiuso': 'Chiuso',
+    };
+
+    await sendNotificationToMasters({
+      title: 'Stato Intervento Aggiornato',
+      body: `${interventionNumber} - ${clientName}: ${statusLabels[previousStatus] || previousStatus} -> ${statusLabels[newStatus] || newStatus}`,
+      data: {
+        type: 'status_change',
+        interventionId,
+        interventionNumber,
+        previousStatus,
+        newStatus,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Status notification sent',
+    });
+  } catch (error) {
+    console.error('[PUSH] Error sending status notification:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send status notification',
     });
   }
 });

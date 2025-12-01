@@ -351,6 +351,20 @@ class ApiService {
       body: JSON.stringify({ interventionNumber, recipientEmail }),
     });
   }
+
+  async notifyAppointmentSet(interventionId: string, interventionNumber: string, clientName: string, appointmentDate: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>(`/push-tokens/notify-appointment/${interventionId}`, {
+      method: 'POST',
+      body: JSON.stringify({ interventionNumber, clientName, appointmentDate }),
+    });
+  }
+
+  async notifyStatusChange(interventionId: string, interventionNumber: string, previousStatus: string, newStatus: string, clientName: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>(`/push-tokens/notify-status/${interventionId}`, {
+      method: 'POST',
+      body: JSON.stringify({ interventionNumber, previousStatus, newStatus, clientName }),
+    });
+  }
 }
 
 interface PhotoMeta {
