@@ -42,74 +42,74 @@ const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9
 
 const DEMO_ACCOUNTS: Record<string, { password: string; user: AuthUser }> = {
   gbd: {
-    password: 'master123',
+    password: 'password',
     user: {
-      id: 'master-1',
+      id: '17ac45dc-2e12-4226-90f5-49db2d8ac92b',
       username: 'gbd',
       role: 'master',
-      name: 'GBD Amministratore',
+      name: 'Amministratore Master',
       email: 'admin@gbd.it',
       companyId: null,
       companyName: null,
     },
   },
   ditta: {
-    password: 'ditta123',
+    password: 'password',
     user: {
-      id: 'ditta-1',
+      id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       username: 'ditta',
       role: 'ditta',
-      name: 'GBD B&A',
+      name: 'Ditta GBD',
       email: 'info@gbd-ba.it',
-      companyId: 'company-1',
+      companyId: '11111111-1111-1111-1111-111111111111',
       companyName: 'GBD B&A S.r.l.',
     },
   },
   alex: {
-    password: 'tecnico123',
+    password: 'password',
     user: {
-      id: 'tech-1',
+      id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
       username: 'alex',
       role: 'tecnico',
-      name: 'Alessandro Rossi',
+      name: 'Alessandro Tecnico',
       email: 'alex@gbd-ba.it',
-      companyId: 'company-1',
+      companyId: '11111111-1111-1111-1111-111111111111',
       companyName: 'GBD B&A S.r.l.',
     },
   },
   billo: {
-    password: 'tecnico123',
+    password: 'password',
     user: {
-      id: 'tech-2',
+      id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
       username: 'billo',
       role: 'tecnico',
-      name: 'Marco Bianchi',
+      name: 'Billo Tecnico',
       email: 'billo@gbd-ba.it',
-      companyId: 'company-1',
+      companyId: '11111111-1111-1111-1111-111111111111',
       companyName: 'GBD B&A S.r.l.',
     },
   },
   solarpro: {
-    password: 'ditta123',
+    password: 'password',
     user: {
-      id: 'ditta-2',
+      id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
       username: 'solarpro',
       role: 'ditta',
       name: 'Solar Pro',
       email: 'info@solarpro.it',
-      companyId: 'company-2',
+      companyId: '22222222-2222-2222-2222-222222222222',
       companyName: 'Solar Pro S.r.l.',
     },
   },
   luca: {
-    password: 'tecnico123',
+    password: 'password',
     user: {
-      id: 'tech-3',
+      id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
       username: 'luca',
       role: 'tecnico',
-      name: 'Luca Verdi',
+      name: 'Luca Tecnico',
       email: 'luca@solarpro.it',
-      companyId: 'company-2',
+      companyId: '22222222-2222-2222-2222-222222222222',
       companyName: 'Solar Pro S.r.l.',
     },
   },
@@ -153,10 +153,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [loadStoredAuth]);
 
   const login = useCallback(async (username: string, password: string) => {
+    console.log('[AUTH LOGIN] Attempting API login for:', username);
+    
+    // Always try API login first
     try {
       const result = await api.login(username, password);
       if (result.success && result.data) {
         const { token, user: userData } = result.data;
+        console.log('[AUTH LOGIN] API login successful, token received');
         const normalizedUser = {
           ...userData,
           role: userData.role?.toLowerCase() as 'master' | 'ditta' | 'tecnico',
@@ -166,13 +170,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         api.setToken(token);
         setUser(normalizedUser);
         return { success: true };
+      } else {
+        console.log('[AUTH LOGIN] API login failed:', result.error);
       }
     } catch (error) {
-      console.log('API login failed, trying demo mode');
+      console.log('[AUTH LOGIN] API login network error:', error);
     }
 
+    // Fallback to demo mode ONLY if network is unavailable
+    // Demo mode provides limited functionality (no server operations like delete)
+    console.log('[AUTH LOGIN] Trying demo mode fallback...');
+    
     const demoAccount = DEMO_ACCOUNTS[username.toLowerCase()];
     if (demoAccount && demoAccount.password === password) {
+      console.log('[AUTH LOGIN] Demo account found, WARNING: no API token, limited functionality');
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(demoAccount.user));
       setUser(demoAccount.user);
       return { success: true };
