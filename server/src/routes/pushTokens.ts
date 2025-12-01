@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
-import { savePushToken, removePushToken, sendNotificationToMasters } from '../services/pushNotificationService';
+import { savePushToken, removePushToken, notifyMasters } from '../services/pushNotificationService';
 
 const router = Router();
 
@@ -62,6 +62,14 @@ router.delete('/', async (req: AuthRequest, res: Response) => {
 
 router.post('/notify-appointment/:interventionId', async (req: AuthRequest, res: Response) => {
   try {
+    const userRole = req.user?.role?.toLowerCase();
+    if (userRole === 'master') {
+      return res.json({
+        success: true,
+        message: 'MASTER users do not need self-notification',
+      });
+    }
+
     const { interventionId } = req.params;
     const { interventionNumber, clientName, appointmentDate } = req.body;
 
@@ -73,7 +81,7 @@ router.post('/notify-appointment/:interventionId', async (req: AuthRequest, res:
       minute: '2-digit',
     });
 
-    await sendNotificationToMasters({
+    await notifyMasters({
       title: 'Appuntamento Fissato',
       body: `Intervento ${interventionNumber} - ${clientName}: appuntamento il ${formattedDate}`,
       data: {
@@ -98,6 +106,14 @@ router.post('/notify-appointment/:interventionId', async (req: AuthRequest, res:
 
 router.post('/notify-status/:interventionId', async (req: AuthRequest, res: Response) => {
   try {
+    const userRole = req.user?.role?.toLowerCase();
+    if (userRole === 'master') {
+      return res.json({
+        success: true,
+        message: 'MASTER users do not need self-notification',
+      });
+    }
+
     const { interventionId } = req.params;
     const { interventionNumber, previousStatus, newStatus, clientName } = req.body;
 
@@ -109,7 +125,7 @@ router.post('/notify-status/:interventionId', async (req: AuthRequest, res: Resp
       'chiuso': 'Chiuso',
     };
 
-    await sendNotificationToMasters({
+    await notifyMasters({
       title: 'Stato Intervento Aggiornato',
       body: `${interventionNumber} - ${clientName}: ${statusLabels[previousStatus] || previousStatus} -> ${statusLabels[newStatus] || newStatus}`,
       data: {

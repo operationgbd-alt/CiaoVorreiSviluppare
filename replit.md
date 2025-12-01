@@ -68,6 +68,25 @@ SolarTech is a cross-platform mobile application (Android and iOS) designed for 
 - **Email Integration**: Reports can be sent via expo-mail-composer to operation.gbd@gruppo-phoenix.com
 - **Technical Note**: Uses PDFKit instead of Puppeteer/Chromium - works on Railway without additional dependencies
 
+## Push Notification System
+- **Target Users**: Only MASTER users receive push notifications
+- **Technology**: Expo Push Notifications service
+- **Token Storage**: Push tokens stored in PostgreSQL `push_tokens` table
+- **Notification Triggers**:
+  - Appointment set: When a TECNICO schedules an appointment for an intervention
+  - Status change: When an intervention status changes (in_corso, completato, etc.)
+  - Report sent: When a PDF report is sent via email
+- **Frontend Implementation**:
+  - `hooks/usePushNotifications.ts` - Hook for permission request and token management
+  - `navigation/RootNavigator.tsx` - Registers token for MASTER users on login
+- **Backend Endpoints**:
+  - POST /api/push-tokens - Save push token
+  - DELETE /api/push-tokens - Remove push token
+  - POST /api/push-tokens/notify-appointment/:id - Trigger appointment notification
+  - POST /api/push-tokens/notify-status/:id - Trigger status change notification
+  - POST /api/reports/notify-sent/:id - Trigger report sent notification
+- **Note**: Push notifications only work on physical devices (iOS/Android), not on web
+
 ## External Dependencies
 - **PostgreSQL**: Database for persistent data storage, including photo storage.
 - **Express.js**: Backend framework for API services.
@@ -77,6 +96,7 @@ SolarTech is a cross-platform mobile application (Android and iOS) designed for 
 - **expo-image-picker**: For accessing device camera and photo gallery.
 - **expo-file-system**: For converting photos to base64 for server upload.
 - **expo-mail-composer**: For composing and sending emails.
+- **expo-notifications**: For push notifications (MASTER only).
 
 ## Production Deployment
 
