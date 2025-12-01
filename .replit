@@ -107,6 +107,7 @@ args = "./start-dev.sh"
 
 [agent]
 stack = "EXPO"
+integrations = ["github:1.0.0"]
 
 [deployment]
 deploymentTarget = "static"
