@@ -38,6 +38,24 @@ function BackButton() {
   );
 }
 
+function CompletedListBackButton() {
+  const { theme } = useTheme();
+  const navigation = useNavigation<any>();
+
+  const handleBack = () => {
+    const tabNav = navigation.getParent();
+    if (tabNav) {
+      tabNav.navigate('DashboardTab');
+    }
+  };
+
+  return (
+    <Pressable onPress={handleBack} style={{ padding: Spacing.xs }}>
+      <Feather name="chevron-left" size={24} color={theme.text} />
+    </Pressable>
+  );
+}
+
 export default function CompletedStackNavigator() {
   const { theme, isDark } = useTheme();
   const commonOptions = getCommonScreenOptions({ theme, isDark });
@@ -49,7 +67,7 @@ export default function CompletedStackNavigator() {
         component={CompletedInterventionsScreen}
         options={{
           title: "Completati",
-          headerLeft: () => <BackButton />,
+          headerLeft: () => <CompletedListBackButton />,
         }}
       />
       <Stack.Screen
