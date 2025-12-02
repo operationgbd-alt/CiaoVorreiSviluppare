@@ -21,7 +21,7 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-const BUILD_VERSION = '2025.12.02.v4';
+const BUILD_VERSION = '2025.12.02.v5';
 
 app.get('/api/health', (req, res) => {
   res.json({ 
@@ -52,15 +52,20 @@ async function seedMasterUser() {
       [username]
     );
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     if (existingUser.rows.length === 0) {
-      const hashedPassword = await bcrypt.hash(password, 10);
       await pool.query(
         'INSERT INTO users (username, password, name, role) VALUES ($1, $2, $3, $4)',
         [username, hashedPassword, name, 'MASTER']
       );
       console.log(`[SEED] Master user '${username}' created successfully`);
     } else {
-      console.log(`[SEED] Master user '${username}' already exists`);
+      await pool.query(
+        'UPDATE users SET password = $1 WHERE username = $2',
+        [hashedPassword, username]
+      );
+      console.log(`[SEED] Master user '${username}' password updated`);
     }
   } catch (error) {
     console.error('[SEED] Error seeding master user:', error);
