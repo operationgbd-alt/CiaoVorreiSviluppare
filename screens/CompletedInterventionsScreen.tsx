@@ -170,22 +170,37 @@ export default function CompletedInterventionsScreen({ navigation }: Props) {
         });
 
         const canSendMail = await MailComposer.isAvailableAsync();
+        console.log('[EMAIL] MailComposer available:', canSendMail);
+        
         if (canSendMail) {
-          await MailComposer.composeAsync({
+          const result = await MailComposer.composeAsync({
             recipients: ['operation.gbd@gruppo-phoenix.com'],
             subject: `Report Intervento ${intervention.number} - ${intervention.client.name}`,
             body: `In allegato il report dell'intervento ${intervention.number} per il cliente ${intervention.client.name}.`,
             attachments: [fileUri],
           });
           
-          updateIntervention(intervention.id, {
-            emailSentTo: 'operation.gbd@gruppo-phoenix.com',
-          });
+          console.log('[EMAIL] MailComposer result:', result.status);
           
-          api.notifyReportSent(intervention.id, intervention.number, intervention.client?.name || 'Cliente')
-            .catch(err => console.log('[PUSH] Failed to notify report sent:', err));
+          if (result.status === 'sent') {
+            updateIntervention(intervention.id, {
+              emailSentTo: 'operation.gbd@gruppo-phoenix.com',
+            });
+            
+            api.notifyReportSent(intervention.id, intervention.number, intervention.client?.name || 'Cliente')
+              .catch(err => console.log('[PUSH] Failed to notify report sent:', err));
+            
+            Alert.alert('Email Inviata', 'Il report e stato inviato con successo a operation.gbd@gruppo-phoenix.com');
+          } else if (result.status === 'cancelled') {
+            Alert.alert('Invio Annullato', 'Il report PDF e stato generato ma l\'invio email e stato annullato.\n\nIl file e stato salvato sul dispositivo.');
+          } else {
+            Alert.alert('Report Salvato', 'Il report PDF e stato salvato. Apri l\'app email per completare l\'invio.');
+          }
         } else {
-          Alert.alert('Report Generato', 'Il report e stato salvato. Configura un client email per inviarlo.');
+          Alert.alert(
+            'Email Non Disponibile', 
+            'Non e presente un\'app email configurata sul dispositivo.\n\nIl report PDF e stato salvato in:\n' + fileUri
+          );
         }
       }
     } catch (error) {

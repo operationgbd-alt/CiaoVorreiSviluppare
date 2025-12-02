@@ -135,18 +135,25 @@ export default function InterventionsListScreen({ navigation }: Props) {
             let successCount = 0;
             let errorCount = 0;
 
+            const errors: string[] = [];
+            
             for (const id of selectedIds) {
               try {
+                console.log('[DELETE] Attempting to delete intervention:', id);
                 const response = await api.deleteIntervention(id);
+                console.log('[DELETE] Response:', response.success, response.error);
+                
                 if (response.success) {
                   deleteIntervention(id);
                   successCount++;
                 } else {
                   errorCount++;
+                  errors.push(response.error || 'Errore sconosciuto');
                 }
               } catch (error) {
-                console.error('Errore eliminazione:', error);
+                console.error('[DELETE] Exception:', error);
                 errorCount++;
+                errors.push(error instanceof Error ? error.message : 'Errore di rete');
               }
             }
 
@@ -156,9 +163,10 @@ export default function InterventionsListScreen({ navigation }: Props) {
             if (errorCount === 0) {
               Alert.alert('Successo', `${successCount} intervento/i eliminato/i con successo.`);
             } else {
+              const uniqueErrors = [...new Set(errors)];
               Alert.alert(
                 'Eliminazione Parziale',
-                `Eliminati: ${successCount}\nErrori: ${errorCount}`
+                `Eliminati: ${successCount}\nErrori: ${errorCount}\n\n${uniqueErrors.join('\n')}`
               );
             }
           },
