@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import bcrypt from 'bcryptjs';
 import { pool, initializeDatabase } from './db';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
@@ -20,7 +21,7 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-const BUILD_VERSION = '2025.12.02.v3';
+const BUILD_VERSION = '2025.12.02.v4';
 
 app.get('/api/health', (req, res) => {
   res.json({ 
@@ -40,10 +41,38 @@ app.use('/api/push-tokens', pushTokenRoutes);
 
 app.use(errorHandler);
 
+async function seedMasterUser() {
+  const username = process.env.MASTER_USERNAME || 'gbd';
+  const password = process.env.MASTER_PASSWORD || 'master123';
+  const name = process.env.MASTER_NAME || 'GBD Master';
+
+  try {
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE username = $1',
+      [username]
+    );
+
+    if (existingUser.rows.length === 0) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await pool.query(
+        'INSERT INTO users (username, password, name, role) VALUES ($1, $2, $3, $4)',
+        [username, hashedPassword, name, 'MASTER']
+      );
+      console.log(`[SEED] Master user '${username}' created successfully`);
+    } else {
+      console.log(`[SEED] Master user '${username}' already exists`);
+    }
+  } catch (error) {
+    console.error('[SEED] Error seeding master user:', error);
+  }
+}
+
 async function main() {
   try {
     await initializeDatabase();
     console.log('Connected to database');
+    
+    await seedMasterUser();
     
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
