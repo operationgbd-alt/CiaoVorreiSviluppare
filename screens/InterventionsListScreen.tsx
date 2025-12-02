@@ -63,7 +63,7 @@ const STATUS_LABELS: Record<InterventionStatus, string> = {
 
 export default function InterventionsListScreen({ navigation }: Props) {
   const { theme } = useTheme();
-  const { interventions, deleteIntervention } = useApp();
+  const { interventions, deleteIntervention, refreshFromServer, isRefreshing } = useApp();
   const { user, hasValidToken } = useAuth();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
@@ -375,12 +375,21 @@ export default function InterventionsListScreen({ navigation }: Props) {
       />
 
       {isMaster && !selectionMode ? (
-        <Pressable
-          style={[styles.fabButton, { backgroundColor: theme.primary, bottom: tabBarHeight + Spacing.lg }]}
-          onPress={() => setSelectionMode(true)}
-        >
-          <Feather name="check-square" size={24} color="#FFFFFF" />
-        </Pressable>
+        <View style={[styles.fabContainer, { bottom: tabBarHeight + Spacing.lg }]}>
+          <Pressable
+            style={[styles.fabButtonSmall, { backgroundColor: isRefreshing ? theme.textTertiary : theme.success }]}
+            onPress={refreshFromServer}
+            disabled={isRefreshing}
+          >
+            <Feather name="refresh-cw" size={20} color="#FFFFFF" />
+          </Pressable>
+          <Pressable
+            style={[styles.fabButton, { backgroundColor: theme.primary }]}
+            onPress={() => setSelectionMode(true)}
+          >
+            <Feather name="check-square" size={24} color="#FFFFFF" />
+          </Pressable>
+        </View>
       ) : null}
 
       {selectionMode ? (
@@ -524,9 +533,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  fabButton: {
+  fabContainer: {
     position: 'absolute',
     right: Spacing.lg,
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  fabButtonSmall: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  fabButton: {
     width: 56,
     height: 56,
     borderRadius: 28,

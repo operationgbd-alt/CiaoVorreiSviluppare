@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Intervention, Appointment, Company, User } from '@/types';
 import { useAuth } from './AuthContext';
+import { api } from '../services/api';
 
 const COMPANIES_STORAGE_KEY = 'solartech_companies';
 const USERS_STORAGE_KEY = 'solartech_users';
@@ -14,6 +15,8 @@ interface AppContextType {
   users: User[];
   allInterventionsCount: number;
   unassignedInterventions: Intervention[];
+  isRefreshing: boolean;
+  refreshFromServer: () => Promise<void>;
   addIntervention: (intervention: Omit<Intervention, 'id' | 'number' | 'createdAt' | 'updatedAt'>) => void;
   updateIntervention: (id: string, updates: Partial<Intervention>) => void;
   deleteIntervention: (id: string) => void;
@@ -519,12 +522,14 @@ const allAppointments: Appointment[] = [
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, hasValidToken } = useAuth();
   const [interventionsData, setInterventionsData] = useState<Intervention[]>(allInterventions);
   const [appointmentsData, setAppointmentsData] = useState<Appointment[]>(allAppointments);
   const [companiesData, setCompaniesData] = useState<Company[]>(initialCompanies);
   const [usersData, setUsersData] = useState<User[]>(initialUsers);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const lastRefreshUserId = useRef<string | null>(null);
 
   useEffect(() => {
     const loadStoredData = async () => {
@@ -701,6 +706,90 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.log('[SYNC] Updated user and intervention IDs from', oldId, 'to', newId);
     }
   }, [user, usersData, isDataLoaded]);
+
+  const refreshFromServer = useCallback(async () => {
+    if (!hasValidToken) {
+      console.log('[REFRESH] No valid token, skipping server refresh');
+      return;
+    }
+
+    console.log('[REFRESH] Starting server sync...');
+    setIsRefreshing(true);
+
+    try {
+      await AsyncStorage.multiRemove([
+        COMPANIES_STORAGE_KEY,
+        USERS_STORAGE_KEY,
+        INTERVENTIONS_STORAGE_KEY,
+      ]);
+      console.log('[REFRESH] Cleared local cache');
+
+      const response = await api.getInterventions();
+      console.log('[REFRESH] API response:', response.success, response.data?.length || 0, 'interventions');
+
+      if (response.success && response.data) {
+        const serverInterventions: Intervention[] = response.data.map((serverInt: any) => ({
+          id: serverInt.id,
+          number: serverInt.number,
+          client: {
+            name: serverInt.clientName || serverInt.client?.name || '',
+            address: serverInt.clientAddress || serverInt.client?.address || '',
+            civicNumber: serverInt.clientCivicNumber || serverInt.client?.civicNumber || '',
+            cap: serverInt.clientPostalCode || serverInt.client?.cap || '',
+            city: serverInt.clientCity || serverInt.client?.city || '',
+            phone: serverInt.clientPhone || serverInt.client?.phone || '',
+            email: serverInt.clientEmail || serverInt.client?.email || '',
+          },
+          companyId: serverInt.companyId || serverInt.company?.id || null,
+          companyName: serverInt.companyName || serverInt.company?.name || null,
+          technicianId: serverInt.technicianId || serverInt.technician?.id || null,
+          technicianName: serverInt.technicianName || serverInt.technician?.name || null,
+          category: serverInt.category,
+          description: serverInt.description,
+          priority: serverInt.priority,
+          assignedAt: serverInt.assignedAt ? new Date(serverInt.assignedAt).getTime() : Date.now(),
+          assignedBy: serverInt.assignedBy || 'Admin',
+          status: serverInt.status,
+          location: serverInt.locationLatitude ? {
+            latitude: serverInt.locationLatitude,
+            longitude: serverInt.locationLongitude,
+            address: serverInt.locationAddress || '',
+            timestamp: serverInt.locationTimestamp ? new Date(serverInt.locationTimestamp).getTime() : Date.now(),
+          } : undefined,
+          documentation: {
+            photos: serverInt.documentationPhotos || [],
+            notes: serverInt.documentationNotes || '',
+            startedAt: serverInt.startedAt ? new Date(serverInt.startedAt).getTime() : undefined,
+            completedAt: serverInt.completedAt ? new Date(serverInt.completedAt).getTime() : undefined,
+          },
+          createdAt: serverInt.createdAt ? new Date(serverInt.createdAt).getTime() : Date.now(),
+          updatedAt: serverInt.updatedAt ? new Date(serverInt.updatedAt).getTime() : Date.now(),
+        }));
+
+        console.log('[REFRESH] Mapped', serverInterventions.length, 'interventions from server');
+        console.log('[REFRESH] Intervention numbers:', serverInterventions.map(i => i.number));
+        setInterventionsData(serverInterventions);
+        setAppointmentsData([]);
+      } else {
+        console.log('[REFRESH] API failed, keeping local data');
+      }
+    } catch (error) {
+      console.error('[REFRESH] Error:', error);
+    } finally {
+      setIsRefreshing(false);
+      console.log('[REFRESH] Sync complete');
+    }
+  }, [hasValidToken]);
+
+  useEffect(() => {
+    if (!user || !hasValidToken || !isDataLoaded) return;
+    
+    if (lastRefreshUserId.current !== user.id) {
+      console.log('[REFRESH AUTO] New user login detected, syncing from server...');
+      lastRefreshUserId.current = user.id;
+      refreshFromServer();
+    }
+  }, [user, hasValidToken, isDataLoaded, refreshFromServer]);
 
   const interventions = useMemo(() => {
     if (!user) {
@@ -929,6 +1018,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         users,
         allInterventionsCount: interventionsData.length,
         unassignedInterventions,
+        isRefreshing,
+        refreshFromServer,
         addIntervention,
         updateIntervention,
         deleteIntervention,
