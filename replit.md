@@ -9,6 +9,15 @@ SolarTech is a cross-platform mobile application (Android and iOS) designed for 
 - Workflow unificato per tutti i tipi di intervento
 - Freccia "torna indietro" sempre visibile in tutte le pagine di navigazione
 
+## REGOLA OBBLIGATORIA: Test Pre-Build
+**PRIMA di ogni build EAS (APK/IPA), DEVE essere eseguita la checklist completa in TESTING.md:**
+1. Verifica API Railway (health, login, endpoints)
+2. Verifica LSP 0 errori su file critici
+3. Test Playwright su versione web
+4. Verifica login per tutti i ruoli
+5. Verifica Mappa Tecnici non crasha
+6. Solo se TUTTI i test passano → procedi con build
+
 ## System Architecture
 
 ### Stack
