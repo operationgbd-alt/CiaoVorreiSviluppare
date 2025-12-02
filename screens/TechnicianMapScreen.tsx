@@ -32,6 +32,15 @@ function formatTimeAgo(timestamp: number): string {
   return `${days} giorni fa`;
 }
 
+function isValidCoordinate(lat: unknown, lng: unknown): boolean {
+  if (typeof lat !== 'number' || typeof lng !== 'number') return false;
+  if (!isFinite(lat) || !isFinite(lng)) return false;
+  if (isNaN(lat) || isNaN(lng)) return false;
+  if (lat < -90 || lat > 90) return false;
+  if (lng < -180 || lng > 180) return false;
+  return true;
+}
+
 export function TechnicianMapScreen() {
   const { theme } = useTheme();
   const { users } = useApp();
@@ -39,38 +48,78 @@ export function TechnicianMapScreen() {
   const insets = useSafeAreaInsets();
   const mapRef = useRef<any>(null);
   
-  const allTechnicians = useMemo(() => 
-    users.filter(u => u.role === 'tecnico'),
-    [users]
-  );
+  const allTechnicians = useMemo(() => {
+    try {
+      return (users || []).filter(u => u && u.role === 'tecnico');
+    } catch (e) {
+      console.warn('[TechnicianMapScreen] Error filtering technicians:', e);
+      return [];
+    }
+  }, [users]);
 
-  const techniciansWithValidLocation = allTechnicians.filter(t => 
-    t.lastLocation && 
-    typeof t.lastLocation.latitude === 'number' && 
-    typeof t.lastLocation.longitude === 'number' &&
-    !isNaN(t.lastLocation.latitude) &&
-    !isNaN(t.lastLocation.longitude)
-  );
-  const techniciansWithoutLocation = allTechnicians.filter(t => 
-    !t.lastLocation || 
-    typeof t.lastLocation.latitude !== 'number' || 
-    typeof t.lastLocation.longitude !== 'number'
-  );
-  const onlineTechnicians = techniciansWithValidLocation.filter(t => t.lastLocation?.isOnline);
-  const offlineTechnicians = techniciansWithValidLocation.filter(t => !t.lastLocation?.isOnline);
+  const techniciansWithValidLocation = useMemo(() => {
+    try {
+      return allTechnicians.filter(t => {
+        if (!t || !t.lastLocation) return false;
+        return isValidCoordinate(t.lastLocation.latitude, t.lastLocation.longitude);
+      });
+    } catch (e) {
+      console.warn('[TechnicianMapScreen] Error filtering valid locations:', e);
+      return [];
+    }
+  }, [allTechnicians]);
+  
+  const techniciansWithoutLocation = useMemo(() => {
+    try {
+      return allTechnicians.filter(t => {
+        if (!t) return false;
+        if (!t.lastLocation) return true;
+        return !isValidCoordinate(t.lastLocation.latitude, t.lastLocation.longitude);
+      });
+    } catch (e) {
+      console.warn('[TechnicianMapScreen] Error filtering no-location:', e);
+      return [];
+    }
+  }, [allTechnicians]);
+  
+  const onlineTechnicians = useMemo(() => {
+    try {
+      return techniciansWithValidLocation.filter(t => t.lastLocation?.isOnline === true);
+    } catch (e) {
+      return [];
+    }
+  }, [techniciansWithValidLocation]);
+  
+  const offlineTechnicians = useMemo(() => {
+    try {
+      return techniciansWithValidLocation.filter(t => t.lastLocation?.isOnline !== true);
+    } catch (e) {
+      return [];
+    }
+  }, [techniciansWithValidLocation]);
 
   const initialRegion = useMemo(() => {
-    if (techniciansWithValidLocation.length > 0) {
-      const lats = techniciansWithValidLocation
-        .map(t => t.lastLocation?.latitude)
-        .filter((lat): lat is number => typeof lat === 'number' && !isNaN(lat));
-      const lngs = techniciansWithValidLocation
-        .map(t => t.lastLocation?.longitude)
-        .filter((lng): lng is number => typeof lng === 'number' && !isNaN(lng));
-      
-      if (lats.length === 0 || lngs.length === 0) {
+    try {
+      if (techniciansWithValidLocation.length === 0) {
         return ITALY_REGION;
       }
+      
+      const validCoords: { lat: number; lng: number }[] = [];
+      for (const t of techniciansWithValidLocation) {
+        if (t.lastLocation && isValidCoordinate(t.lastLocation.latitude, t.lastLocation.longitude)) {
+          validCoords.push({
+            lat: Number(t.lastLocation.latitude),
+            lng: Number(t.lastLocation.longitude),
+          });
+        }
+      }
+      
+      if (validCoords.length === 0) {
+        return ITALY_REGION;
+      }
+      
+      const lats = validCoords.map(c => c.lat);
+      const lngs = validCoords.map(c => c.lng);
       
       const minLat = Math.min(...lats);
       const maxLat = Math.max(...lats);
@@ -81,14 +130,23 @@ export function TechnicianMapScreen() {
         return ITALY_REGION;
       }
       
+      const centerLat = (minLat + maxLat) / 2;
+      const centerLng = (minLng + maxLng) / 2;
+      
+      if (!isFinite(centerLat) || !isFinite(centerLng)) {
+        return ITALY_REGION;
+      }
+      
       return {
-        latitude: (minLat + maxLat) / 2,
-        longitude: (minLng + maxLng) / 2,
+        latitude: centerLat,
+        longitude: centerLng,
         latitudeDelta: Math.max(0.05, (maxLat - minLat) * 1.5),
         longitudeDelta: Math.max(0.05, (maxLng - minLng) * 1.5),
       };
+    } catch (e) {
+      console.warn('[TechnicianMapScreen] Error computing region:', e);
+      return ITALY_REGION;
     }
-    return ITALY_REGION;
   }, [techniciansWithValidLocation]);
 
   const handleMarkerPress = (tech: User) => {

@@ -51,69 +51,104 @@ export function TechnicianMap({
 }: TechnicianMapProps) {
   const { theme } = useTheme();
 
+  const safeRegion = {
+    latitude: isFinite(initialRegion?.latitude) ? initialRegion.latitude : 42.5,
+    longitude: isFinite(initialRegion?.longitude) ? initialRegion.longitude : 12.5,
+    latitudeDelta: isFinite(initialRegion?.latitudeDelta) && initialRegion.latitudeDelta > 0 ? initialRegion.latitudeDelta : 8,
+    longitudeDelta: isFinite(initialRegion?.longitudeDelta) && initialRegion.longitudeDelta > 0 ? initialRegion.longitudeDelta : 8,
+  };
+
+  const validTechnicians = (technicians || []).filter((tech) => {
+    if (!tech || !tech.lastLocation) return false;
+    const lat = tech.lastLocation.latitude;
+    const lng = tech.lastLocation.longitude;
+    return (
+      typeof lat === 'number' &&
+      typeof lng === 'number' &&
+      isFinite(lat) &&
+      isFinite(lng) &&
+      lat >= -90 &&
+      lat <= 90 &&
+      lng >= -180 &&
+      lng <= 180
+    );
+  });
+
   return (
     <View style={styles.mapContainer}>
       <MapView
         ref={mapRef}
         style={styles.map}
         provider={PROVIDER_DEFAULT}
-        initialRegion={initialRegion}
+        initialRegion={safeRegion}
         showsUserLocation={false}
         showsMyLocationButton={false}
         showsCompass={true}
         rotateEnabled={false}
       >
-        {technicians.map((tech) => {
-          const location = tech.lastLocation;
-          if (!location || typeof location.latitude !== 'number' || typeof location.longitude !== 'number') {
-            return null;
-          }
-          const isOnline = location.isOnline;
-          return (
-            <Marker
-              key={tech.id}
-              coordinate={{
-                latitude: location.latitude,
-                longitude: location.longitude,
-              }}
-              onPress={() => onMarkerPress(tech)}
-              pinColor={isOnline ? '#34C759' : '#8E8E93'}
-            >
-              <View style={[
-                styles.customMarker,
-                { backgroundColor: isOnline ? '#34C759' : '#8E8E93' }
-              ]}>
-                <ThemedText style={styles.markerText}>
-                  {tech.name?.split(' ').map(n => n[0]).join('') || '?'}
-                </ThemedText>
-              </View>
-              <Callout tooltip onPress={() => onCallTech(tech.phone)}>
-                <View style={[styles.callout, { backgroundColor: theme.backgroundDefault }]}>
-                  <ThemedText type="h4" style={{ marginBottom: 4 }}>{tech.name}</ThemedText>
-                  <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                    {tech.companyName}
+        {validTechnicians.map((tech) => {
+          try {
+            const location = tech.lastLocation!;
+            const lat = Number(location.latitude);
+            const lng = Number(location.longitude);
+            
+            if (!isFinite(lat) || !isFinite(lng)) {
+              return null;
+            }
+            
+            const isOnline = Boolean(location.isOnline);
+            const techName = String(tech.name || '?');
+            const initials = techName.split(' ').map(n => (n && n[0]) || '').join('') || '?';
+            
+            return (
+              <Marker
+                key={tech.id}
+                coordinate={{
+                  latitude: lat,
+                  longitude: lng,
+                }}
+                onPress={() => onMarkerPress(tech)}
+                pinColor={isOnline ? '#34C759' : '#8E8E93'}
+              >
+                <View style={[
+                  styles.customMarker,
+                  { backgroundColor: isOnline ? '#34C759' : '#8E8E93' }
+                ]}>
+                  <ThemedText style={styles.markerText}>
+                    {initials}
                   </ThemedText>
-                  <View style={[styles.calloutStatus, { backgroundColor: isOnline ? '#34C75920' : '#8E8E9320' }]}>
-                    <View style={[styles.calloutDot, { backgroundColor: isOnline ? '#34C759' : '#8E8E93' }]} />
-                    <ThemedText type="caption" style={{ color: isOnline ? '#34C759' : '#8E8E93' }}>
-                      {isOnline ? 'Online' : 'Offline'}
+                </View>
+                <Callout tooltip onPress={() => onCallTech(tech.phone)}>
+                  <View style={[styles.callout, { backgroundColor: theme.backgroundDefault }]}>
+                    <ThemedText type="h4" style={{ marginBottom: 4 }}>{techName}</ThemedText>
+                    <ThemedText type="small" style={{ color: theme.textSecondary }}>
+                      {tech.companyName || ''}
                     </ThemedText>
-                  </View>
-                  <ThemedText type="caption" style={{ color: theme.textSecondary, marginTop: 4 }}>
-                    {location.timestamp ? formatTimeAgo(location.timestamp) : ''}
-                  </ThemedText>
-                  {tech.phone ? (
-                    <View style={[styles.calloutAction, { backgroundColor: theme.primary }]}>
-                      <Feather name="phone" size={12} color="#FFF" />
-                      <ThemedText type="caption" style={{ color: '#FFF', marginLeft: 4 }}>
-                        Chiama
+                    <View style={[styles.calloutStatus, { backgroundColor: isOnline ? '#34C75920' : '#8E8E9320' }]}>
+                      <View style={[styles.calloutDot, { backgroundColor: isOnline ? '#34C759' : '#8E8E93' }]} />
+                      <ThemedText type="caption" style={{ color: isOnline ? '#34C759' : '#8E8E93' }}>
+                        {isOnline ? 'Online' : 'Offline'}
                       </ThemedText>
                     </View>
-                  ) : null}
-                </View>
-              </Callout>
-            </Marker>
-          );
+                    <ThemedText type="caption" style={{ color: theme.textSecondary, marginTop: 4 }}>
+                      {location.timestamp ? formatTimeAgo(location.timestamp) : ''}
+                    </ThemedText>
+                    {tech.phone ? (
+                      <View style={[styles.calloutAction, { backgroundColor: theme.primary }]}>
+                        <Feather name="phone" size={12} color="#FFF" />
+                        <ThemedText type="caption" style={{ color: '#FFF', marginLeft: 4 }}>
+                          Chiama
+                        </ThemedText>
+                      </View>
+                    ) : null}
+                  </View>
+                </Callout>
+              </Marker>
+            );
+          } catch (e) {
+            console.warn('[TechnicianMap] Error rendering marker:', e);
+            return null;
+          }
         })}
       </MapView>
       
