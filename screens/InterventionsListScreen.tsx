@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { StyleSheet, View, Pressable, SectionList, Alert } from "react-native";
+import { StyleSheet, View, Pressable, SectionList, Alert, ActivityIndicator } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
@@ -375,13 +375,17 @@ export default function InterventionsListScreen({ navigation }: Props) {
       />
 
       {isMaster && !selectionMode ? (
-        <View style={[styles.fabContainer, { bottom: tabBarHeight + Spacing.lg }]}>
+        <View style={[styles.fabContainer, { bottom: tabBarHeight + Spacing.lg + insets.bottom }]}>
           <Pressable
             style={[styles.fabButtonSmall, { backgroundColor: isRefreshing ? theme.textTertiary : theme.success }]}
             onPress={refreshFromServer}
             disabled={isRefreshing}
           >
-            <Feather name="refresh-cw" size={20} color="#FFFFFF" />
+            {isRefreshing ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Feather name="refresh-cw" size={20} color="#FFFFFF" />
+            )}
           </Pressable>
           <Pressable
             style={[styles.fabButton, { backgroundColor: theme.primary }]}
