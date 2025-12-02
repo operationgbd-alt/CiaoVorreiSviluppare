@@ -44,19 +44,42 @@ export function TechnicianMapScreen() {
     [users]
   );
 
-  const techniciansWithLocation = allTechnicians.filter(t => t.lastLocation);
-  const techniciansWithoutLocation = allTechnicians.filter(t => !t.lastLocation);
-  const onlineTechnicians = techniciansWithLocation.filter(t => t.lastLocation?.isOnline);
-  const offlineTechnicians = techniciansWithLocation.filter(t => !t.lastLocation?.isOnline);
+  const techniciansWithValidLocation = allTechnicians.filter(t => 
+    t.lastLocation && 
+    typeof t.lastLocation.latitude === 'number' && 
+    typeof t.lastLocation.longitude === 'number' &&
+    !isNaN(t.lastLocation.latitude) &&
+    !isNaN(t.lastLocation.longitude)
+  );
+  const techniciansWithoutLocation = allTechnicians.filter(t => 
+    !t.lastLocation || 
+    typeof t.lastLocation.latitude !== 'number' || 
+    typeof t.lastLocation.longitude !== 'number'
+  );
+  const onlineTechnicians = techniciansWithValidLocation.filter(t => t.lastLocation?.isOnline);
+  const offlineTechnicians = techniciansWithValidLocation.filter(t => !t.lastLocation?.isOnline);
 
   const initialRegion = useMemo(() => {
-    if (techniciansWithLocation.length > 0) {
-      const lats = techniciansWithLocation.map(t => t.lastLocation!.latitude);
-      const lngs = techniciansWithLocation.map(t => t.lastLocation!.longitude);
+    if (techniciansWithValidLocation.length > 0) {
+      const lats = techniciansWithValidLocation
+        .map(t => t.lastLocation?.latitude)
+        .filter((lat): lat is number => typeof lat === 'number' && !isNaN(lat));
+      const lngs = techniciansWithValidLocation
+        .map(t => t.lastLocation?.longitude)
+        .filter((lng): lng is number => typeof lng === 'number' && !isNaN(lng));
+      
+      if (lats.length === 0 || lngs.length === 0) {
+        return ITALY_REGION;
+      }
+      
       const minLat = Math.min(...lats);
       const maxLat = Math.max(...lats);
       const minLng = Math.min(...lngs);
       const maxLng = Math.max(...lngs);
+      
+      if (!isFinite(minLat) || !isFinite(maxLat) || !isFinite(minLng) || !isFinite(maxLng)) {
+        return ITALY_REGION;
+      }
       
       return {
         latitude: (minLat + maxLat) / 2,
@@ -66,7 +89,7 @@ export function TechnicianMapScreen() {
       };
     }
     return ITALY_REGION;
-  }, [techniciansWithLocation]);
+  }, [techniciansWithValidLocation]);
 
   const handleMarkerPress = (tech: User) => {
     setSelectedTech(tech);
@@ -104,7 +127,7 @@ export function TechnicianMapScreen() {
       </ThemedView>
 
       <TechnicianMap
-        technicians={techniciansWithLocation}
+        technicians={techniciansWithValidLocation}
         initialRegion={initialRegion}
         onMarkerPress={handleMarkerPress}
         onCallTech={handleCallTech}
@@ -151,7 +174,7 @@ export function TechnicianMapScreen() {
         </ThemedView>
       ) : null}
 
-      {techniciansWithLocation.map((tech) => {
+      {techniciansWithValidLocation.map((tech: User) => {
         const isOnline = tech.lastLocation?.isOnline;
         const isSelected = selectedTech?.id === tech.id;
         
@@ -176,7 +199,7 @@ export function TechnicianMapScreen() {
             <View style={styles.techCardHeader}>
               <View style={[styles.avatar, { backgroundColor: isOnline ? theme.success + '20' : theme.primaryLight }]}>
                 <ThemedText type="h4" style={{ color: isOnline ? theme.success : theme.primary }}>
-                  {tech.name.split(' ').map(n => n[0]).join('')}
+                  {tech.name?.split(' ').map((n: string) => n[0]).join('') || '?'}
                 </ThemedText>
               </View>
               <View style={styles.techCardInfo}>
@@ -253,7 +276,7 @@ export function TechnicianMapScreen() {
           <ThemedText type="h4" style={{ marginHorizontal: Spacing.md, marginBottom: Spacing.md, color: theme.secondary }}>
             Tecnici senza posizione GPS
           </ThemedText>
-          {techniciansWithoutLocation.map((tech) => {
+          {techniciansWithoutLocation.map((tech: User) => {
             const isSelected = selectedTech?.id === tech.id;
             
             return (
@@ -272,7 +295,7 @@ export function TechnicianMapScreen() {
                 <View style={styles.techCardHeader}>
                   <View style={[styles.avatar, { backgroundColor: theme.secondary + '20' }]}>
                     <ThemedText type="h4" style={{ color: theme.secondary }}>
-                      {tech.name.split(' ').map(n => n[0]).join('')}
+                      {tech.name?.split(' ').map((n: string) => n[0]).join('') || '?'}
                     </ThemedText>
                   </View>
                   <View style={styles.techCardInfo}>
