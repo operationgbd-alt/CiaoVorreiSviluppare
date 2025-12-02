@@ -1,15 +1,27 @@
 import { Pool } from 'pg';
 
-// Priority: RAILWAY_DATABASE_URL (for dev connecting to Railway) > DATABASE_URL > DATABASE_PUBLIC_URL
-const connectionString = process.env.RAILWAY_DATABASE_URL || process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL;
+// Log available database environment variables for debugging
+console.log('[DB] Environment check:');
+console.log('[DB]   DATABASE_URL:', process.env.DATABASE_URL ? 'SET (' + process.env.DATABASE_URL.substring(0, 30) + '...)' : 'NOT SET');
+console.log('[DB]   DATABASE_PUBLIC_URL:', process.env.DATABASE_PUBLIC_URL ? 'SET' : 'NOT SET');
+console.log('[DB]   RAILWAY_DATABASE_URL:', process.env.RAILWAY_DATABASE_URL ? 'SET' : 'NOT SET');
+console.log('[DB]   DATABASE_PRIVATE_URL:', process.env.DATABASE_PRIVATE_URL ? 'SET' : 'NOT SET');
+console.log('[DB]   PGHOST:', process.env.PGHOST || 'NOT SET');
+console.log('[DB]   PGDATABASE:', process.env.PGDATABASE || 'NOT SET');
+
+// Priority: DATABASE_URL (Railway sets this) > DATABASE_PRIVATE_URL > DATABASE_PUBLIC_URL > RAILWAY_DATABASE_URL (dev)
+const connectionString = process.env.DATABASE_URL || 
+                         process.env.DATABASE_PRIVATE_URL || 
+                         process.env.DATABASE_PUBLIC_URL || 
+                         process.env.RAILWAY_DATABASE_URL;
 
 if (!connectionString) {
-  console.error('ERROR: No database connection string found!');
-  console.error('Set DATABASE_URL or DATABASE_PUBLIC_URL environment variable');
+  console.error('[DB] ERROR: No database connection string found!');
+  console.error('[DB] Available env vars:', Object.keys(process.env).filter(k => k.includes('DATABASE') || k.includes('PG')).join(', '));
   process.exit(1);
 }
 
-console.log('Connecting to database...');
+console.log('[DB] Connecting to database using connection string...');
 
 export const pool = new Pool({
   connectionString,
