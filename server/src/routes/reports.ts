@@ -232,9 +232,13 @@ router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: R
     res.setHeader('Content-Length', pdfBuffer.length);
     return res.send(pdfBuffer);
 
-  } catch (error) {
-    console.error('Error generating report:', error);
-    return res.status(500).json({ error: 'Errore nella generazione del report' });
+  } catch (error: any) {
+    console.error('[REPORT] Error generating report:', error?.message || error);
+    console.error('[REPORT] Stack:', error?.stack);
+    return res.status(500).json({ 
+      error: 'Errore nella generazione del report',
+      details: error?.message || String(error)
+    });
   }
 });
 
