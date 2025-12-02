@@ -135,12 +135,20 @@ export default function CompletedInterventionsScreen({ navigation }: Props) {
       
       const response = await api.generateReport(intervention.id, 'base64', demoUser, interventionData);
       
-      if (!response.success || !response.data) {
+      if (!response.success) {
         throw new Error(response.error || 'Errore nella generazione del report');
       }
 
-      const pdfBase64 = response.data.data;
-      const fileName = response.data.filename;
+      // API returns { success, data: "base64...", filename: "..." }
+      // After service unwrap: { success, data: "base64..." } - filename is at root level in raw response
+      // Handle both nested and flat response formats
+      const rawResponse = response as any;
+      const pdfBase64 = typeof response.data === 'string' ? response.data : response.data?.data;
+      const fileName = rawResponse.filename || response.data?.filename || `Report_${intervention.number}.pdf`;
+      
+      if (!pdfBase64) {
+        throw new Error('Dati PDF non ricevuti dal server');
+      }
       
       if (Platform.OS === 'web') {
         const byteCharacters = atob(pdfBase64);

@@ -210,8 +210,13 @@ class ApiService {
       
       // Backend wraps responses in { success: true, data: {...} }
       // We need to unwrap and return just the inner data
+      // But preserve extra fields like filename, mimeType for report responses
       if (responseData && responseData.success && responseData.data !== undefined) {
-        return { success: true, data: responseData.data };
+        const result: any = { success: true, data: responseData.data };
+        // Preserve extra fields (for reports: filename, mimeType)
+        if (responseData.filename) result.filename = responseData.filename;
+        if (responseData.mimeType) result.mimeType = responseData.mimeType;
+        return result;
       }
       
       // For responses that are not wrapped (like arrays or direct objects)
