@@ -5,39 +5,24 @@ import { useTheme } from '@/hooks/useTheme';
 import { ThemedText } from '@/components/ThemedText';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { Feather } from '@expo/vector-icons';
+import { User } from '@/types';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MAP_HEIGHT = SCREEN_HEIGHT * 0.45;
 
-interface TechnicianLocation {
-  latitude: number;
-  longitude: number;
-  address?: string;
-  timestamp: number;
-  isOnline: boolean;
-}
-
-interface TechnicianData {
-  id: string;
-  name: string;
-  phone?: string | null;
-  companyName?: string | null;
-  lastLocation?: TechnicianLocation;
-}
-
 interface TechnicianMapProps {
-  technicians: TechnicianData[];
+  technicians: User[];
   initialRegion: {
     latitude: number;
     longitude: number;
     latitudeDelta: number;
     longitudeDelta: number;
   };
-  onMarkerPress: (tech: TechnicianData) => void;
+  onMarkerPress: (tech: User) => void;
   onCallTech: (phone?: string | null) => void;
   mapRef: React.RefObject<MapView | null>;
-  onlineTechnicians: TechnicianData[];
-  offlineTechnicians: TechnicianData[];
+  onlineTechnicians: User[];
+  offlineTechnicians: User[];
 }
 
 function formatTimeAgo(timestamp: number): string {
@@ -79,13 +64,17 @@ export function TechnicianMap({
         rotateEnabled={false}
       >
         {technicians.map((tech) => {
-          const isOnline = tech.lastLocation?.isOnline;
+          const location = tech.lastLocation;
+          if (!location || typeof location.latitude !== 'number' || typeof location.longitude !== 'number') {
+            return null;
+          }
+          const isOnline = location.isOnline;
           return (
             <Marker
               key={tech.id}
               coordinate={{
-                latitude: tech.lastLocation!.latitude,
-                longitude: tech.lastLocation!.longitude,
+                latitude: location.latitude,
+                longitude: location.longitude,
               }}
               onPress={() => onMarkerPress(tech)}
               pinColor={isOnline ? '#34C759' : '#8E8E93'}
@@ -95,7 +84,7 @@ export function TechnicianMap({
                 { backgroundColor: isOnline ? '#34C759' : '#8E8E93' }
               ]}>
                 <ThemedText style={styles.markerText}>
-                  {tech.name.split(' ').map(n => n[0]).join('')}
+                  {tech.name?.split(' ').map(n => n[0]).join('') || '?'}
                 </ThemedText>
               </View>
               <Callout tooltip onPress={() => onCallTech(tech.phone)}>
@@ -111,7 +100,7 @@ export function TechnicianMap({
                     </ThemedText>
                   </View>
                   <ThemedText type="caption" style={{ color: theme.textSecondary, marginTop: 4 }}>
-                    {tech.lastLocation ? formatTimeAgo(tech.lastLocation.timestamp) : ''}
+                    {location.timestamp ? formatTimeAgo(location.timestamp) : ''}
                   </ThemedText>
                   {tech.phone ? (
                     <View style={[styles.calloutAction, { backgroundColor: theme.primary }]}>

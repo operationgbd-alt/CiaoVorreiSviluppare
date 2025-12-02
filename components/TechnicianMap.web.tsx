@@ -5,36 +5,21 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { Feather } from '@expo/vector-icons';
-
-interface TechnicianLocation {
-  latitude: number;
-  longitude: number;
-  address?: string;
-  timestamp: number;
-  isOnline: boolean;
-}
-
-interface TechnicianData {
-  id: string;
-  name: string;
-  phone?: string | null;
-  companyName?: string | null;
-  lastLocation?: TechnicianLocation;
-}
+import { User } from '@/types';
 
 interface TechnicianMapProps {
-  technicians: TechnicianData[];
+  technicians: User[];
   initialRegion: {
     latitude: number;
     longitude: number;
     latitudeDelta: number;
     longitudeDelta: number;
   };
-  onMarkerPress: (tech: TechnicianData) => void;
+  onMarkerPress: (tech: User) => void;
   onCallTech: (phone?: string | null) => void;
   mapRef: React.RefObject<any>;
-  onlineTechnicians: TechnicianData[];
-  offlineTechnicians: TechnicianData[];
+  onlineTechnicians: User[];
+  offlineTechnicians: User[];
 }
 
 export function TechnicianMap({

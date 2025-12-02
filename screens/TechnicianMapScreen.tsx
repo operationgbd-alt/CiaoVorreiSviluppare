@@ -72,7 +72,7 @@ export function TechnicianMapScreen() {
     setSelectedTech(tech);
   };
 
-  const handleCallTech = (phone?: string) => {
+  const handleCallTech = (phone?: string | null) => {
     if (phone) {
       Linking.openURL(`tel:${phone}`);
     }
