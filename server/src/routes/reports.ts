@@ -28,7 +28,6 @@ router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: R
     let appointments: any[] = [];
 
     if (interventionData) {
-      // Handle both API format (flat: clientName) and nested format (client.name)
       const clientName = interventionData.clientName || interventionData.client?.name || 'N/D';
       const clientAddress = interventionData.clientAddress || interventionData.client?.address || '';
       const clientCivicNumber = interventionData.clientCivicNumber || '';
@@ -66,7 +65,6 @@ router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: R
         technician = { name: techName, phone: techPhone };
       }
 
-      // Handle both flat format (appointmentDate) and nested format (appointment.date)
       const appointmentDate = interventionData.appointmentDate || interventionData.appointment?.date;
       const appointmentNotes = interventionData.appointmentNotes || interventionData.appointment?.notes;
       if (appointmentDate) {
@@ -118,7 +116,7 @@ router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: R
       
       console.log('[REPORT] Fetching intervention from database, ID:', id, 'Role:', userRole);
       
-      if (userrole?.toUpperCase() === 'MASTER') {
+      if (userRole === 'MASTER') {
         interventionResult = await pool.query(
           `SELECT 
             i.*,
@@ -129,7 +127,7 @@ router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: R
           [id]
         );
         console.log('[REPORT] MASTER query result rows:', interventionResult.rows.length);
-      } else if (userrole?.toUpperCase() === 'DITTA') {
+      } else if (userRole === 'DITTA') {
         if (!req.user.companyId) {
           return res.status(403).json({ error: 'Utente non associato a un\'azienda' });
         }
@@ -179,7 +177,6 @@ router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: R
       }
     }
 
-    // Build title from number field (e.g., "INT-2025-005")
     const interventionTitle = intervention.title || intervention.number || `INT-${intervention.id.substring(0, 8)}`;
     
     const reportData = {
