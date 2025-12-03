@@ -16,7 +16,7 @@ router.get('/', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, res: Re
     let query = 'SELECT u.*, c.id as company_id_ref, c.name as company_name FROM users u LEFT JOIN companies c ON u.company_id = c.id WHERE u.active = true';
     const params: any[] = [];
     
-    if (user.role === 'DITTA') {
+    if (user.role?.toUpperCase() === 'DITTA') {
       const companyResult = await pool.query<Company>(
         'SELECT * FROM companies WHERE owner_id = $1',
         [user.id]
@@ -86,7 +86,7 @@ router.post('/', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, res: R
     
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    if (currentUser.role === 'DITTA') {
+    if (currentUser.role?.toUpperCase() === 'DITTA') {
       if (role !== 'TECNICO') {
         throw new AppError('La ditta può creare solo account tecnico', 403);
       }
@@ -127,12 +127,12 @@ router.post('/', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, res: R
       });
     }
     
-    if (currentUser.role === 'MASTER') {
-      if (role === 'MASTER') {
+    if (currentUser.role?.toUpperCase() === 'MASTER') {
+      if (role?.toUpperCase() === 'MASTER') {
         throw new AppError('Non è possibile creare altri account Master', 403);
       }
       
-      if (role === 'DITTA') {
+      if (role?.toUpperCase() === 'DITTA') {
         const userResult = await pool.query<User>(
           `INSERT INTO users (username, password, name, email, phone, role, created_by_id)
            VALUES ($1, $2, $3, $4, $5, 'DITTA', $6)
@@ -168,7 +168,7 @@ router.post('/', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, res: R
         });
       }
       
-      if (role === 'TECNICO') {
+      if (role?.toUpperCase() === 'TECNICO') {
         if (!companyId) {
           throw new AppError('Per creare un tecnico è necessario specificare la ditta', 400);
         }
@@ -232,7 +232,7 @@ router.patch('/:id', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, re
       throw new AppError('Utente non trovato', 404);
     }
     
-    if (currentUser.role === 'DITTA') {
+    if (currentUser.role?.toUpperCase() === 'DITTA') {
       const companyResult = await pool.query<Company>(
         'SELECT * FROM companies WHERE owner_id = $1',
         [currentUser.id]
@@ -316,7 +316,7 @@ router.post('/:id/reset-password', requireRole('MASTER', 'DITTA'), async (req: A
       throw new AppError('Utente non trovato', 404);
     }
     
-    if (currentUser.role === 'DITTA') {
+    if (currentUser.role?.toUpperCase() === 'DITTA') {
       const companyResult = await pool.query<Company>(
         'SELECT * FROM companies WHERE owner_id = $1',
         [currentUser.id]

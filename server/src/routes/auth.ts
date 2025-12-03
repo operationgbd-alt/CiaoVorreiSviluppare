@@ -36,7 +36,7 @@ router.post('/login', async (req, res, next) => {
     }
     
     let company: Company | null = null;
-    if (user.role === 'DITTA') {
+    if (user.role?.toUpperCase() === 'DITTA') {
       const companyResult = await pool.query<Company>(
         'SELECT * FROM companies WHERE owner_id = $1',
         [user.id]
@@ -95,7 +95,7 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response, next) 
     }
     
     let company: Company | null = null;
-    if (user.role === 'DITTA') {
+    if (user.role?.toUpperCase() === 'DITTA') {
       const companyResult = await pool.query<Company>(
         'SELECT * FROM companies WHERE owner_id = $1',
         [user.id]

@@ -31,8 +31,8 @@ export function ManageUsersScreen() {
     setVisiblePasswords(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const technicians = users.filter(u => u.role === 'tecnico');
-  const companyAccounts = users.filter(u => u.role === 'ditta');
+  const technicians = users.filter(u => u.role?.toUpperCase() === 'TECNICO');
+  const companyAccounts = users.filter(u => u.role?.toUpperCase() === 'DITTA');
 
   const handleSubmit = async () => {
     if (!formData.username.trim() || !formData.name.trim()) {
@@ -192,7 +192,7 @@ export function ManageUsersScreen() {
       <View style={styles.cardHeader}>
         <View style={[styles.iconContainer, { backgroundColor: getRoleColor(user.role) + '20' }]}>
           <Feather
-            name={user.role === 'tecnico' ? 'tool' : user.role === 'ditta' ? 'home' : 'shield'}
+            name={user.role?.toUpperCase() === 'TECNICO' ? 'tool' : user.role?.toUpperCase() === 'DITTA' ? 'home' : 'shield'}
             size={24}
             color={getRoleColor(user.role)}
           />
@@ -297,12 +297,12 @@ export function ManageUsersScreen() {
                 style={[
                   styles.roleButton,
                   { borderColor: theme.border },
-                  formData.role === 'tecnico' && { backgroundColor: theme.primary, borderColor: theme.primary },
+                  formData.role?.toUpperCase() === 'TECNICO' && { backgroundColor: theme.primary, borderColor: theme.primary },
                 ]}
                 onPress={() => setFormData(prev => ({ ...prev, role: 'tecnico' }))}
               >
-                <Feather name="tool" size={16} color={formData.role === 'tecnico' ? '#FFFFFF' : theme.text} />
-                <ThemedText style={[styles.roleButtonText, formData.role === 'tecnico' && { color: '#FFFFFF' }]}>
+                <Feather name="tool" size={16} color={formData.role?.toUpperCase() === 'TECNICO' ? '#FFFFFF' : theme.text} />
+                <ThemedText style={[styles.roleButtonText, formData.role?.toUpperCase() === 'TECNICO' && { color: '#FFFFFF' }]}>
                   Tecnico
                 </ThemedText>
               </Pressable>
@@ -310,12 +310,12 @@ export function ManageUsersScreen() {
                 style={[
                   styles.roleButton,
                   { borderColor: theme.border },
-                  formData.role === 'ditta' && { backgroundColor: theme.secondary, borderColor: theme.secondary },
+                  formData.role?.toUpperCase() === 'DITTA' && { backgroundColor: theme.secondary, borderColor: theme.secondary },
                 ]}
                 onPress={() => setFormData(prev => ({ ...prev, role: 'ditta' }))}
               >
-                <Feather name="home" size={16} color={formData.role === 'ditta' ? '#FFFFFF' : theme.text} />
-                <ThemedText style={[styles.roleButtonText, formData.role === 'ditta' && { color: '#FFFFFF' }]}>
+                <Feather name="home" size={16} color={formData.role?.toUpperCase() === 'DITTA' ? '#FFFFFF' : theme.text} />
+                <ThemedText style={[styles.roleButtonText, formData.role?.toUpperCase() === 'DITTA' && { color: '#FFFFFF' }]}>
                   Account Ditta
                 </ThemedText>
               </Pressable>
@@ -457,11 +457,11 @@ export function ManageUsersScreen() {
         </View>
       ) : null}
 
-      {users.filter(u => u.role === 'master').length > 0 ? (
+      {users.filter(u => u.role?.toUpperCase() === 'MASTER').length > 0 ? (
         <View style={styles.section}>
           <ThemedText type="h4" style={styles.sectionTitle}>Amministratori</ThemedText>
           <View style={styles.list}>
-            {users.filter(u => u.role === 'master').map(renderUserCard)}
+            {users.filter(u => u.role?.toUpperCase() === 'MASTER').map(renderUserCard)}
           </View>
         </View>
       ) : null}

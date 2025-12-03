@@ -44,7 +44,7 @@ export function CreateInterventionScreen() {
   });
 
   const selectedCompanyTechnicians = users.filter(
-    u => u.role === 'tecnico' && u.companyId === formData.companyId
+    u => u.role?.toUpperCase() === 'TECNICO' && u.companyId === formData.companyId
   );
 
   const handleSubmit = () => {

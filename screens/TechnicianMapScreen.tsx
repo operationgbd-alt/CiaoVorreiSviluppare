@@ -50,7 +50,7 @@ export function TechnicianMapScreen() {
   
   const allTechnicians = useMemo(() => {
     try {
-      return (users || []).filter(u => u && u.role === 'tecnico');
+      return (users || []).filter(u => u && u.role?.toUpperCase() === 'TECNICO');
     } catch (e) {
       console.warn('[TechnicianMapScreen] Error filtering technicians:', e);
       return [];

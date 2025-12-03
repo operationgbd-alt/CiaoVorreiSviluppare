@@ -30,7 +30,7 @@ export function ManageTechniciansScreen() {
   };
 
   const companyTechnicians = users.filter(
-    u => u.role === 'tecnico' && u.companyId === currentUser?.companyId
+    u => u.role?.toUpperCase() === 'TECNICO' && u.companyId === currentUser?.companyId
   );
 
   const handleSubmit = async () => {

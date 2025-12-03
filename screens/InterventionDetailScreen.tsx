@@ -68,9 +68,9 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
   const intervention = getInterventionById(route.params.interventionId);
   
   const userRole = user?.role?.toUpperCase();
-  const isTecnico = userRole === 'TECNICO';
-  const isMaster = userRole === 'MASTER';
-  const isMasterOrDitta = userRole === 'MASTER' || userRole === 'DITTA';
+  const isTecnico = userrole?.toUpperCase() === 'TECNICO';
+  const isMaster = userrole?.toUpperCase() === 'MASTER';
+  const isMasterOrDitta = userrole?.toUpperCase() === 'MASTER' || userrole?.toUpperCase() === 'DITTA';
   const canEdit = isTecnico;
   const canAssignTechnician = isMasterOrDitta;
   const canDelete = isMaster;
@@ -111,10 +111,10 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
 
   const availableTechnicians = users.filter(u => {
     if (u.role !== 'tecnico') return false;
-    if (user?.role === 'master') {
+    if (user?.role?.toUpperCase() === 'MASTER') {
       return u.companyId === intervention?.companyId;
     }
-    if (user?.role === 'ditta') {
+    if (user?.role?.toUpperCase() === 'DITTA') {
       return u.companyId === user.companyId;
     }
     return false;

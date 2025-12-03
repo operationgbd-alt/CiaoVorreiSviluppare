@@ -146,7 +146,7 @@ export function ManageCompaniesScreen() {
 
   const renderCompanyCard = (company: Company) => {
     const users = getUsersByCompany(company.id);
-    const technicians = users.filter(u => u.role === 'tecnico');
+    const technicians = users.filter(u => u.role?.toUpperCase() === 'TECNICO');
 
     return (
       <Card key={company.id} style={styles.card}>

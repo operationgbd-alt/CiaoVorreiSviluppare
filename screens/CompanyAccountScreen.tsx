@@ -35,7 +35,7 @@ export function CompanyAccountScreen() {
   );
 
   const companyTechnicians = useMemo(() => 
-    users.filter(u => u.companyId === user?.companyId && u.role === 'tecnico'),
+    users.filter(u => u.companyId === user?.companyId && u.role?.toUpperCase() === 'TECNICO'),
     [users, user?.companyId]
   );
 

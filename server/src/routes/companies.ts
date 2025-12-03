@@ -63,7 +63,7 @@ router.get('/:id', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, res:
       throw new AppError('Ditta non trovata', 404);
     }
     
-    if (currentUser.role === 'DITTA' && company.owner_id !== currentUser.id) {
+    if (currentUser.role?.toUpperCase() === 'DITTA' && company.owner_id !== currentUser.id) {
       throw new AppError('Non hai i permessi per vedere questa ditta', 403);
     }
     
@@ -110,7 +110,7 @@ router.patch('/:id', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, re
       throw new AppError('Ditta non trovata', 404);
     }
     
-    if (currentUser.role === 'DITTA' && company.owner_id !== currentUser.id) {
+    if (currentUser.role?.toUpperCase() === 'DITTA' && company.owner_id !== currentUser.id) {
       throw new AppError('Non hai i permessi per modificare questa ditta', 403);
     }
     
@@ -134,7 +134,7 @@ router.patch('/:id', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, re
       updates.push(`address = $${paramCount++}`);
       values.push(address);
     }
-    if (currentUser.role === 'MASTER' && active !== undefined) {
+    if (currentUser.role?.toUpperCase() === 'MASTER' && active !== undefined) {
       updates.push(`active = $${paramCount++}`);
       values.push(active);
     }
@@ -175,7 +175,7 @@ router.get('/:id/technicians', requireRole('MASTER', 'DITTA'), async (req: AuthR
       throw new AppError('Ditta non trovata', 404);
     }
     
-    if (currentUser.role === 'DITTA' && company.owner_id !== currentUser.id) {
+    if (currentUser.role?.toUpperCase() === 'DITTA' && company.owner_id !== currentUser.id) {
       throw new AppError('Non hai i permessi per vedere i tecnici di questa ditta', 403);
     }
     

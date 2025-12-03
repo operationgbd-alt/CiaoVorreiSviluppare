@@ -40,8 +40,8 @@ export default function CompletedInterventionsScreen({ navigation }: Props) {
   const [showReportModal, setShowReportModal] = useState(false);
   const [generatingReportId, setGeneratingReportId] = useState<string | null>(null);
 
-  const isDitta = user?.role === 'ditta';
-  const isMasterOrDitta = user?.role === 'master' || user?.role === 'ditta';
+  const isDitta = user?.role?.toUpperCase() === 'DITTA';
+  const isMasterOrDitta = user?.role?.toUpperCase() === 'MASTER' || user?.role?.toUpperCase() === 'DITTA';
 
   const handleGenerateReport = async (intervention: Intervention) => {
     if (generatingReportId) return;

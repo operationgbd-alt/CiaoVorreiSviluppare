@@ -35,10 +35,10 @@ router.get('/', async (req: AuthRequest, res: Response, next) => {
     const params: any[] = [];
     let paramCount = 1;
     
-    if (user.role === 'TECNICO') {
+    if (user.role?.toUpperCase() === 'TECNICO') {
       query += ` AND i.technician_id = $${paramCount++}`;
       params.push(user.id);
-    } else if (user.role === 'DITTA') {
+    } else if (user.role?.toUpperCase() === 'DITTA') {
       const companyResult = await pool.query<Company>(
         'SELECT * FROM companies WHERE owner_id = $1',
         [user.id]
@@ -58,11 +58,11 @@ router.get('/', async (req: AuthRequest, res: Response, next) => {
       query += ` AND i.category = $${paramCount++}`;
       params.push(category);
     }
-    if (user.role === 'MASTER' && companyId) {
+    if (user.role?.toUpperCase() === 'MASTER' && companyId) {
       query += ` AND i.company_id = $${paramCount++}`;
       params.push(companyId);
     }
-    if ((user.role === 'MASTER' || user.role === 'DITTA') && technicianId) {
+    if ((user.role?.toUpperCase() === 'MASTER' || user.role?.toUpperCase() === 'DITTA') && technicianId) {
       query += ` AND i.technician_id = $${paramCount++}`;
       params.push(technicianId);
     }
@@ -129,10 +129,10 @@ router.get('/stats', async (req: AuthRequest, res: Response, next) => {
     let whereClause = '';
     const params: any[] = [];
     
-    if (user.role === 'TECNICO') {
+    if (user.role?.toUpperCase() === 'TECNICO') {
       whereClause = 'WHERE technician_id = $1';
       params.push(user.id);
-    } else if (user.role === 'DITTA') {
+    } else if (user.role?.toUpperCase() === 'DITTA') {
       const companyResult = await pool.query<Company>(
         'SELECT * FROM companies WHERE owner_id = $1',
         [user.id]
@@ -193,11 +193,11 @@ router.get('/:id', async (req: AuthRequest, res: Response, next) => {
       throw new AppError('Intervento non trovato', 404);
     }
     
-    if (user.role === 'TECNICO' && row.technician_id !== user.id) {
+    if (user.role?.toUpperCase() === 'TECNICO' && row.technician_id !== user.id) {
       throw new AppError('Non hai i permessi per vedere questo intervento', 403);
     }
     
-    if (user.role === 'DITTA') {
+    if (user.role?.toUpperCase() === 'DITTA') {
       const companyResult = await pool.query<Company>(
         'SELECT * FROM companies WHERE owner_id = $1',
         [user.id]
@@ -466,11 +466,11 @@ router.post('/:id/status', async (req: AuthRequest, res: Response, next) => {
       throw new AppError(`Non puoi cambiare lo stato da "${intervention.status}" a "${status}"`, 403);
     }
     
-    if (user.role === 'TECNICO' && intervention.technician_id !== user.id) {
+    if (user.role?.toUpperCase() === 'TECNICO' && intervention.technician_id !== user.id) {
       throw new AppError('Non hai i permessi per modificare questo intervento', 403);
     }
     
-    if (user.role === 'DITTA') {
+    if (user.role?.toUpperCase() === 'DITTA') {
       const companyResult = await pool.query<Company>(
         'SELECT * FROM companies WHERE owner_id = $1',
         [user.id]
@@ -582,11 +582,11 @@ router.patch('/:id', async (req: AuthRequest, res: Response, next) => {
       throw new AppError('Intervento non trovato', 404);
     }
     
-    if (user.role === 'TECNICO' && intervention.technician_id !== user.id) {
+    if (user.role?.toUpperCase() === 'TECNICO' && intervention.technician_id !== user.id) {
       throw new AppError('Non hai i permessi per modificare questo intervento', 403);
     }
     
-    if (user.role === 'DITTA') {
+    if (user.role?.toUpperCase() === 'DITTA') {
       const companyResult = await pool.query<Company>(
         'SELECT * FROM companies WHERE owner_id = $1',
         [user.id]

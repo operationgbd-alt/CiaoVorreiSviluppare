@@ -848,16 +848,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const companies = useMemo(() => {
     if (!user) return [];
     const role = user.role?.toLowerCase();
-    if (role === 'master') return companiesData;
-    if (role === 'ditta') return companiesData.filter(c => c.id === user.companyId);
+    if (role?.toUpperCase() === 'MASTER') return companiesData;
+    if (role?.toUpperCase() === 'DITTA') return companiesData.filter(c => c.id === user.companyId);
     return [];
   }, [user, companiesData]);
 
   const users = useMemo(() => {
     if (!user) return [];
     const role = user.role?.toLowerCase();
-    if (role === 'master') return usersData;
-    if (role === 'ditta') return usersData.filter(u => u.companyId === user.companyId);
+    if (role?.toUpperCase() === 'MASTER') return usersData;
+    if (role?.toUpperCase() === 'DITTA') return usersData.filter(u => u.companyId === user.companyId);
     return [];
   }, [user, usersData]);
 
@@ -1004,7 +1004,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       byStatus,
       byCompany,
       totalCompanies: companiesData.length,
-      totalTechnicians: usersData.filter(u => u.role === 'tecnico').length,
+      totalTechnicians: usersData.filter(u => u.role?.toUpperCase() === 'TECNICO').length,
       unassignedCount,
     };
   }, [interventionsData, companiesData, usersData]);

@@ -32,8 +32,8 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   
-  const isMaster = user?.role === 'master';
-  const isDitta = user?.role === 'ditta';
+  const isMaster = user?.role?.toUpperCase() === 'MASTER';
+  const isDitta = user?.role?.toUpperCase() === 'DITTA';
 
   const handleLogout = () => {
     if (Platform.OS === 'web') {

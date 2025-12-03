@@ -118,7 +118,7 @@ router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: R
       
       console.log('[REPORT] Fetching intervention from database, ID:', id, 'Role:', userRole);
       
-      if (userRole === 'MASTER') {
+      if (userrole?.toUpperCase() === 'MASTER') {
         interventionResult = await pool.query(
           `SELECT 
             i.*,
@@ -129,7 +129,7 @@ router.post('/intervention/:id', authMiddleware, async (req: AuthRequest, res: R
           [id]
         );
         console.log('[REPORT] MASTER query result rows:', interventionResult.rows.length);
-      } else if (userRole === 'DITTA') {
+      } else if (userrole?.toUpperCase() === 'DITTA') {
         if (!req.user.companyId) {
           return res.status(403).json({ error: 'Utente non associato a un\'azienda' });
         }
