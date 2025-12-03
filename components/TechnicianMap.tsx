@@ -36,6 +36,7 @@ const DEFAULT_REGION = {
   longitudeDelta: 5,
 };
 
+// FUNZIONE CRITICA: Valida le coordinate per evitare crash
 const isValidCoordinate = (lat: any, lng: any): boolean => {
   const latitude = parseFloat(lat);
   const longitude = parseFloat(lng);
@@ -67,6 +68,7 @@ export default function TechnicianMap({ onTechnicianSelect }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [region, setRegion] = useState(DEFAULT_REGION);
 
+  // CORREZIONE CRITICA: Normalizza il ruolo in MAIUSCOLO
   const userRole = user?.role?.toUpperCase();
   const canViewMap = userRole === 'MASTER' || userRole === 'DITTA';
 
@@ -84,6 +86,7 @@ export default function TechnicianMap({ onTechnicianSelect }: Props) {
       const response = await api.get('/users/technician-locations');
       
       if (response.data.success && Array.isArray(response.data.data)) {
+        // CORREZIONE CRITICA: Filtra tecnici con coordinate invalide
         const validTechnicians = response.data.data
           .filter((tech: any) => {
             const hasValidCoords = isValidCoordinate(tech.latitude, tech.longitude);
@@ -184,7 +187,7 @@ export default function TechnicianMap({ onTechnicianSelect }: Props) {
             Mappa Tecnici
           </Text>
           <Text style={[styles.webFallbackText, { color: colors.textSecondary }]}>
-            La mappa è disponibile solo nell'app mobile
+            La mappa e disponibile solo nell app mobile
           </Text>
           <View style={styles.technicianList}>
             {technicians.map((tech) => (
@@ -249,26 +252,26 @@ const styles = StyleSheet.create({
   centerContent: {
     justifyContent: 'center',
     alignItems: 'center',
-    padding: Spacing.xl,
+    padding: 24,
   },
   map: {
     width: '100%',
     height: '100%',
   },
   loadingText: {
-    marginTop: Spacing.md,
-    fontSize: Typography.sizes.md,
+    marginTop: 16,
+    fontSize: 16,
   },
   errorText: {
-    marginTop: Spacing.md,
-    fontSize: Typography.sizes.md,
+    marginTop: 16,
+    fontSize: 16,
     textAlign: 'center',
   },
   markerContainer: {
     alignItems: 'center',
   },
   marker: {
-    backgroundColor: Colors.primary,
+    backgroundColor: '#FF6B00',
     padding: 8,
     borderRadius: 20,
     borderWidth: 2,
@@ -279,7 +282,7 @@ const styles = StyleSheet.create({
     bottom: 20,
     left: 20,
     right: 20,
-    padding: Spacing.md,
+    padding: 16,
     borderRadius: 12,
     elevation: 4,
     shadowColor: '#000',
@@ -288,7 +291,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   legendTitle: {
-    fontSize: Typography.sizes.md,
+    fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -296,39 +299,39 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: Spacing.xl,
-    margin: Spacing.lg,
+    padding: 24,
+    margin: 16,
     borderRadius: 16,
   },
   webFallbackTitle: {
-    fontSize: Typography.sizes.xl,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginTop: Spacing.md,
+    marginTop: 16,
   },
   webFallbackText: {
-    fontSize: Typography.sizes.md,
-    marginTop: Spacing.sm,
+    fontSize: 16,
+    marginTop: 8,
     textAlign: 'center',
   },
   technicianList: {
-    marginTop: Spacing.xl,
+    marginTop: 24,
     width: '100%',
   },
   technicianItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.md,
-    marginVertical: Spacing.xs,
+    padding: 16,
+    marginVertical: 4,
     borderRadius: 8,
   },
   technicianInfo: {
-    marginLeft: Spacing.md,
+    marginLeft: 16,
   },
   technicianName: {
-    fontSize: Typography.sizes.md,
+    fontSize: 16,
     fontWeight: '600',
   },
   technicianCoords: {
-    fontSize: Typography.sizes.sm,
+    fontSize: 14,
   },
 });
