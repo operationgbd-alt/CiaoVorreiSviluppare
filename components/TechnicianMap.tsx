@@ -1,285 +1,334 @@
-import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
-import MapView, { Marker, Callout, PROVIDER_DEFAULT } from 'react-native-maps';
-import { useTheme } from '@/hooks/useTheme';
-import { ThemedText } from '@/components/ThemedText';
-import { Spacing, BorderRadius } from '@/constants/theme';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Dimensions,
+  Platform,
+} from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { Feather } from '@expo/vector-icons';
-import { User } from '@/types';
+import { api } from '../services/api';
+import { Colors, Spacing, Typography } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
+import { useAuth } from '../contexts/AuthContext';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const MAP_HEIGHT = SCREEN_HEIGHT * 0.45;
-
-interface TechnicianMapProps {
-  technicians: User[];
-  initialRegion: {
-    latitude: number;
-    longitude: number;
-    latitudeDelta: number;
-    longitudeDelta: number;
-  };
-  onMarkerPress: (tech: User) => void;
-  onCallTech: (phone?: string | null) => void;
-  mapRef: React.RefObject<MapView | null>;
-  onlineTechnicians: User[];
-  offlineTechnicians: User[];
+interface TechnicianLocation {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  lastUpdate: string;
+  status?: string;
 }
 
-function formatTimeAgo(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp;
-  const minutes = Math.floor(diff / 60000);
-  
-  if (minutes < 1) return 'Adesso';
-  if (minutes < 60) return `${minutes} min fa`;
-  
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} ore fa`;
-  
-  const days = Math.floor(hours / 24);
-  return `${days} giorni fa`;
+interface Props {
+  onTechnicianSelect?: (technicianId: string) => void;
 }
 
-export function TechnicianMap({
-  technicians,
-  initialRegion,
-  onMarkerPress,
-  onCallTech,
-  mapRef,
-  onlineTechnicians,
-  offlineTechnicians,
-}: TechnicianMapProps) {
-  const { theme } = useTheme();
+const { width, height } = Dimensions.get('window');
 
-  // PROTEZIONE ANTI-CRASH: Se i dati non sono validi, mostra mappa vuota
-  if (!technicians || !Array.isArray(technicians)) {
+const DEFAULT_REGION = {
+  latitude: 41.9028,
+  longitude: 12.4964,
+  latitudeDelta: 5,
+  longitudeDelta: 5,
+};
+
+const isValidCoordinate = (lat: any, lng: any): boolean => {
+  const latitude = parseFloat(lat);
+  const longitude = parseFloat(lng);
+  
+  if (isNaN(latitude) || isNaN(longitude)) {
+    return false;
+  }
+  
+  if (latitude < -90 || latitude > 90) {
+    return false;
+  }
+  
+  if (longitude < -180 || longitude > 180) {
+    return false;
+  }
+  
+  if (latitude === 0 && longitude === 0) {
+    return false;
+  }
+  
+  return true;
+};
+
+export default function TechnicianMap({ onTechnicianSelect }: Props) {
+  const { colors } = useTheme();
+  const { user } = useAuth();
+  const [technicians, setTechnicians] = useState<TechnicianLocation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [region, setRegion] = useState(DEFAULT_REGION);
+
+  const userRole = user?.role?.toUpperCase();
+  const canViewMap = userRole === 'MASTER' || userRole === 'DITTA';
+
+  const loadTechnicianLocations = useCallback(async () => {
+    if (!canViewMap) {
+      setError('Accesso non autorizzato');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await api.get('/users/technician-locations');
+      
+      if (response.data.success && Array.isArray(response.data.data)) {
+        const validTechnicians = response.data.data
+          .filter((tech: any) => {
+            const hasValidCoords = isValidCoordinate(tech.latitude, tech.longitude);
+            if (!hasValidCoords) {
+              console.log(`[MAP] Skipping technician ${tech.name}: invalid coordinates`, tech.latitude, tech.longitude);
+            }
+            return hasValidCoords;
+          })
+          .map((tech: any) => ({
+            id: tech.id,
+            name: tech.name || 'Tecnico',
+            latitude: parseFloat(tech.latitude),
+            longitude: parseFloat(tech.longitude),
+            lastUpdate: tech.lastUpdate || tech.updatedAt || new Date().toISOString(),
+            status: tech.status,
+          }));
+
+        console.log(`[MAP] Valid technicians: ${validTechnicians.length}`);
+        setTechnicians(validTechnicians);
+
+        if (validTechnicians.length > 0) {
+          const avgLat = validTechnicians.reduce((sum: number, t: TechnicianLocation) => sum + t.latitude, 0) / validTechnicians.length;
+          const avgLng = validTechnicians.reduce((sum: number, t: TechnicianLocation) => sum + t.longitude, 0) / validTechnicians.length;
+          
+          if (isValidCoordinate(avgLat, avgLng)) {
+            setRegion({
+              latitude: avgLat,
+              longitude: avgLng,
+              latitudeDelta: 0.5,
+              longitudeDelta: 0.5,
+            });
+          }
+        }
+      } else {
+        setTechnicians([]);
+      }
+    } catch (err: any) {
+      console.error('[MAP] Error loading locations:', err);
+      setError(err.message || 'Errore nel caricamento delle posizioni');
+      setTechnicians([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [canViewMap]);
+
+  useEffect(() => {
+    loadTechnicianLocations();
+  }, [loadTechnicianLocations]);
+
+  if (!canViewMap) {
     return (
-      <View style={styles.mapContainer}>
-        <View style={[styles.map, { backgroundColor: '#F2F2F7', justifyContent: 'center', alignItems: 'center' }]}>
-          <ThemedText style={{ color: '#8E8E93' }}>Caricamento mappa...</ThemedText>
+      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
+        <Feather name="lock" size={48} color={colors.textSecondary} />
+        <Text style={[styles.errorText, { color: colors.textSecondary }]}>
+          Solo MASTER e DITTA possono visualizzare la mappa
+        </Text>
+      </View>
+    );
+  }
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+          Caricamento posizioni...
+        </Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
+        <Feather name="alert-circle" size={48} color="#F44336" />
+        <Text style={[styles.errorText, { color: '#F44336' }]}>{error}</Text>
+      </View>
+    );
+  }
+
+  if (technicians.length === 0) {
+    return (
+      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
+        <Feather name="map-pin" size={48} color={colors.textSecondary} />
+        <Text style={[styles.errorText, { color: colors.textSecondary }]}>
+          Nessun tecnico con posizione disponibile
+        </Text>
+      </View>
+    );
+  }
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.webFallback, { backgroundColor: colors.card }]}>
+          <Feather name="map" size={48} color={Colors.primary} />
+          <Text style={[styles.webFallbackTitle, { color: colors.text }]}>
+            Mappa Tecnici
+          </Text>
+          <Text style={[styles.webFallbackText, { color: colors.textSecondary }]}>
+            La mappa è disponibile solo nell'app mobile
+          </Text>
+          <View style={styles.technicianList}>
+            {technicians.map((tech) => (
+              <View key={tech.id} style={[styles.technicianItem, { backgroundColor: colors.background }]}>
+                <Feather name="user" size={20} color={Colors.primary} />
+                <View style={styles.technicianInfo}>
+                  <Text style={[styles.technicianName, { color: colors.text }]}>{tech.name}</Text>
+                  <Text style={[styles.technicianCoords, { color: colors.textSecondary }]}>
+                    {tech.latitude.toFixed(4)}, {tech.longitude.toFixed(4)}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
         </View>
       </View>
     );
   }
 
-  // PROTEZIONE ANTI-CRASH: Valida tutte le coordinate con controlli extra
-  const safeRegion = React.useMemo(() => {
-    try {
-      const lat = Number(initialRegion?.latitude);
-      const lng = Number(initialRegion?.longitude);
-      const latDelta = Number(initialRegion?.latitudeDelta);
-      const lngDelta = Number(initialRegion?.longitudeDelta);
-      
-      return {
-        latitude: (isFinite(lat) && !isNaN(lat) && lat >= -90 && lat <= 90) ? lat : 42.5,
-        longitude: (isFinite(lng) && !isNaN(lng) && lng >= -180 && lng <= 180) ? lng : 12.5,
-        latitudeDelta: (isFinite(latDelta) && !isNaN(latDelta) && latDelta > 0) ? latDelta : 8,
-        longitudeDelta: (isFinite(lngDelta) && !isNaN(lngDelta) && lngDelta > 0) ? lngDelta : 8,
-      };
-    } catch (e) {
-      console.warn('[TechnicianMap] Error computing safeRegion:', e);
-      return { latitude: 42.5, longitude: 12.5, latitudeDelta: 8, longitudeDelta: 8 };
-    }
-  }, [initialRegion]);
-
-  const validTechnicians = React.useMemo(() => {
-    try {
-      return (technicians || []).filter((tech) => {
-        if (!tech || !tech.lastLocation) return false;
-        const lat = Number(tech.lastLocation.latitude);
-        const lng = Number(tech.lastLocation.longitude);
-        return (
-          typeof lat === 'number' &&
-          typeof lng === 'number' &&
-          isFinite(lat) &&
-          isFinite(lng) &&
-          !isNaN(lat) &&
-          !isNaN(lng) &&
-          lat >= -90 &&
-          lat <= 90 &&
-          lng >= -180 &&
-          lng <= 180
-        );
-      });
-    } catch (e) {
-      console.warn('[TechnicianMap] Error filtering technicians:', e);
-      return [];
-    }
-  }, [technicians]);
-
   return (
-    <View style={styles.mapContainer}>
+    <View style={styles.container}>
       <MapView
-        ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_DEFAULT}
-        initialRegion={safeRegion}
-        showsUserLocation={false}
-        showsMyLocationButton={false}
-        showsCompass={true}
-        rotateEnabled={false}
+        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+        initialRegion={region}
+        showsUserLocation
+        showsMyLocationButton
       >
-        {validTechnicians.map((tech) => {
-          try {
-            const location = tech.lastLocation!;
-            const lat = Number(location.latitude);
-            const lng = Number(location.longitude);
-            
-            if (!isFinite(lat) || !isFinite(lng) || isNaN(lat) || isNaN(lng)) {
-              return null;
-            }
-            
-            const isOnline = Boolean(location.isOnline);
-            const techName = String(tech.name || '?');
-            const initials = techName.split(' ').map(n => (n && n[0]) || '').join('') || '?';
-            
-            return (
-              <Marker
-                key={tech.id}
-                coordinate={{
-                  latitude: lat,
-                  longitude: lng,
-                }}
-                onPress={() => onMarkerPress(tech)}
-                pinColor={isOnline ? '#34C759' : '#8E8E93'}
-              >
-                <View style={[
-                  styles.customMarker,
-                  { backgroundColor: isOnline ? '#34C759' : '#8E8E93' }
-                ]}>
-                  <ThemedText style={styles.markerText}>
-                    {initials}
-                  </ThemedText>
-                </View>
-                <Callout tooltip onPress={() => onCallTech(tech.phone)}>
-                  <View style={[styles.callout, { backgroundColor: theme.backgroundDefault }]}>
-                    <ThemedText type="h4" style={{ marginBottom: 4 }}>{techName}</ThemedText>
-                    <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                      {tech.companyName || ''}
-                    </ThemedText>
-                    <View style={[styles.calloutStatus, { backgroundColor: isOnline ? '#34C75920' : '#8E8E9320' }]}>
-                      <View style={[styles.calloutDot, { backgroundColor: isOnline ? '#34C759' : '#8E8E93' }]} />
-                      <ThemedText type="caption" style={{ color: isOnline ? '#34C759' : '#8E8E93' }}>
-                        {isOnline ? 'Online' : 'Offline'}
-                      </ThemedText>
-                    </View>
-                    <ThemedText type="caption" style={{ color: theme.textSecondary, marginTop: 4 }}>
-                      {location.timestamp ? formatTimeAgo(location.timestamp) : ''}
-                    </ThemedText>
-                    {tech.phone ? (
-                      <View style={[styles.calloutAction, { backgroundColor: theme.primary }]}>
-                        <Feather name="phone" size={12} color="#FFF" />
-                        <ThemedText type="caption" style={{ color: '#FFF', marginLeft: 4 }}>
-                          Chiama
-                        </ThemedText>
-                      </View>
-                    ) : null}
-                  </View>
-                </Callout>
-              </Marker>
-            );
-          } catch (e) {
-            console.warn('[TechnicianMap] Error rendering marker:', e);
-            return null;
-          }
-        })}
+        {technicians.map((tech) => (
+          <Marker
+            key={tech.id}
+            coordinate={{
+              latitude: tech.latitude,
+              longitude: tech.longitude,
+            }}
+            title={tech.name}
+            description={`Ultimo aggiornamento: ${new Date(tech.lastUpdate).toLocaleString('it-IT')}`}
+            onPress={() => onTechnicianSelect?.(tech.id)}
+          >
+            <View style={styles.markerContainer}>
+              <View style={styles.marker}>
+                <Feather name="user" size={16} color="#fff" />
+              </View>
+            </View>
+          </Marker>
+        ))}
       </MapView>
-      
-      <View style={[styles.mapLegend, { backgroundColor: theme.backgroundDefault + 'E6' }]}>
-        <View style={styles.legendRow}>
-          <View style={[styles.legendDot, { backgroundColor: '#34C759' }]} />
-          <ThemedText type="caption">Online ({onlineTechnicians?.length || 0})</ThemedText>
-        </View>
-        <View style={styles.legendRow}>
-          <View style={[styles.legendDot, { backgroundColor: '#8E8E93' }]} />
-          <ThemedText type="caption">Offline ({offlineTechnicians?.length || 0})</ThemedText>
-        </View>
+
+      <View style={[styles.legend, { backgroundColor: colors.card }]}>
+        <Text style={[styles.legendTitle, { color: colors.text }]}>
+          Tecnici attivi: {technicians.length}
+        </Text>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  mapContainer: {
-    marginHorizontal: Spacing.md,
-    marginBottom: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-    position: 'relative',
+  container: {
+    flex: 1,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
   },
   map: {
     width: '100%',
-    height: MAP_HEIGHT,
+    height: '100%',
   },
-  mapLegend: {
-    position: 'absolute',
-    top: Spacing.sm,
-    right: Spacing.sm,
-    padding: Spacing.sm,
-    borderRadius: BorderRadius.md,
+  loadingText: {
+    marginTop: Spacing.md,
+    fontSize: Typography.sizes.md,
   },
-  legendRow: {
-    flexDirection: 'row',
+  errorText: {
+    marginTop: Spacing.md,
+    fontSize: Typography.sizes.md,
+    textAlign: 'center',
+  },
+  markerContainer: {
     alignItems: 'center',
-    marginBottom: 4,
   },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: Spacing.xs,
-  },
-  customMarker: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+  marker: {
+    backgroundColor: Colors.primary,
+    padding: 8,
+    borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#FFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderColor: '#fff',
   },
-  markerText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  callout: {
+  legend: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
     padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    minWidth: 150,
+    borderRadius: 12,
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 4,
   },
-  calloutStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-    marginTop: Spacing.xs,
-    alignSelf: 'flex-start',
+  legendTitle: {
+    fontSize: Typography.sizes.md,
+    fontWeight: '600',
+    textAlign: 'center',
   },
-  calloutDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 4,
-  },
-  calloutAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  webFallback: {
+    flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
+    alignItems: 'center',
+    padding: Spacing.xl,
+    margin: Spacing.lg,
+    borderRadius: 16,
+  },
+  webFallbackTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: 'bold',
+    marginTop: Spacing.md,
+  },
+  webFallbackText: {
+    fontSize: Typography.sizes.md,
     marginTop: Spacing.sm,
+    textAlign: 'center',
+  },
+  technicianList: {
+    marginTop: Spacing.xl,
+    width: '100%',
+  },
+  technicianItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    marginVertical: Spacing.xs,
+    borderRadius: 8,
+  },
+  technicianInfo: {
+    marginLeft: Spacing.md,
+  },
+  technicianName: {
+    fontSize: Typography.sizes.md,
+    fontWeight: '600',
+  },
+  technicianCoords: {
+    fontSize: Typography.sizes.sm,
   },
 });
