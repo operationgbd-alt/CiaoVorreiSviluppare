@@ -39,6 +39,7 @@ export default function InterventionDetailScreen() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
+  // CORREZIONE CRITICA: Normalizza il ruolo in MAIUSCOLO
   const userRole = user?.role?.toUpperCase();
   const isMaster = userRole === 'MASTER';
   const isDitta = userRole === 'DITTA';
@@ -266,12 +267,12 @@ export default function InterventionDetailScreen() {
           <Text style={[styles.infoText, { color: Colors.primary }]}>{intervention.clientPhone}</Text>
         </TouchableOpacity>
 
-        {intervention.clientEmail && (
+        {intervention.clientEmail ? (
           <TouchableOpacity style={styles.infoRow} onPress={() => handleEmail(intervention.clientEmail)}>
             <Feather name="mail" size={18} color={Colors.primary} />
             <Text style={[styles.infoText, { color: Colors.primary }]}>{intervention.clientEmail}</Text>
           </TouchableOpacity>
-        )}
+        ) : null}
 
         <TouchableOpacity style={styles.infoRow} onPress={handleNavigate}>
           <Feather name="map-pin" size={18} color={Colors.primary} />
@@ -286,20 +287,20 @@ export default function InterventionDetailScreen() {
         <Text style={[styles.category, { color: colors.textSecondary }]}>
           Categoria: {intervention.category}
         </Text>
-        {intervention.description && (
+        {intervention.description ? (
           <Text style={[styles.description, { color: colors.text }]}>
             {intervention.description}
           </Text>
-        )}
+        ) : null}
       </View>
 
-      {intervention.technician && (
+      {intervention.technician ? (
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Tecnico Assegnato</Text>
           <Text style={[styles.technicianName, { color: colors.text }]}>
             {intervention.technician.name}
           </Text>
-          {intervention.technician.phone && (
+          {intervention.technician.phone ? (
             <TouchableOpacity 
               style={styles.infoRow} 
               onPress={() => handleCall(intervention.technician.phone)}
@@ -309,12 +310,12 @@ export default function InterventionDetailScreen() {
                 {intervention.technician.phone}
               </Text>
             </TouchableOpacity>
-          )}
+          ) : null}
         </View>
-      )}
+      ) : null}
 
       <View style={styles.actionsContainer}>
-        {canGeneratePdf && (
+        {canGeneratePdf ? (
           <TouchableOpacity
             style={[styles.actionButton, styles.pdfButton]}
             onPress={handleGeneratePdf}
@@ -329,9 +330,9 @@ export default function InterventionDetailScreen() {
               </>
             )}
           </TouchableOpacity>
-        )}
+        ) : null}
 
-        {canDelete && (
+        {canDelete ? (
           <TouchableOpacity
             style={[styles.actionButton, styles.deleteButton]}
             onPress={handleDelete}
@@ -346,7 +347,7 @@ export default function InterventionDetailScreen() {
               </>
             )}
           </TouchableOpacity>
-        )}
+        ) : null}
       </View>
 
       <View style={{ height: 40 }} />
@@ -367,106 +368,106 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: Spacing.xl,
+    padding: 24,
   },
   errorText: {
-    marginTop: Spacing.md,
-    fontSize: Typography.sizes.md,
+    marginTop: 16,
+    fontSize: 16,
   },
   header: {
-    padding: Spacing.lg,
+    padding: 16,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: 8,
   },
   interventionNumber: {
-    fontSize: Typography.sizes.xl,
+    fontSize: 24,
     fontWeight: 'bold',
   },
   statusBadge: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
     borderRadius: 16,
   },
   statusText: {
     color: '#fff',
-    fontSize: Typography.sizes.sm,
+    fontSize: 14,
     fontWeight: '600',
   },
   priorityBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
   },
   priorityText: {
     color: '#fff',
-    fontSize: Typography.sizes.xs,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   section: {
-    margin: Spacing.md,
-    padding: Spacing.lg,
+    margin: 16,
+    padding: 16,
     borderRadius: 12,
   },
   sectionTitle: {
-    fontSize: Typography.sizes.md,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: Spacing.md,
+    marginBottom: 16,
   },
   clientName: {
-    fontSize: Typography.sizes.lg,
+    fontSize: 18,
     fontWeight: '600',
-    marginBottom: Spacing.sm,
+    marginBottom: 8,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: Spacing.sm,
+    marginTop: 8,
   },
   infoText: {
-    marginLeft: Spacing.sm,
-    fontSize: Typography.sizes.md,
+    marginLeft: 8,
+    fontSize: 16,
   },
   category: {
-    fontSize: Typography.sizes.md,
-    marginBottom: Spacing.sm,
+    fontSize: 16,
+    marginBottom: 8,
   },
   description: {
-    fontSize: Typography.sizes.md,
+    fontSize: 16,
     lineHeight: 22,
   },
   technicianName: {
-    fontSize: Typography.sizes.md,
+    fontSize: 16,
     fontWeight: '600',
   },
   actionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    padding: Spacing.lg,
-    gap: Spacing.md,
+    padding: 16,
+    gap: 16,
   },
   actionButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: Spacing.md,
+    padding: 16,
     borderRadius: 12,
-    gap: Spacing.sm,
+    gap: 8,
   },
   pdfButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: '#FF6B00',
   },
   deleteButton: {
     backgroundColor: '#F44336',
   },
   actionButtonText: {
     color: '#fff',
-    fontSize: Typography.sizes.md,
+    fontSize: 16,
     fontWeight: '600',
   },
 });
