@@ -37,9 +37,10 @@ export default function DashboardScreen() {
   const { interventions, appointments, getGlobalStats, unassignedInterventions, users } = useApp();
   const insets = useSafeAreaInsets();
 
-  const isMaster = user?.role === 'master';
+  const userRole = user?.role?.toUpperCase();
+  const isMaster = userRole === 'MASTER';
   
-  const techniciansCount = users.filter(u => u.role === 'tecnico').length;
+  const techniciansCount = users.filter(u => u.role?.toUpperCase() === 'TECNICO').length;
   const globalStats = isMaster ? { ...getGlobalStats(), totalTechnicians: techniciansCount } : null;
 
   const today = new Date();
