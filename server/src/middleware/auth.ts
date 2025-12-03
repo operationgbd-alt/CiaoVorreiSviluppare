@@ -45,13 +45,16 @@ export async function authMiddleware(
       const user = result.rows[0];
       
       if (user && user.active) {
+        // CRITICO: Normalizza SEMPRE il ruolo in MAIUSCOLO
+        const normalizedRole = (user.role?.toUpperCase() || 'TECNICO') as 'MASTER' | 'DITTA' | 'TECNICO';
         req.user = {
           id: user.id,
           username: user.username,
           name: user.name,
-          role: user.role,
+          role: normalizedRole,
           companyId: user.company_id,
         };
+        console.log('[AUTH] User authenticated:', user.username, 'role:', normalizedRole);
         return next();
       }
     }
