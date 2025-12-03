@@ -51,28 +51,61 @@ export function TechnicianMap({
 }: TechnicianMapProps) {
   const { theme } = useTheme();
 
-  const safeRegion = {
-    latitude: isFinite(initialRegion?.latitude) ? initialRegion.latitude : 42.5,
-    longitude: isFinite(initialRegion?.longitude) ? initialRegion.longitude : 12.5,
-    latitudeDelta: isFinite(initialRegion?.latitudeDelta) && initialRegion.latitudeDelta > 0 ? initialRegion.latitudeDelta : 8,
-    longitudeDelta: isFinite(initialRegion?.longitudeDelta) && initialRegion.longitudeDelta > 0 ? initialRegion.longitudeDelta : 8,
-  };
-
-  const validTechnicians = (technicians || []).filter((tech) => {
-    if (!tech || !tech.lastLocation) return false;
-    const lat = tech.lastLocation.latitude;
-    const lng = tech.lastLocation.longitude;
+  // PROTEZIONE ANTI-CRASH: Se i dati non sono validi, mostra mappa vuota
+  if (!technicians || !Array.isArray(technicians)) {
     return (
-      typeof lat === 'number' &&
-      typeof lng === 'number' &&
-      isFinite(lat) &&
-      isFinite(lng) &&
-      lat >= -90 &&
-      lat <= 90 &&
-      lng >= -180 &&
-      lng <= 180
+      <View style={styles.mapContainer}>
+        <View style={[styles.map, { backgroundColor: '#F2F2F7', justifyContent: 'center', alignItems: 'center' }]}>
+          <ThemedText style={{ color: '#8E8E93' }}>Caricamento mappa...</ThemedText>
+        </View>
+      </View>
     );
-  });
+  }
+
+  // PROTEZIONE ANTI-CRASH: Valida tutte le coordinate con controlli extra
+  const safeRegion = React.useMemo(() => {
+    try {
+      const lat = Number(initialRegion?.latitude);
+      const lng = Number(initialRegion?.longitude);
+      const latDelta = Number(initialRegion?.latitudeDelta);
+      const lngDelta = Number(initialRegion?.longitudeDelta);
+      
+      return {
+        latitude: (isFinite(lat) && !isNaN(lat) && lat >= -90 && lat <= 90) ? lat : 42.5,
+        longitude: (isFinite(lng) && !isNaN(lng) && lng >= -180 && lng <= 180) ? lng : 12.5,
+        latitudeDelta: (isFinite(latDelta) && !isNaN(latDelta) && latDelta > 0) ? latDelta : 8,
+        longitudeDelta: (isFinite(lngDelta) && !isNaN(lngDelta) && lngDelta > 0) ? lngDelta : 8,
+      };
+    } catch (e) {
+      console.warn('[TechnicianMap] Error computing safeRegion:', e);
+      return { latitude: 42.5, longitude: 12.5, latitudeDelta: 8, longitudeDelta: 8 };
+    }
+  }, [initialRegion]);
+
+  const validTechnicians = React.useMemo(() => {
+    try {
+      return (technicians || []).filter((tech) => {
+        if (!tech || !tech.lastLocation) return false;
+        const lat = Number(tech.lastLocation.latitude);
+        const lng = Number(tech.lastLocation.longitude);
+        return (
+          typeof lat === 'number' &&
+          typeof lng === 'number' &&
+          isFinite(lat) &&
+          isFinite(lng) &&
+          !isNaN(lat) &&
+          !isNaN(lng) &&
+          lat >= -90 &&
+          lat <= 90 &&
+          lng >= -180 &&
+          lng <= 180
+        );
+      });
+    } catch (e) {
+      console.warn('[TechnicianMap] Error filtering technicians:', e);
+      return [];
+    }
+  }, [technicians]);
 
   return (
     <View style={styles.mapContainer}>
@@ -92,7 +125,7 @@ export function TechnicianMap({
             const lat = Number(location.latitude);
             const lng = Number(location.longitude);
             
-            if (!isFinite(lat) || !isFinite(lng)) {
+            if (!isFinite(lat) || !isFinite(lng) || isNaN(lat) || isNaN(lng)) {
               return null;
             }
             
@@ -155,11 +188,11 @@ export function TechnicianMap({
       <View style={[styles.mapLegend, { backgroundColor: theme.backgroundDefault + 'E6' }]}>
         <View style={styles.legendRow}>
           <View style={[styles.legendDot, { backgroundColor: '#34C759' }]} />
-          <ThemedText type="caption">Online ({onlineTechnicians.length})</ThemedText>
+          <ThemedText type="caption">Online ({onlineTechnicians?.length || 0})</ThemedText>
         </View>
         <View style={styles.legendRow}>
           <View style={[styles.legendDot, { backgroundColor: '#8E8E93' }]} />
-          <ThemedText type="caption">Offline ({offlineTechnicians.length})</ThemedText>
+          <ThemedText type="caption">Offline ({offlineTechnicians?.length || 0})</ThemedText>
         </View>
       </View>
     </View>
