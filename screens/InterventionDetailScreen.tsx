@@ -67,9 +67,10 @@ export default function InterventionDetailScreen({ navigation, route }: Props) {
   
   const intervention = getInterventionById(route.params.interventionId);
   
-  const isTecnico = user?.role === 'tecnico';
-  const isMaster = user?.role === 'master';
-  const isMasterOrDitta = user?.role === 'master' || user?.role === 'ditta';
+  const userRole = user?.role?.toUpperCase();
+  const isTecnico = userRole === 'TECNICO';
+  const isMaster = userRole === 'MASTER';
+  const isMasterOrDitta = userRole === 'MASTER' || userRole === 'DITTA';
   const canEdit = isTecnico;
   const canAssignTechnician = isMasterOrDitta;
   const canDelete = isMaster;
