@@ -63,7 +63,7 @@ router.delete('/', async (req: AuthRequest, res: Response) => {
 router.post('/notify-appointment/:interventionId', async (req: AuthRequest, res: Response) => {
   try {
     const userRole = req.user?.role?.toLowerCase();
-    if (userrole?.toUpperCase() === 'MASTER') {
+    if (userRole === 'master') {
       return res.json({
         success: true,
         message: 'MASTER users do not need self-notification',
@@ -107,7 +107,7 @@ router.post('/notify-appointment/:interventionId', async (req: AuthRequest, res:
 router.post('/notify-status/:interventionId', async (req: AuthRequest, res: Response) => {
   try {
     const userRole = req.user?.role?.toLowerCase();
-    if (userrole?.toUpperCase() === 'MASTER') {
+   if (userRole === 'master') {
       return res.json({
         success: true,
         message: 'MASTER users do not need self-notification',
