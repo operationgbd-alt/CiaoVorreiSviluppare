@@ -16,7 +16,7 @@ router.get('/', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, res: Re
     let query = 'SELECT u.*, c.id as company_id_ref, c.name as company_name FROM users u LEFT JOIN companies c ON u.company_id = c.id WHERE u.active = true';
     const params: any[] = [];
     
-    if (user.role?.toUpperCase() === 'DITTA') {
+    if (user.role === 'DITTA') {
       const companyResult = await pool.query<Company>(
         'SELECT * FROM companies WHERE owner_id = $1',
         [user.id]
@@ -86,7 +86,7 @@ router.post('/', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, res: R
     
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    if (currentUser.role?.toUpperCase() === 'DITTA') {
+    if (currentUser.role === 'DITTA') {
       if (role !== 'TECNICO') {
         throw new AppError('La ditta può creare solo account tecnico', 403);
       }
@@ -127,12 +127,12 @@ router.post('/', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, res: R
       });
     }
     
-    if (currentUser.role?.toUpperCase() === 'MASTER') {
-      if (role?.toUpperCase() === 'MASTER') {
+    if (currentUser.role === 'MASTER') {
+      if (role === 'MASTER') {
         throw new AppError('Non è possibile creare altri account Master', 403);
       }
       
-      if (role?.toUpperCase() === 'DITTA') {
+      if (role === 'DITTA') {
         const userResult = await pool.query<User>(
           `INSERT INTO users (username, password, name, email, phone, role, created_by_id)
            VALUES ($1, $2, $3, $4, $5, 'DITTA', $6)
@@ -168,7 +168,7 @@ router.post('/', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, res: R
         });
       }
       
-      if (role?.toUpperCase() === 'TECNICO') {
+      if (role === 'TECNICO') {
         if (!companyId) {
           throw new AppError('Per creare un tecnico è necessario specificare la ditta', 400);
         }
@@ -232,7 +232,7 @@ router.patch('/:id', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, re
       throw new AppError('Utente non trovato', 404);
     }
     
-    if (currentUser.role?.toUpperCase() === 'DITTA') {
+    if (currentUser.role === 'DITTA') {
       const companyResult = await pool.query<Company>(
         'SELECT * FROM companies WHERE owner_id = $1',
         [currentUser.id]
@@ -296,6 +296,72 @@ router.patch('/:id', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, re
   }
 });
 
+// GET posizioni tecnici per la mappa - MASTER e DITTA
+router.get('/technician-locations', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, res: Response, next) => {
+  try {
+    const user = req.user!;
+    
+    let query = `
+      SELECT u.id, u.name, u.phone, u.email,
+             i.location_latitude as latitude, 
+             i.location_longitude as longitude,
+             i.location_timestamp as last_update,
+             i.status
+      FROM users u
+      LEFT JOIN LATERAL (
+        SELECT location_latitude, location_longitude, location_timestamp, status
+        FROM interventions
+        WHERE technician_id = u.id 
+          AND location_latitude IS NOT NULL 
+          AND location_longitude IS NOT NULL
+        ORDER BY location_timestamp DESC NULLS LAST
+        LIMIT 1
+      ) i ON true
+      WHERE u.role = 'TECNICO' AND u.active = true
+    `;
+    
+    const params: any[] = [];
+    
+    // Se DITTA, filtra solo i tecnici della propria azienda
+    if (user.role === 'DITTA') {
+      const companyResult = await pool.query<Company>(
+        'SELECT * FROM companies WHERE owner_id = $1',
+        [user.id]
+      );
+      
+      const company = companyResult.rows[0];
+      if (!company) {
+        throw new AppError('Ditta non trovata', 404);
+      }
+      
+      query += ' AND u.company_id = $1';
+      params.push(company.id);
+    }
+    
+    const result = await pool.query(query, params);
+    
+    const technicians = result.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      phone: row.phone,
+      email: row.email,
+      latitude: row.latitude ? parseFloat(row.latitude) : null,
+      longitude: row.longitude ? parseFloat(row.longitude) : null,
+      lastUpdate: row.last_update,
+      status: row.status,
+    }));
+    
+    console.log('[USERS] Technician locations:', technicians.length, 'found');
+    
+    res.json({
+      success: true,
+      data: technicians,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/:id/reset-password', requireRole('MASTER', 'DITTA'), async (req: AuthRequest, res: Response, next) => {
   try {
     const { id } = req.params;
@@ -316,7 +382,7 @@ router.post('/:id/reset-password', requireRole('MASTER', 'DITTA'), async (req: A
       throw new AppError('Utente non trovato', 404);
     }
     
-    if (currentUser.role?.toUpperCase() === 'DITTA') {
+    if (currentUser.role === 'DITTA') {
       const companyResult = await pool.query<Company>(
         'SELECT * FROM companies WHERE owner_id = $1',
         [currentUser.id]

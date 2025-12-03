@@ -681,6 +681,10 @@ router.delete('/:id', requireRole('MASTER'), async (req: AuthRequest, res: Respo
     res.json({
       success: true,
       message: 'Intervento eliminato con successo',
+      data: {
+        deleted: true,
+        deletedCount: 1
+      }
     });
   } catch (error) {
     next(error);
@@ -712,6 +716,10 @@ router.post('/bulk-delete', requireRole('MASTER'), async (req: AuthRequest, res:
       success: true,
       message: `${result.rowCount} interventi eliminati con successo`,
       deletedCount: result.rowCount,
+      data: {
+        deleted: true,
+        deletedCount: result.rowCount
+      }
     });
   } catch (error) {
     next(error);
