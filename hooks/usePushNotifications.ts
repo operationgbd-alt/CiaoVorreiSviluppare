@@ -105,7 +105,7 @@ export function usePushNotifications() {
         setExpoPushToken(token);
         
         const platform = Platform.OS;
-        const response = await api.savePushToken(token, platform);
+        const response = await api.registerPushToken(token, platform);
         
         if (response.success) {
           console.log('[PUSH] Token registered on server');
@@ -125,7 +125,7 @@ export function usePushNotifications() {
   const unregisterPushToken = async (): Promise<void> => {
     if (expoPushToken) {
       try {
-        await api.removePushToken(expoPushToken);
+        await api.unregisterPushToken(expoPushToken);
         setExpoPushToken(null);
         console.log('[PUSH] Token unregistered');
       } catch (error) {
