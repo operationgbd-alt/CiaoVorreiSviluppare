@@ -1,30 +1,22 @@
 import Constants from 'expo-constants';
-import * as SecureStore from 'expo-secure-store';
 
-// URL del backend - FALLBACK HARDCODED per sicurezza
+// URL del backend
 const API_BASE_URL = Constants.expoConfig?.extra?.apiUrl 
   || 'https://solartech-backend-production.up.railway.app/api';
 
-// Log per debug - rimuovi in produzione
 console.log('[API] Base URL:', API_BASE_URL);
 
-async function getAuthToken(): Promise<string | null> {
-  try {
-    return await SecureStore.getItemAsync('authToken');
-  } catch {
-    return null;
-  }
-}
+// Token e callback memorizzati
+let authToken: string | null = null;
+let onUnauthorizedCallback: (() => void) | null = null;
 
 async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = await getAuthToken();
-  
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
     ...options.headers,
   };
 
@@ -36,6 +28,13 @@ async function apiRequest<T>(
       ...options,
       headers,
     });
+
+    // Gestione 401 - token scaduto
+    if (response.status === 401 && onUnauthorizedCallback) {
+      console.log('[API] 401 Unauthorized - calling logout');
+      onUnauthorizedCallback();
+      throw new Error('Sessione scaduta');
+    }
 
     const data = await response.json();
 
@@ -51,9 +50,19 @@ async function apiRequest<T>(
 }
 
 export const api = {
+  // METODI MANCANTI - AGGIUNTI!
+  setToken: (token: string | null) => {
+    authToken = token;
+    console.log('[API] Token set:', token ? 'YES' : 'NO');
+  },
+
+  setOnUnauthorized: (callback: () => void) => {
+    onUnauthorizedCallback = callback;
+  },
+
   // Auth
   login: async (username: string, password: string) => {
-    return apiRequest<{ success: boolean; data: { token: string; user: any } }>('/auth/login', {
+    return apiRequest<{ success: boolean; data: { token: string; user: any }; error?: string }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
@@ -138,7 +147,6 @@ export const api = {
     });
   },
 
-  // Status update
   updateInterventionStatus: async (id: string, status: string, notes?: string) => {
     return apiRequest<{ success: boolean; data: any }>(`/interventions/${id}/status`, {
       method: 'PUT',
@@ -146,7 +154,6 @@ export const api = {
     });
   },
 
-  // GPS update
   updateInterventionGps: async (id: string, latitude: number, longitude: number) => {
     return apiRequest<{ success: boolean; data: any }>(`/interventions/${id}/gps`, {
       method: 'PUT',
@@ -154,7 +161,6 @@ export const api = {
     });
   },
 
-  // Appointment
   setAppointment: async (id: string, date: string, notes?: string) => {
     return apiRequest<{ success: boolean; data: any }>(`/interventions/${id}/appointment`, {
       method: 'POST',
@@ -190,7 +196,7 @@ export const api = {
     return apiRequest<{ success: boolean; data: { pdf: string } }>(`/reports/intervention/${interventionId}`);
   },
 
-  // Push Tokens - NOMI CORRETTI
+  // Push Tokens
   registerPushToken: async (token: string) => {
     return apiRequest<{ success: boolean }>('/push-tokens/register', {
       method: 'POST',
@@ -205,7 +211,6 @@ export const api = {
     });
   },
 
-  // Technicians location (for map)
   getTechniciansLocations: async () => {
     return apiRequest<{ success: boolean; data: any[] }>('/users/technicians/locations');
   },
