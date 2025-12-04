@@ -12,7 +12,7 @@ import { Feather } from '@expo/vector-icons';
 import { api } from '../services/api';
 import { Colors, Spacing, Typography } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../store/AuthContext';
 
 interface TechnicianLocation {
   id: string;
